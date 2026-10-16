@@ -1,3 +1,9 @@
+> **Superseded (2026-10-16).** The owner moved hosting to DigitalOcean App Platform
+> (a plain CPython container; see `Dockerfile`). This document is kept as the record
+> of the Cloudflare Python Worker evaluation -- the architecture worked, but needed
+> the Workers Paid plan. `scripts/build_static.py` (content-hashed assets) carried
+> over; the `worker/` directory and wrangler config were removed.
+
 # PLATFORM — whenwillhazeend.com on Cloudflare (Python Worker + Static Assets)
 
 Owner of this file: PLATFORM agent. Written 2026-10-16. Every number in the

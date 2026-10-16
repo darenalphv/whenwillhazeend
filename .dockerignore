@@ -1,0 +1,14 @@
+.git
+.venv
+.pytest_cache
+**/__pycache__
+*.pyc
+public
+node_modules
+worker
+research
+tests
+scripts/model
+*.md
+.DS_Store
+.claude

@@ -9,11 +9,16 @@ climatology and says so in its response.
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api.routes import router as api_router
@@ -46,16 +51,89 @@ app = FastAPI(
 
 app.include_router(api_router)
 
+# The haze3d payloads run to several hundred KB of JSON; gzip cuts that ~6x.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+@app.get("/healthz", include_in_schema=False)
+def healthz() -> dict[str, str]:
+    """Liveness for the platform's health checks. Deliberately does no I/O:
+    /api/health probes Open-Meteo, and a slow upstream must never get a healthy
+    container restarted."""
+    return {"status": "ok", "version": __version__}
+
+
 # --------------------------------------------------------------------------- #
-# Static files and templates (owned by the WEB agent; mounted defensively so a
-# missing directory degrades to a clear message rather than an import error).
+# Production: serve the content-hashed build in public/.
+#
+# `scripts/build_static.py` writes public/ with every asset URL carrying
+# ?v=<content hash>, so /static can be cached for a year and a deploy is still
+# picked up on the next page load. Opt-in via SERVE_BUILT=1 (set in the
+# Dockerfile) rather than "if public/ exists", because a stale public/ left on a
+# dev machine would otherwise silently shadow the live templates.
 # --------------------------------------------------------------------------- #
 
-# On Cloudflare (Python Worker) neither directory is shipped -- Workers Static
-# Assets serve the pre-built pages and /static/* -- and jinja2 is not installed,
-# so both imports are deferred until we know they are needed.
+PUBLIC_DIR = Path(__file__).resolve().parents[1] / "public"
+SERVE_BUILT = os.environ.get("SERVE_BUILT") == "1" and (PUBLIC_DIR / "index.html").is_file()
 
-if settings.static_dir.is_dir():
+_BUILT_HEADERS: dict = {}
+if SERVE_BUILT:
+    try:
+        _BUILT_HEADERS = json.loads((PUBLIC_DIR / "_headers.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        log.warning("public/_headers.json missing or unreadable; serving without it")
+
+
+if SERVE_BUILT:
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/static", StaticFiles(directory=PUBLIC_DIR / "static"), name="static")
+
+    @app.middleware("http")
+    async def _built_headers(request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith("/static/"):
+            response.headers["Cache-Control"] = _BUILT_HEADERS.get(
+                "static_cache_control", "public, max-age=31536000, immutable")
+        elif not path.startswith("/api/"):
+            # pages: always revalidate, so a deploy shows on the next load
+            response.headers.setdefault("Cache-Control", "no-cache")
+            for key, value in _BUILT_HEADERS.get("html_headers", {}).items():
+                response.headers.setdefault(key, value)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        return response
+
+    def _page(rel: str) -> FileResponse:
+        return FileResponse(PUBLIC_DIR / rel, media_type="text/html")
+
+    @app.get("/", include_in_schema=False)
+    def index_built() -> FileResponse:
+        return _page("index.html")
+
+    @app.get("/simulator", include_in_schema=False)
+    def simulator_built() -> FileResponse:
+        return _page("simulator/index.html")
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _not_found_page(request: Request, exc: StarletteHTTPException):
+        if exc.status_code == 404 and not request.url.path.startswith("/api/") \
+                and (PUBLIC_DIR / "404.html").is_file():
+            return FileResponse(PUBLIC_DIR / "404.html", status_code=404,
+                                media_type="text/html")
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                            headers=getattr(exc, "headers", None))
+
+
+# --------------------------------------------------------------------------- #
+# Development: live templates and /static straight from app/ (mounted
+# defensively so a missing directory degrades to a clear message rather than an
+# import error).
+# --------------------------------------------------------------------------- #
+
+if SERVE_BUILT:
+    pass
+elif settings.static_dir.is_dir():
     from fastapi.staticfiles import StaticFiles
 
     app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
@@ -88,7 +166,7 @@ _MISSING_PAGE = """<!doctype html>
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-def index(request: Request) -> HTMLResponse:
+def index(request: Request) -> HTMLResponse:  # shadowed by index_built in production
     """Serve the single-page frontend."""
     if templates is None or not (settings.templates_dir / "index.html").is_file():
         return HTMLResponse(

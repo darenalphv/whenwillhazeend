@@ -52,6 +52,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import posixpath
+import json
 import re
 import shutil
 import sys
@@ -331,6 +332,17 @@ class Builder:
             dest.write_text(self.page(src), encoding="utf-8")
         (OUT / "404.html").write_text(NOT_FOUND, encoding="utf-8")
         (OUT / "_headers").write_text(HEADERS_FILE, encoding="utf-8")
+        # Same policy as machine-readable JSON, for app.main when it serves
+        # public/ itself (the DigitalOcean container) rather than a CDN.
+        (OUT / "_headers.json").write_text(json.dumps({
+            "static_cache_control": "public, max-age=31536000, immutable",
+            "html_headers": {
+                "X-Content-Type-Options": "nosniff",
+                "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+                "Content-Security-Policy-Report-Only": CSP,
+            },
+        }, indent=2), encoding="utf-8")
         files = [p for p in OUT.rglob("*") if p.is_file()]
         return {"files": len(files), "bytes": sum(p.stat().st_size for p in files)}
 

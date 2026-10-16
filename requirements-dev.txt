@@ -1,0 +1,4 @@
+# Everything in requirements.txt, plus calibration and test tooling.
+-r requirements.txt
+scipy==1.18.1
+pytest==9.1.1

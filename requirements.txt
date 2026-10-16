@@ -1,13 +1,11 @@
-# Pinned to the versions actually installed in .venv (python 3.14.7).
-# Regenerate a full transitive lock with: .venv/bin/pip freeze
+# Runtime dependencies -- what the production container installs.
+# Pinned to the versions verified in .venv (python 3.14).
+# scipy is deliberately absent: only the offline calibration uses it, and it
+# imports it lazily. Dev and test tooling lives in requirements-dev.txt.
 
 fastapi==0.141.1
 uvicorn[standard]==0.53.0
 jinja2==3.1.6
 httpx==0.28.1
 numpy==2.5.3
-scipy==1.18.1
 pydantic==2.13.5
-
-# Tests
-pytest==9.1.1
