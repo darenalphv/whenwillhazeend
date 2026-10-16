@@ -149,10 +149,11 @@ direct measurement carries `"estimated": true`. This includes:
 
 ### About the mortality and economic figures
 
-The site publishes excess-death and economic-loss figures, most visibly the
-~100,000 excess deaths attributed to the 2015 event across Indonesia, Malaysia
-and Singapore (Koplitz et al. 2016, *Environmental Research Letters*) and the
-World Bank's ~US$16bn loss estimate for the same season.
+The site publishes excess-death and economic-loss figures. For the 2015 event,
+four peer-reviewed estimates of excess deaths across Indonesia, Malaysia and
+Singapore run from **~12,000 to ~100,000** (Crippa et al. 2016; Kiely et al. 2020;
+Koplitz et al. 2016), and the site shows that range with every study's DOI rather
+than a single figure. The World Bank put the season's losses at ~US$16bn.
 
 These are **epidemiological and economic model outputs, not body counts**. The
 mortality figure comes from exposure–response functions applied to modelled
