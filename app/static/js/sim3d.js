@@ -1,548 +1,415 @@
 /**
- * sim3d.js — the 3D haze simulator.
+ * sim3d.js — the simulator page: panels, timeline and controls around the
+ * shared 3D scene (./sim3d/scene.js).
  *
- * Renders /api/simulate/haze3d as extruded columns over a dark basemap. The
- * grid, the concentrations, the receptor readouts and the caveats all come
- * from the model; nothing numeric is invented here.
- *
- * The one thing worth understanding about this view: across the simulated day
- * the fires do not change. The emission rate of a smouldering peat cluster is
- * effectively constant. What changes is the mixing height, and the columns
- * rise and fall with it. That is the actual mechanism behind "the haze is
- * worse in the morning".
+ * Every number on this page comes from the model's response: receptor values
+ * from receptor_series (exact at each model frame, linearly interpolated
+ * between frames during playback), field peak and mixing height from frames[].
+ * The particles are drawn, never counted.
  */
+
+import { Scene } from './sim3d/scene.js';
+import { BANDS, bandColors, bandIndex, bandOf } from './sim3d/colors.js';
+import { VERSIONS } from './sim3d/libs.js';
+import { loadWeek, readingAt } from './sim3d/now.js';
 
 const API = '/api/simulate/haze3d';
-
-/* AQI breakpoints, matching the model's own bands. Colours are the palette's
-   AQI ramp read from CSS so this page cannot drift from the main one. */
-const BANDS = [
-  { max: 12, name: 'Good' },
-  { max: 35.4, name: 'Moderate' },
-  { max: 55.4, name: 'Unhealthy for sensitive groups' },
-  { max: 150.4, name: 'Unhealthy' },
-  { max: 250.4, name: 'Very unhealthy' },
-  { max: Infinity, name: 'Hazardous' },
-];
-const BAND_RGB = [
-  [99, 211, 166], [240, 180, 41], [255, 138, 60],
-  [255, 106, 106], [198, 84, 198], [156, 42, 60],
-];
-
-const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-
 const $ = (s, r = document) => r.querySelector(s);
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const compass = (d) => COMPASS[Math.round(((d % 360) + 360) % 360 / 22.5) % 16];
+const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const compass = (d) => COMPASS[Math.round((((d % 360) + 360) % 360) / 22.5) % 16];
+const fmt = (v) => Math.round(v).toLocaleString('en-GB');
+const MY_SG = new Set(['Malaysia', 'Singapore']);
+const EMPH = ['Kuching', 'Sibu', 'Miri', 'Kuala Lumpur', 'Singapore', 'Batam'];
+const NO_SUMATRA = new Set(['Singapore', 'Kuala Lumpur', 'Batam', 'Jambi', 'Pekanbaru']);
 
-function bandIndex(v) {
-  for (let i = 0; i < BANDS.length; i += 1) if (v <= BANDS[i].max) return i;
-  return BANDS.length - 1;
-}
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const small = () => window.innerWidth < 720 || window.matchMedia('(pointer: coarse)').matches;
 
-/* ------------------------------------------------------------------ state */
+const state = { scene: null, data: null, seasons: [], running: false, view: 'home', scrubbing: false, mode: 'model', week: null, lastRaw: null };
+const FIXTURE = new URLSearchParams(location.search).get('fixture') === 'week';
+const TZ = 'Asia/Kuala_Lumpur';   // MYT and SGT are both UTC+8
 
-const state = {
-  field: null,
-  frame: 0,
-  playing: false,
-  timer: null,
-  deck: null,
-  cells: [],           // {lon, lat, i} once per grid cell, reused every frame
-  running: false,
-  seasons: [],
-  t: 0,            // seconds since load, drives the fire flicker
-  anim: 0,
-  reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-};
-
-const INITIAL_VIEW = {
-  longitude: 113.5, latitude: -1.6, zoom: 5.1,
-  pitch: 52, bearing: -18, maxZoom: 11, minZoom: 3,
-};
-
-/* ------------------------------------------------------------------- deck */
-
-function basemapLayer() {
-  const { TileLayer } = deck;
-  const { BitmapLayer } = deck;
-  return new TileLayer({
-    id: 'basemap',
-    // Esri Dark Gray Canvas: free, no API key. CARTO's dark_all now watermarks
-    // unkeyed tiles, so it is not an option here.
-    data: 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    minZoom: 0,
-    maxZoom: 16,
-    tileSize: 256,
-    renderSubLayers: (props) => {
-      const { boundingBox } = props.tile;
-      return new BitmapLayer(props, {
-        data: null,
-        image: props.data,
-        bounds: [boundingBox[0][0], boundingBox[0][1],
-          boundingBox[1][0], boundingBox[1][1]],
-      });
-    },
-  });
-}
-
-/** Cell centres, computed once per field. */
-function buildCells(grid) {
-  const cells = [];
-  const { nx, ny, lon_min, lat_min, dlon, dlat } = grid;
-  for (let r = 0; r < ny; r += 1) {
-    for (let c = 0; c < nx; c += 1) {
-      cells.push({ lon: lon_min + c * dlon, lat: lat_min + r * dlat, i: r * nx + c });
-    }
-  }
-  return cells;
-}
-
-function currentValues() {
-  const f = state.field && state.field.frames[state.frame];
-  return f ? f.values : null;
-}
-
-function layers() {
-  const out = [basemapLayer()];
-  if (!state.field || !state.field.grid) return out;
-
-  const { ColumnLayer, ScatterplotLayer, TextLayer } = deck;
-  const vals = currentValues();
-  const floor = Number($('#ctl-floor').value);
-  const exag = Number($('#ctl-exag').value);
-  const grid = state.field.grid;
-  // Cell radius in metres, from the grid spacing, so columns tile the domain.
-  const cellM = grid.dlon * 111320 * Math.cos(grid.lat_min * Math.PI / 180) * 0.5;
-
-  out.push(new ColumnLayer({
-    id: 'haze',
-    data: state.cells,
-    diskResolution: 4,
-    radius: Math.max(1200, cellM),
-    angle: 45,
-    extruded: true,
-    pickable: true,
-    getPosition: (d) => [d.lon, d.lat],
-    // sqrt keeps a 5 -> 8000 range legible; linear would bury everything
-    // under one spike, log would flatter the low end into looking dangerous.
-    getElevation: (d) => {
-      const v = vals[d.i];
-      return v < floor ? 0 : Math.sqrt(v) * 1250 * exag;
-    },
-    // Alpha ramps with concentration. A flat alpha made the whole domain a
-    // solid rectangle whose edge was the grid boundary, not the haze -- which
-    // read as a wall of smoke stopping dead in mid-air. Fading the thin edges
-    // out lets the plume have a shape.
-    getFillColor: (d) => {
-      const v = vals[d.i];
-      if (v < floor) return [0, 0, 0, 0];
-      const rgb = BAND_RGB[bandIndex(v)];
-      const t = Math.min(1, Math.sqrt((v - floor) / 220));
-      return [rgb[0], rgb[1], rgb[2], Math.round(26 + t * 184)];
-    },
-    updateTriggers: {
-      getElevation: [state.frame, floor, exag],
-      getFillColor: [state.frame, floor],
-    },
-    transitions: { getElevation: 320, getFillColor: 320 },
-  }));
-
-  /* The fires themselves. Three stacked layers so a cluster reads as burning
-     rather than as a marker: an outer heat halo that breathes, a flame column
-     that flickers, and a hot core. Each source gets its own phase from its
-     coordinates, so they never pulse in unison -- synchronised fire is the
-     tell that you are looking at a UI element rather than a landscape. */
-  const T = state.t;
-  const phase = (d) => (d.lon * 7.3 + d.lat * 11.7);
-  const flicker = (d, rate, depth) => 1 + depth * (
-    0.6 * Math.sin(T * rate + phase(d))
-    + 0.4 * Math.sin(T * rate * 2.37 + phase(d) * 1.7));
-  const baseR = (d) => clamp(Math.sqrt(d.area_ha) * 28, 1500, 22000);
-
-  out.push(new ScatterplotLayer({
-    id: 'fire-halo',
-    data: state.field.sources,
-    radiusUnits: 'meters',
-    getPosition: (d) => [d.lon, d.lat],
-    getRadius: (d) => baseR(d) * 2.6 * flicker(d, 1.1, 0.10),
-    getFillColor: (d) => [255, 96, 34, Math.round(34 * flicker(d, 1.1, 0.35))],
-    updateTriggers: { getRadius: T, getFillColor: T },
-  }));
-
-  out.push(new ColumnLayer({
-    id: 'fire-flames',
-    data: state.field.sources,
-    diskResolution: 6,
-    radius: 4200,
-    extruded: true,
-    getPosition: (d) => [d.lon, d.lat],
-    getElevation: (d) => Math.sqrt(d.area_ha) * 320 * flicker(d, 2.6, 0.22) * exag,
-    getFillColor: (d) => {
-      const f = clamp(flicker(d, 2.6, 0.5), 0.4, 1.6);
-      return [255, Math.round(120 + 70 * f), Math.round(40 * f), 205];
-    },
-    updateTriggers: { getElevation: [T, exag], getFillColor: T },
-  }));
-
-  out.push(new ScatterplotLayer({
-    id: 'fires',
-    data: state.field.sources,
-    pickable: true,
-    radiusUnits: 'meters',
-    getPosition: (d) => [d.lon, d.lat],
-    getRadius: (d) => baseR(d) * flicker(d, 3.1, 0.06),
-    getFillColor: (d) => [255, Math.round(196 + 40 * Math.sin(T * 3.1 + phase(d))), 150, 235],
-    stroked: true,
-    getLineColor: [255, 236, 214, 210],
-    lineWidthMinPixels: 1,
-    updateTriggers: { getRadius: T, getFillColor: T },
-  }));
-
-  if ($('#ctl-trails').checked) {
-    const trails = smokeTrailsLayer();
-    if (trails) out.push(trails);
-  }
-
-  const rec = state.field.receptor_series || [];
-  out.push(new ScatterplotLayer({
-    id: 'receptors',
-    data: rec,
-    pickable: true,
-    radiusUnits: 'pixels',
-    getPosition: (d) => [d.lon, d.lat],
-    getRadius: 5,
-    getFillColor: (d) => {
-      const v = d.pm25[state.frame] ?? 0;
-      const rgb = BAND_RGB[bandIndex(v)];
-      return [rgb[0], rgb[1], rgb[2], 255];
-    },
-    stroked: true,
-    getLineColor: [12, 10, 9, 255],
-    lineWidthMinPixels: 2,
-    updateTriggers: { getFillColor: state.frame },
-  }));
-
-  out.push(new TextLayer({
-    id: 'receptor-labels',
-    data: rec,
-    getPosition: (d) => [d.lon, d.lat],
-    getText: (d) => `${d.name}  ${Math.round(d.pm25[state.frame] ?? 0)}`,
-    getSize: 11,
-    getColor: [244, 239, 232, 225],
-    getPixelOffset: [0, -14],
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-    outlineWidth: 3,
-    outlineColor: [8, 7, 6, 255],
-    fontSettings: { sdf: true },
-    updateTriggers: { getText: state.frame },
-  }));
-
-  return out;
-}
-
-/* ------------------------------------------------------------ smoke trails */
-
-/**
- * Trajectories of parcels released from the biggest clusters, integrated
- * through the model's own per-hour wind (including veer). These are not
- * decoration: each vertex is where a parcel would be after that many hours at
- * the modelled wind speed and direction. In release mode the trail head is the
- * plume front at the displayed hour, which is what carries smoke to Sarawak.
- */
-function buildTrails(field) {
-  const src = field.sources.slice()
-    .sort((a, b) => b.area_ha - a.area_ha)
-    .slice(0, 26);
-  const step = field.conditions.step_hours;
-  const u = field.conditions.wind_speed_ms;
-  const trails = [];
-
-  for (const s of src) {
-    let lon = s.lon;
-    let lat = s.lat;
-    const path = [[lon, lat, 0]];
-    const times = [0];
-    for (let k = 0; k < field.frames.length; k += 1) {
-      const f = field.frames[k];
-      // meteorological "from" -> the bearing it travels toward
-      const toRad = ((f.wind_dir_deg + 180) % 360) * Math.PI / 180;
-      const dist = u * step * 3600;                   // metres this step
-      const dLat = (dist * Math.cos(toRad)) / 110574;
-      const dLon = (dist * Math.sin(toRad))
-        / (111320 * Math.cos(lat * Math.PI / 180));
-      lat += dLat;
-      lon += dLon;
-      path.push([lon, lat, 0]);
-      times.push((k + 1) * step);
-    }
-    trails.push({ path, timestamps: times, area_ha: s.area_ha });
-  }
-  return trails;
-}
-
-function smokeTrailsLayer() {
-  const field = state.field;
-  if (!state.trails || !state.trails.length) return null;
-  const total = field.conditions.hours;
-  const release = field.conditions.release_from_start;
-  // Release mode: the head is the front at the hour on screen. Steady state:
-  // a continuous loop, which reads as flow rather than as an advancing front.
-  const now = release
-    ? field.frames[state.frame].hour
-    : (state.t * 3.2) % (total + 12);
-
-  const Trips = deck.TripsLayer;
-  if (Trips) {
-    return new Trips({
-      id: 'smoke-trails',
-      data: state.trails,
-      getPath: (d) => d.path,
-      getTimestamps: (d) => d.timestamps,
-      getColor: [214, 206, 198],
-      opacity: 0.30,
-      widthMinPixels: 2,
-      jointRounded: true,
-      capRounded: true,
-      fadeTrail: true,
-      trailLength: release ? Math.max(8, total * 0.5) : 14,
-      currentTime: now,
-      updateTriggers: { currentTime: now },
-    });
-  }
-  // TripsLayer is part of the standalone bundle, but if a future build drops it
-  // the trails degrade to static paths rather than the page failing.
-  return new deck.PathLayer({
-    id: 'smoke-trails',
-    data: state.trails,
-    getPath: (d) => d.path,
-    getColor: [214, 206, 198, 60],
-    widthMinPixels: 2,
-  });
-}
-
-function tooltip({ object, layer }) {
-  if (!object) return null;
-  if (layer.id === 'haze') {
-    const v = currentValues()[object.i];
-    return { text: `${Math.round(v)} µg/m³ — ${BANDS[bandIndex(v)].name}` };
-  }
-  if (layer.id === 'fires') {
-    return { text: `${Math.round(object.area_ha).toLocaleString()} ha · ${object.pool.replace(/_/g, ' ')}` };
-  }
-  if (layer.id === 'receptors') {
-    const v = object.pm25[state.frame] ?? 0;
-    return {
-      text: `${object.name}\n${Math.round(v)} µg/m³ now\npeak ${Math.round(object.peak_pm25)} at ${String(object.peak_hour_of_day).padStart(2, '0')}:00\n${Math.round(object.distance_km)} km from the fires`,
-    };
-  }
-  return null;
-}
-
-/* A single rAF clock drives the fire flicker and the trail flow. It stops when
-   the tab is hidden and never starts under prefers-reduced-motion, where the
-   fires stay lit but still and the trails stay put. */
-function startClock() {
-  if (state.reduced || state.anim) return;
-  let last = performance.now();
-  const tick = (now) => {
-    state.t += Math.min(0.05, (now - last) / 1000);
-    last = now;
-    if (state.field) redraw();
-    state.anim = requestAnimationFrame(tick);
-  };
-  state.anim = requestAnimationFrame(tick);
-}
-
-function stopClock() {
-  if (state.anim) cancelAnimationFrame(state.anim);
-  state.anim = 0;
-}
-
-function initDeck() {
-  state.deck = new deck.Deck({
-    canvas: 'deck-canvas',
-    initialViewState: INITIAL_VIEW,
-    controller: { dragRotate: true, touchRotate: true },
-    layers: layers(),
-    getTooltip: tooltip,
-    parameters: { clearColor: [0.043, 0.039, 0.035, 1] },
-  });
-}
-
-function redraw() {
-  if (state.deck) state.deck.setProps({ layers: layers() });
-}
-
-/* -------------------------------------------------------------- rendering */
+/* ------------------------------------------------------------ status */
 
 function setStatus(kind, text) {
-  const d = $('#sim-status .status__dot');
-  const t = $('#sim-status .status__text');
-  if (d) d.dataset.status = kind;
-  if (t) t.textContent = text;
+  $('#sim-status .sbar__statusdot').dataset.status = kind;
+  $('#sim-status .sbar__statustext').textContent = text;
 }
 
-function showFrame(i) {
-  const field = state.field;
-  if (!field || !field.frames.length) return;
-  state.frame = clamp(i, 0, field.frames.length - 1);
-  const f = field.frames[state.frame];
+function showError(title, msg, what) {
+  $('#stage-loading').hidden = true;
+  $('#stage-error-title').textContent = title;
+  $('#stage-error-msg').textContent = msg;
+  $('#stage-error-what').textContent = what ? `What failed: ${what}` : '';
+  $('#stage-error').hidden = false;
+}
 
-  $('#fr-time').textContent = f.label;
-  $('#fr-date').textContent = f.time ? ` · ${f.time.slice(0, 10)}` : '';
-  $('#fr-mix').textContent = `${f.mixing_height_m.toLocaleString()} m`;
-  $('#fr-max').textContent = `${Math.round(f.max_pm25).toLocaleString()} µg/m³`;
-  $('#fr-wind').textContent = `${f.wind_speed_ms} m/s from ${Math.round(f.wind_dir_deg)}° ${compass(f.wind_dir_deg)}`;
-  $('#frame-slider').value = String(state.frame);
-  $('#frame-label').textContent = f.label;
+function notice(text) {
+  const n = $('#stage-notice');
+  if (!text) { n.hidden = true; return; }
+  n.textContent = text;
+  n.hidden = false;
+}
 
-  const night = f.mixing_height_m < field.conditions.mean_mixing_height_m;
-  $('#fr-note').textContent = field.conditions.diurnal
-    ? (night
+/* ----------------------------------------------------------- readout */
+
+function clockAt(t) {
+  const f0 = state.data.frames[0];
+  const abs = (f0.hour_of_day ?? 0) + t;
+  const hh = Math.floor(((abs % 24) + 24) % 24);
+  const mm = Math.floor((abs - Math.floor(abs)) * 60);
+  let date = '';
+  if (f0.time) {
+    const base = new Date(`${f0.time.slice(0, 10)}T00:00:00Z`);
+    base.setUTCHours(Math.floor(abs));
+    date = base.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  }
+  return { text: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`, date, day: Math.floor(abs / 24) + 1 };
+}
+
+function weekClock(t) {
+  const d = new Date(state.week.t0 + t * 3.6e6);
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ, hour12: false });
+  const date = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ });
+  return { time, date, ms: d.getTime() };
+}
+
+function onFrameWeek(s) {
+  const f = state.scene.field;
+  const { t } = s;
+  const c = weekClock(t);
+  const [k0, k1, a] = s.bracket;
+  const exact = a < 0.005 || a > 0.995 || k0 === k1;
+  $('#ro-time').textContent = c.time;
+  $('#ro-date').textContent = `${c.date} · MYT/SGT`;
+  $('#ro-sub').textContent = `${exact ? `CAMS frame ${a > 0.5 ? k1 : k0}` : `between CAMS frames ${k0} and ${k1}`}`;
+  $('#ro-mix').textContent = `${state.scene.fires.info.filter((x) => x.on && t >= x.on[0] && t <= x.on[1]).length} burning`;
+  $('#ro-max').textContent = `${fmt(f.scalarAt(t, 'max_pm25'))} µg/m³`;
+  $('#ro-note').textContent = 'Haze: CAMS model (modelled). Fires: NASA FIRMS detections (measured), lit on the days they were seen.';
+  if (!state.scrubbing) $('#scrub').value = String(t);
+  $('#tl-clock').textContent = `${c.date} ${c.time}`;
+  setPlayIcon(s.playing);
+  renderPlaces(c.ms);
+  const fps = s.fps ? Math.round(Math.min(s.fps, 240)) : 0;
+  $('#perf').textContent = reduced ? 'Still frame (reduced motion)' : `No smoke particles this mode — no wind field to carry them · ${fps} fps`;
+}
+
+function onFrame(s) {
+  // the scene may still hold the other mode's data mid-switch
+  if (state.mode !== state.scene?.mode) return;
+  if (state.mode === 'week') { if (state.week) onFrameWeek(s); return; }
+  const d = state.data;
+  if (!d) return;
+  const f = state.scene.field;
+  const { t } = s;
+  const c = clockAt(t);
+  const [k0, k1, a] = s.bracket;
+  const exact = a < 0.005 || a > 0.995 || k0 === k1;
+  const kNear = a > 0.5 ? k1 : k0;
+  const fr = d.frames[kNear];
+
+  $('#ro-time').textContent = c.text;
+  $('#ro-date').textContent = c.date ? `${c.date} · day ${c.day}` : `day ${c.day}`;
+  $('#ro-sub').textContent = `+${t.toFixed(1)} h · ${exact ? `model frame ${kNear}` : `between frames ${k0} and ${k1}`}`;
+  $('#ro-mix').textContent = `${fmt(f.scalarAt(t, 'mixing_height_m'))} m`;
+  $('#ro-max').textContent = `${fmt(f.scalarAt(t, 'max_pm25'))} µg/m³`;
+  $('#ro-wind').textContent = `${fr.wind_speed_ms} m/s from ${Math.round(fr.wind_dir_deg)}° ${compass(fr.wind_dir_deg)}`;
+  updateArrow(fr.wind_dir_deg);
+  const H = f.scalarAt(t, 'mixing_height_m');
+  $('#ro-note').textContent = d.conditions.diurnal
+    ? (H < d.conditions.mean_mixing_height_m
       ? 'The layer has collapsed. Same fires, less air to dilute into.'
       : 'Convection has lifted the layer. Same fires, more air.')
     : 'Diurnal cycle off — the mixing height is held flat.';
 
-  renderReceptors();
-  redraw();
+  if (!state.scrubbing) $('#scrub').value = String(t);
+  $('#tl-clock').textContent = `${c.text} · +${t.toFixed(1)} h`;
+  setPlayIcon(s.playing);
+  renderReceptors(t);
+  updateArrivalStates(t);
+
+  const fps = s.fps ? Math.round(Math.min(s.fps, 240)) : 0;
+  $('#perf').textContent = reduced
+    ? `${fmt(s.particles)} particles · still frame (reduced motion)`
+    : `${fmt(s.particles)} particles (${fmt(s.visible)} in smoke) · ${fps} fps`;
 }
 
-function renderReceptors() {
-  const ul = $('#receptor-list');
-  const rec = (state.field.receptor_series || [])
-    .slice()
-    .sort((a, b) => (b.pm25[state.frame] ?? 0) - (a.pm25[state.frame] ?? 0))
-    .slice(0, 8);
-  ul.textContent = '';
-  for (const r of rec) {
-    const v = r.pm25[state.frame] ?? 0;
-    const li = document.createElement('li');
-    li.className = 'receptor';
-    const rgb = BAND_RGB[bandIndex(v)];
-    li.innerHTML =
-      `<span class="receptor__dot" style="background:rgb(${rgb.join(',')})"></span>` +
-      `<span class="receptor__name"></span>` +
-      `<b class="receptor__v"></b>` +
-      `<span class="receptor__cat"></span>`;
-    li.querySelector('.receptor__name').textContent = r.name;
-    li.querySelector('.receptor__v').textContent = `${Math.round(v)}`;
-    li.querySelector('.receptor__cat').textContent = BANDS[bandIndex(v)].name;
-    ul.appendChild(li);
-  }
+/** Arrow points where the wind blows TO, in screen space (map may be rotated). */
+function updateArrow(dirFrom) {
+  const b = state.scene?.map?.getBearing() || 0;
+  const rot = ((dirFrom + 180 - b) % 360 + 360) % 360;
+  $('#ro-arrow').style.transform = `rotate(${rot}deg)`;
+  $('#ro-arrow').dataset.dir = String(dirFrom);
+}
+
+function setPlayIcon(playing) {
+  const b = $('#play-btn');
+  if (b.dataset.playing === String(playing)) return;
+  b.dataset.playing = String(playing);
+  $('#play-icon').setAttribute('d', playing ? 'M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z' : 'M7 4.5v15l12-7.5z');
+  b.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+
+/* --------------------------------------------------------- receptors */
+
+function receptorRow(r) {
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'rbtn';
+  b.innerHTML = '<i class="r__dot"></i><span class="r__name"></span><b class="r__v"></b><span class="r__cat"></span>';
+  b.addEventListener('click', () => flyToCity(r));
+  li.appendChild(b);
+  li._els = { dot: b.querySelector('.r__dot'), name: b.querySelector('.r__name'), v: b.querySelector('.r__v'), cat: b.querySelector('.r__cat') };
+  li._els.name.textContent = r.name;
+  li._r = r;
+  return li;
+}
+
+function buildReceptorLists() {
+  const rec = state.data.receptor_series || [];
+  const my = $('#receptor-my');
+  const id = $('#receptor-id');
+  my.textContent = '';
+  id.textContent = '';
+  const order = (a, b) => {
+    const ia = EMPH.indexOf(a.name);
+    const ib = EMPH.indexOf(b.name);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  };
+  for (const r of rec.filter((x) => MY_SG.has(x.country)).sort(order)) my.appendChild(receptorRow(r));
+  for (const r of rec.filter((x) => !MY_SG.has(x.country)).sort(order)) id.appendChild(receptorRow(r));
+  my.classList.add('rlist--em');
   $('#receptor-block').hidden = rec.length === 0;
 }
+
+function renderReceptors(t) {
+  const rgb = bandColors();
+  const sumatra = state.data.sources.some((s) => s.region === 'sumatra');
+  for (const li of document.querySelectorAll('#receptor-my li, #receptor-id li')) {
+    const v = state.scene.receptorAt(li._r, t);
+    const rv = Math.round(v);
+    if (li._last === rv) continue;
+    li._last = rv;
+    const c = rgb[bandIndex(v)];
+    li._els.dot.style.background = `rgb(${c.join(',')})`;
+    li._els.v.innerHTML = `${fmt(v)} <small>µg/m³ PM2.5 · modelled</small>`;
+    li._els.cat.textContent = `${bandOf(v).name}${!sumatra && NO_SUMATRA.has(li._r.name) ? ' · Sumatran fires not modelled' : ''}`;
+  }
+}
+
+function flyToCity(r) {
+  const m = state.scene.map;
+  const opts = { center: [r.lon, r.lat], zoom: 7.3, pitch: 58, bearing: m.getBearing() };
+  if (reduced) m.jumpTo(opts); else m.flyTo({ ...opts, duration: 2200 });
+  setView(NO_SUMATRA.has(r.name) ? 'strait-city' : null);
+}
+
+/* ---------------------------------------------------------- arrivals */
+
+/*
+ * The model's arrival time is along-wind distance / wind speed and ignores
+ * how far off the plume axis a city is, so it can promise "+2 h" to a city
+ * the smoke never reaches. Only show an arrival when the city's modelled
+ * concentration actually rises above background during the run.
+ */
+const ARRIVAL_MIN_EXCESS = 5;   // µg/m³ above background
+function arrives(r) {
+  const bg = state.data?.scale?.background_pm25 ?? 12;
+  return r.downwind && r.arrival_hours != null && (r.peak_pm25 ?? 0) > bg + ARRIVAL_MIN_EXCESS;
+}
+
+function renderArrivals() {
+  const d = state.data;
+  const ul = $('#arrival-list');
+  ul.textContent = '';
+  const downwind = (d.receptor_series || [])
+    .filter(arrives)
+    .sort((a, b) => {
+      const am = MY_SG.has(a.country) ? 0 : 1;
+      const bm = MY_SG.has(b.country) ? 0 : 1;
+      return am - bm || a.arrival_hours - b.arrival_hours;
+    });
+  $('#arrival-block').hidden = false;
+  if (!downwind.length) {
+    $('#arrival-note').textContent = 'On this wind no city\'s modelled PM2.5 rises above background during the run. Turn the wind and the same smoke goes somewhere else entirely.';
+    return;
+  }
+  const runH = d.conditions.hours;
+  for (const r of downwind.slice(0, 10)) {
+    const li = document.createElement('li');
+    li.className = 'arrival';
+    const within = r.arrival_hours <= runH;
+    li.innerHTML = '<span class="arrival__name"></span><span class="arrival__t"></span><span class="arrival__peak"></span>';
+    const nm = li.querySelector('.arrival__name');
+    nm.textContent = `${r.name} `;
+    const sm = document.createElement('small');
+    sm.textContent = r.country || '';
+    nm.appendChild(sm);
+    li.querySelector('.arrival__t').textContent = within ? `+${r.arrival_hours.toFixed(1)} h` : `+${Math.round(r.arrival_hours)} h · past this run`;
+    li.querySelector('.arrival__peak').textContent = `${fmt(r.distance_km)} km from the fires · run peak ${fmt(r.peak_pm25)} µg/m³, ${(r.peak_category || bandOf(r.peak_pm25).name).toLowerCase()}`;
+    if (!within) li.classList.add('arrival--beyond');
+    li._r = r;
+    ul.appendChild(li);
+  }
+  $('#arrival-note').textContent = d.conditions.release_from_start
+    ? 'Release mode: the front leaves the fires at hour 0 and travels at the wind speed. Each badge flips as the timeline passes that arrival.'
+    : 'Times are how long smoke takes to cover the distance. The field itself is steady state — use release mode to watch the front move.';
+}
+
+function updateArrivalStates(t) {
+  if (!state.data.conditions.release_from_start) return;
+  for (const li of document.querySelectorAll('#arrival-list li')) {
+    if (li._r.arrival_hours > state.data.conditions.hours) continue;
+    const here = t >= li._r.arrival_hours;
+    if (li._here === here) continue;
+    li._here = here;
+    let b = li.querySelector('.arrival__state');
+    if (!b) {
+      b = document.createElement('span');
+      li.querySelector('.arrival__name').appendChild(b);
+    }
+    b.className = `arrival__state arrival__state--${here ? 'here' : 'coming'}`;
+    b.textContent = here ? 'arrived' : 'on its way';
+  }
+}
+
+/* ------------------------------------------------- legend, validation */
 
 function renderLegend() {
   const ul = $('#legend-scale');
   ul.textContent = '';
+  const rgb = bandColors();
   BANDS.forEach((b, i) => {
     const li = document.createElement('li');
     const lo = i === 0 ? 0 : Math.ceil(BANDS[i - 1].max);
-    const hi = b.max === Infinity ? '250+' : Math.round(b.max);
-    li.innerHTML = `<i style="background:rgb(${BAND_RGB[i].join(',')})"></i><span></span>`;
-    li.querySelector('span').textContent =
-      `${b.name} · ${b.max === Infinity ? hi : `${lo}–${hi}`}`;
+    li.innerHTML = `<i style="background:rgb(${rgb[i].join(',')})"></i><span></span><span></span>`;
+    li.children[1].textContent = b.name;
+    li.children[2].textContent = b.max === Infinity ? '251+' : `${lo}–${Math.floor(b.max)}`;
     ul.appendChild(li);
   });
   $('#legend').hidden = false;
+  $('#legend-sumatra').hidden = state.mode === 'week' || !state.data.sources.some((s) => s.region === 'sumatra');
 }
 
 function renderValidation() {
-  const v = state.field.validation;
-  const block = $('#validation-block');
+  const v = state.data.validation;
   const body = $('#validation-body');
   body.textContent = '';
+  $('#validation-block').hidden = false;
   if (!v || !v.rows || !v.rows.length) {
-    block.hidden = false;
     const p = document.createElement('p');
     p.className = 'muted';
-    p.textContent =
-      'This year has no reported station peak in the dataset, so this run has '
-      + 'not been checked against anything. That is not the same as it being right.';
+    p.textContent = 'This year has no reported station peak in the dataset, so this run has not been checked against anything. That is not the same as it being right.';
     body.appendChild(p);
     return;
   }
   for (const row of v.rows) {
-    const d = document.createElement('p');
-    d.className = 'validation__row';
-    d.innerHTML = '<b></b><span></span>';
-    d.querySelector('b').textContent =
-      `${row.receptor}: modelled ${Math.round(row.modelled_peak_ugm3).toLocaleString()} vs reported ${Math.round(row.reported_peak_ugm3).toLocaleString()} µg/m³`;
-    d.querySelector('span').textContent =
-      row.ratio ? ` — this run is running ${row.ratio}× high.` : '';
-    body.appendChild(d);
+    const p = document.createElement('p');
+    p.className = 'vrow';
+    p.innerHTML = '<span></span>: modelled <b></b> vs reported <b></b> µg/m³<span class="ratio"></span>';
+    p.children[0].textContent = row.receptor;
+    p.children[1].textContent = fmt(row.modelled_peak_ugm3);
+    p.children[2].textContent = fmt(row.reported_peak_ugm3);
+    p.querySelector('.ratio').textContent = row.ratio ? `This run is ${row.ratio}× the reported peak.` : '';
+    body.appendChild(p);
   }
   const note = document.createElement('p');
   note.className = 'muted';
   note.textContent = v.note || '';
   body.appendChild(note);
-  block.hidden = false;
 }
 
-function renderArrivals() {
-  const field = state.field;
-  const ul = $('#arrival-list');
-  const block = $('#arrival-block');
+function renderProvenance() {
+  const d = state.data;
+  const a = d.adapted;
+  const ul = $('#provenance');
   ul.textContent = '';
-
-  const downwind = (field.receptor_series || [])
-    .filter((r) => r.downwind && r.arrival_hours != null)
-    .sort((a, b) => a.arrival_hours - b.arrival_hours);
-
-  if (!downwind.length) {
-    block.hidden = false;
-    $('#arrival-note').textContent =
-      'No receptor city lies downwind of these fires on this wind. Turn the '
-      + 'wind around and the same smoke goes somewhere else entirely.';
-    return;
-  }
-
-  const runHours = field.conditions.hours;
-  for (const r of downwind.slice(0, 9)) {
+  const add = (text, filled) => {
     const li = document.createElement('li');
-    li.className = 'arrival';
-    const within = r.arrival_hours <= runHours;
-    const rgb = BAND_RGB[bandIndex(r.peak_pm25)];
-    li.innerHTML = '<span class="arrival__name"></span>'
-      + '<span class="arrival__t"></span>'
-      + '<span class="arrival__peak"></span>';
-    li.querySelector('.arrival__name').textContent =
-      `${r.name}${r.country ? ` · ${r.country}` : ''}`;
-    li.querySelector('.arrival__t').textContent =
-      within ? `+${r.arrival_hours.toFixed(1)} h` : `+${r.arrival_hours.toFixed(0)} h — past this run`;
-    const peak = li.querySelector('.arrival__peak');
-    peak.textContent = `${Math.round(r.distance_km)} km · peak ${Math.round(r.peak_pm25)} µg/m³`;
-    peak.style.color = `rgb(${rgb.join(',')})`;
-    if (!within) li.classList.add('arrival--beyond');
+    li.textContent = text;
+    if (filled) li.className = 'filled';
     ul.appendChild(li);
-  }
-
-  $('#arrival-note').textContent = field.conditions.release_from_start
-    ? 'Release mode: the front leaves the fires at hour 0 and travels at the mean wind speed.'
-    : 'Times are how long smoke takes to cover the distance. The field itself is steady state — turn on release mode to watch the front move.';
-  block.hidden = false;
+  };
+  add(`Concentrations, city values, peaks and arrival times: the model's (haze3d response v${d.version}).`, false);
+  add(a.wind
+    ? 'Wind field: uniform over the domain, built on this page from the run\'s wind speed and its hourly direction. The model has not published a gridded wind field for this run.'
+    : `Wind field: the model's, ${d.wind.nx}×${d.wind.ny} at ${d.wind.levels_m.join(' / ')} m.`, a.wind);
+  add(a.emission
+    ? 'Particle release rates: each cluster\'s PM2.5 spread evenly over a 14-day episode.'
+    : 'Particle release rates: the model\'s emission rate per cluster.', a.emission);
+  add(a.injection
+    ? 'Injection heights: 0–500 m for peat, 0–1,500 m for other fuels (contract defaults).'
+    : 'Injection heights: the model\'s, per cluster.', a.injection);
+  if (a.flaming) add('Flame versus smoulder appearance: assumed from fuel type. It changes how a fire looks, not any number.', true);
+  add(d.hasAloft
+    ? 'Elevated smoke layer: the model\'s, drawn above the mixing layer.'
+    : 'No elevated layer in this response, so all smoke is kept under the mixing height.', !d.hasAloft);
+  add('Particles are drawn, not counted. No number on this page comes from them; their shade is the model\'s local value.', false);
+  $('#provenance-block').hidden = false;
 }
 
 function renderCaveats() {
   const ul = $('#sim-caveats');
   ul.textContent = '';
-  for (const c of state.field.caveats || []) {
+  for (const c of state.data.caveats || []) {
     const li = document.createElement('li');
     li.textContent = c;
     ul.appendChild(li);
   }
 }
 
-/* ------------------------------------------------------------------ fetch */
+function renderSumatra() {
+  const n = state.data.sources.filter((s) => s.region === 'sumatra').length;
+  const ex = $('#sumatra-extra');
+  if (n) {
+    ex.textContent = `This run does include ${n} Sumatran fire${n > 1 ? 's' : ''}, ringed in blue on the map. Check the model's caveats for how complete that set is.`;
+    ex.hidden = false;
+  } else ex.hidden = true;
+}
+
+function renderTicks() {
+  const d = state.data;
+  const tEnd = state.scene.field.tEnd || 1;
+  const box = $('#ticks');
+  box.textContent = '';
+  const hod0 = d.frames[0].hour_of_day ?? 0;
+  for (const f of d.frames) {
+    const isDay = Math.round((hod0 + f.hour) % 24) === 0;
+    if (!isDay && d.frames.length > 30 && f.index % 3) continue;
+    const i = document.createElement('i');
+    i.className = isDay ? 'day' : '';
+    i.style.left = `${(f.hour / tEnd) * 100}%`;
+    box.appendChild(i);
+  }
+  if (d.conditions.release_from_start) {
+    for (const r of d.receptor_series || []) {
+      if (!EMPH.includes(r.name) || !arrives(r) || r.arrival_hours > tEnd) continue;
+      const i = document.createElement('i');
+      i.className = 'arr';
+      i.style.left = `${(r.arrival_hours / tEnd) * 100}%`;
+      box.appendChild(i);
+    }
+  }
+}
+
+/* ------------------------------------------------------------ views */
+
+function setView(name) {
+  state.view = name;
+  for (const b of document.querySelectorAll('.vbtn')) b.setAttribute('aria-pressed', String(b.dataset.view === name));
+  $('#sumatra-chip').hidden = state.mode !== 'model' || !(name === 'singapore' || name === 'home' || name === 'strait-city');
+}
+
+/* -------------------------------------------------------------- run */
 
 function params() {
+  const hours = Number($('#ctl-hours').value);
   return {
     year: Number($('#ctl-year').value),
     start_date: $('#ctl-date').value || null,
-    hours: Number($('#ctl-hours').value),
-    step_hours: Number($('#ctl-hours').value) > 48 ? 2 : 1,
+    hours,
+    step_hours: hours > 48 ? 2 : 1,
     release_from_start: $('#ctl-release').checked,
     grid_n: Number($('#ctl-grid').value),
     wind_speed_ms: Number($('#ctl-wind-speed').value),
@@ -554,63 +421,70 @@ function params() {
   };
 }
 
+export async function fetchField(body) {
+  let res;
+  try {
+    res = await fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  } catch {
+    throw Object.assign(new Error('The model API could not be reached.'), { what: `POST ${API}` });
+  }
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const j = await res.json();
+      if (typeof j.detail === 'string') detail = j.detail;
+      else if (Array.isArray(j.detail) && j.detail[0]?.msg) detail = j.detail[0].msg;
+    } catch { /* keep the status line */ }
+    throw Object.assign(new Error(detail), { what: `POST ${API} (${res.status})` });
+  }
+  const field = await res.json();
+  if (!field.grid || !field.frames?.length) {
+    throw Object.assign(new Error(field.note || 'The model returned no field for those inputs.'), { what: 'model output' });
+  }
+  return field;
+}
+
 async function run() {
-  if (state.running) return;
+  if (state.running || !state.scene) return;
   state.running = true;
-  pause();
+  state.scene.pause();
   $('#stage-error').hidden = true;
   $('#stage-loading').hidden = false;
   $('#stage-loading-text').textContent = 'Running the dispersion model…';
-  setStatus('pending', 'running…');
+  setStatus('pending', 'running the model…');
   $('#run-btn').disabled = true;
-
   try {
-    const body = params();
-    const res = await fetch(API, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      let detail = `${res.status} ${res.statusText}`;
-      try {
-        const j = await res.json();
-        if (typeof j.detail === 'string') detail = j.detail;
-        else if (Array.isArray(j.detail) && j.detail[0]?.msg) detail = j.detail[0].msg;
-      } catch { /* keep the status line */ }
-      throw new Error(detail);
-    }
-    const field = await res.json();
-    if (!field.grid || !field.frames.length) {
-      throw new Error(field.note || 'The model returned no field for those inputs.');
-    }
-
-    state.field = field;
-    state.cells = buildCells(field.grid);
-    state.trails = buildTrails(field);
-    state.frame = 0;
-
-    $('#frame-slider').max = String(field.frames.length - 1);
-    $('#frame-readout').hidden = false;
-    $('#timeline').hidden = false;
+    const raw = await fetchField(params());
+    state.lastRaw = raw;
+    applyMode('model');
+    const data = state.scene.setData(raw);
+    state.data = data;
+    const f = state.scene.field;
+    $('#scrub').max = String(f.tEnd);
+    $('#scrub').step = 'any';
+    for (const id of ['#readout', '#timeline', '#views']) $(id).hidden = false;
     renderLegend();
+    buildReceptorLists();
     renderArrivals();
     renderValidation();
+    renderProvenance();
     renderCaveats();
-
-    const c = field.conditions;
-    $('#hint-active').textContent =
-      `${field.sources_used} clusters burning on this date`
-      + (field.sources_inactive_on_date
-        ? `, ${field.sources_inactive_on_date} elsewhere in the season` : '')
-      + (field.sources_dropped ? ` · ${field.note}` : '')
+    renderSumatra();
+    renderTicks();
+    const c = data.conditions;
+    $('#hint-active').textContent = `${data.sources_used} clusters burning on this date`
+      + (data.sources_inactive_on_date ? `, ${data.sources_inactive_on_date} more elsewhere in the season` : '')
+      + (data.sources_dropped ? ` · ${data.note}` : '')
       + ` · layer ${c.night_mixing_height_m}–${c.day_mixing_height_m} m`;
-
-    showFrame(0);
-    setStatus('ok', `${field.sources_used} fires · ${field.conditions.hours} h`);
+    const sp = c.hours >= 72 ? 4 : 2;     // a run plays through in ~12-25 s
+    $('#speed').value = String(sp);
+    state.scene.speed = sp;
+    setStatus('ok', `${data.sources_used} fires · ${c.hours} h · ${c.release_from_start ? 'release' : 'steady state'}`);
+    onFrame(state.scene.state());
+    notice(state.scene.notices.length ? state.scene.notices.join(' ') : null);
+    if (!reduced) state.scene.play();
   } catch (err) {
-    $('#stage-error-msg').textContent = String(err.message || err);
-    $('#stage-error').hidden = false;
+    showError('The model run failed.', String(err.message || err), err.what || 'the model API');
     setStatus('error', 'model failed');
   } finally {
     $('#stage-loading').hidden = true;
@@ -619,58 +493,267 @@ async function run() {
   }
 }
 
-/* ------------------------------------------------------------- transport */
 
-function play() {
-  if (!state.field || state.playing) return;
-  state.playing = true;
-  $('#play-btn').innerHTML = '<span aria-hidden="true">❚❚</span> Pause';
-  $('#play-btn').setAttribute('aria-label', 'Pause the simulated day');
-  state.timer = setInterval(() => {
-    showFrame((state.frame + 1) % state.field.frames.length);
-  }, 620);
+/* -------------------------------------------------------- this week */
+
+function applyMode(m) {
+  state.mode = m;
+  document.body.dataset.mode = m;
+  for (const b of document.querySelectorAll('.mode')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
+  const week = m === 'week';
+  $('#legend-title').textContent = week ? 'PM2.5, µg/m³ · modelled (CAMS)' : 'Surface PM2.5, µg/m³ · modelled';
+  $('#legend-fire').textContent = week ? 'Fire detected by satellite (NASA FIRMS, measured), lit on the days it was seen' : 'Fire, sized by emission';
+  $('#legend-smoke').hidden = week;
+  $('#legend-grid').textContent = week ? 'CAMS extract' : 'model grid';
+  $('#ro-mix-dt').textContent = week ? 'Fires now' : 'Mixing layer';
+  $('#ro-max-dt').textContent = week ? 'Peak PM2.5 · modelled' : 'Peak PM2.5 · modelled';
+  $('#ro-wind-dt').parentElement.hidden = week;
+  const attr = $('#legend-attr');
+  attr.hidden = !week || !state.week?.available;
+  if (week && state.week?.available) attr.textContent = state.week.attribution.join(' · ');
+  $('#fixture-banner').hidden = !(week && state.week?.fixture);
+  setView(state.view);
 }
 
-function pause() {
-  state.playing = false;
-  if (state.timer) clearInterval(state.timer);
-  state.timer = null;
-  const b = $('#play-btn');
-  if (b) {
-    b.innerHTML = '<span aria-hidden="true">▶</span> Play';
-    b.setAttribute('aria-label', 'Play the simulated day');
+function placeRow(p) {
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'rbtn';
+  b.innerHTML = '<i class="r__dot"></i><span class="r__name"></span><b class="r__v"></b><span class="r__cat"></span>';
+  b.querySelector('.r__name').textContent = p.name;
+  b.addEventListener('click', () => flyToCity(p));
+  li.appendChild(b);
+  li._p = p;
+  li._els = { dot: b.querySelector('.r__dot'), v: b.querySelector('.r__v'), cat: b.querySelector('.r__cat') };
+  return li;
+}
+
+function renderPlaces(ms) {
+  for (const li of document.querySelectorAll('#week-my li, #week-sg li')) {
+    const r = readingAt(li._p, ms);
+    const key = r ? `${r.value}|${r.label}` : 'none';
+    if (li._last === key) continue;
+    li._last = key;
+    if (!r) {
+      li._els.v.innerHTML = '— <small>no reading</small>';
+      li._els.cat.textContent = 'No reading for this time.';
+      li._els.dot.style.background = 'transparent';
+      continue;
+    }
+    li._els.dot.style.background = getComputedStyle(document.documentElement).getPropertyValue(r.band.token).trim() || r.band.hex;
+    li._els.v.innerHTML = '';
+    li._els.v.append(`${fmt(r.value)} `);
+    const sm = document.createElement('small');
+    sm.textContent = `${r.label} · ${r.tag}`;
+    li._els.v.appendChild(sm);
+    li._els.cat.textContent = `${r.band.name} on the ${r.index === 'USAQI' ? 'US AQI' : r.index} scale${r.measured ? '' : ' · CAMS ~40 km grid, cannot separate nearby towns'}`;
   }
 }
 
-/* ------------------------------------------------------------------- init */
+function renderWeekPanels() {
+  const w = state.week;
+  const ok = w && w.available;
+  $('#week-unavailable').hidden = ok;
+  if (!ok) {
+    $('#week-unavailable-msg').textContent = `${w?.reason || "This week's haze data is not available right now."} The model run below still works.`;
+  }
+  // headline: generated by the API from the data; shown with its label
+  const h = ok ? w.headline : null;
+  $('#week-headline').hidden = !h;
+  if (h) {
+    $('#week-headline-text').textContent = h.text;
+    $('#week-headline-meta').textContent = [h.index, h.measured ? 'measured' : 'modelled', h.t ? new Date(h.t).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null].filter(Boolean).join(' · ');
+  }
+  const places = ok ? w.places : [];
+  $('#week-places').hidden = !places.length;
+  const my = $('#week-my');
+  const sg = $('#week-sg');
+  my.textContent = '';
+  sg.textContent = '';
+  for (const p of places) (p.country === 'SG' ? sg : my).appendChild(placeRow(p));
 
-function wireOutputs() {
-  const bind = (id, out, fmt) => {
+  const hs = ok ? w.hotspots : null;
+  $('#week-fires').hidden = !hs;
+  if (hs) {
+    const ul = $('#week-fires-list');
+    ul.textContent = '';
+    const names = { kalimantan: 'Kalimantan', sumatra: 'Sumatra', peninsular_malaysia: 'Peninsular Malaysia' };
+    const counts = hs.count_by_region || {};
+    const keys = Object.keys(counts).sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+    for (const k of keys) {
+      const li = document.createElement('li');
+      const gw = hs.frp_gw_by_region?.[k];
+      li.innerHTML = '<span></span><b></b>';
+      li.children[0].textContent = names[k] || k.replace(/_/g, ' ');
+      li.children[1].textContent = `${fmt(counts[k])} hotspots${gw != null ? ` · ${gw} GW FRP` : ''}`;
+      ul.appendChild(li);
+    }
+    $('#week-fires-note').textContent = `${w.sources.length} aggregated fire bins on the map. Hotspots are satellite detections (measured); FRP is fire radiative power. ${hs.as_of ? `As of ${new Date(hs.as_of).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} MYT.` : ''}`;
+  }
+  const attr = $('#week-attr');
+  attr.textContent = '';
+  for (const a of ok ? w.attribution : []) {
+    const li = document.createElement('li');
+    li.textContent = a;
+    attr.appendChild(li);
+  }
+  $('#week-attr-block').hidden = !ok;
+}
+
+function renderWeekCaveats() {
+  const ul = $('#sim-caveats');
+  ul.textContent = '';
+  const list = [
+    'No wind field comes with this week\'s data, so this mode draws no drifting smoke particles. The haze you see is the CAMS model\'s PM2.5 field, interpolated between its 3-hourly frames.',
+    'Fire markers are satellite detections binned for display. Their size follows fire radiative power; their column heights are illustrative.',
+    ...(state.week.caveats || []),
+  ];
+  for (const c of list) {
+    const li = document.createElement('li');
+    li.textContent = c;
+    ul.appendChild(li);
+  }
+}
+
+function enterWeek() {
+  const w = state.week;
+  applyMode('week');
+  renderWeekPanels();
+  if (!w || !w.available) {
+    setStatus('error', 'this week unavailable');
+    return false;
+  }
+  state.scene.pause();
+  state.scene.setWeek(w);
+  state.data = state.scene.data;
+  const f = state.scene.field;
+  $('#scrub').max = String(f.tEnd);
+  $('#scrub').step = 'any';
+  for (const id of ['#readout', '#timeline', '#views']) $(id).hidden = false;
+  renderLegend();
+  renderWeekCaveats();
+  renderWeekTicks();
+  $('#speed').value = '8';
+  state.scene.speed = 8;
+  setStatus('ok', `this week · ${w.sources.length} fire bins${w.fixture ? ' · FIXTURE' : ''}`);
+  onFrame(state.scene.state());
+  notice(state.scene.notices.length ? state.scene.notices.join(' ') : null);
+  if (!reduced) state.scene.play();
+  return true;
+}
+
+function renderWeekTicks() {
+  const box = $('#ticks');
+  box.textContent = '';
+  const tEnd = state.scene.field.tEnd || 1;
+  for (let h = 0; h <= tEnd; h += 3) {
+    const d = new Date(state.week.t0 + h * 3.6e6);
+    const local = (d.getUTCHours() + 8) % 24;
+    if (local !== 0 && h % 12) continue;
+    const i = document.createElement('i');
+    i.className = local === 0 ? 'day' : '';
+    i.style.left = `${(h / tEnd) * 100}%`;
+    box.appendChild(i);
+  }
+}
+
+/* ----------------------------------------------------------- wiring */
+
+function bindOutputs() {
+  const bind = (id, out, f) => {
     const el = $(id);
-    const o = $(out);
-    const upd = () => { o.textContent = fmt(Number(el.value)); };
+    const upd = () => { $(out).textContent = f(Number(el.value)); };
     el.addEventListener('input', upd);
     upd();
   };
   bind('#ctl-wind-speed', '#out-wind-speed', (v) => `${v.toFixed(1)} m/s`);
   bind('#ctl-wind-dir', '#out-wind-dir', (v) => `${v}° ${compass(v)}`);
   bind('#ctl-veer', '#out-veer', (v) => `${v > 0 ? '+' : ''}${v}°/h`);
-  bind('#ctl-mix', '#out-mix', (v) => `${v.toLocaleString()} m`);
+  bind('#ctl-mix', '#out-mix', (v) => `${fmt(v)} m`);
   bind('#ctl-rain', '#out-rain', (v) => `${v} mm`);
-  bind('#ctl-exag', '#out-exag', (v) => `${v.toFixed(1)}×`);
+  bind('#ctl-hours', '#out-hours', (v) => `${v} h`);
+  bind('#ctl-vex', '#out-vex', (v) => `${v}×`);
   bind('#ctl-floor', '#out-floor', (v) => `${v} µg/m³`);
   bind('#ctl-grid', '#out-grid', (v) => `${v} × ${v}`);
-  bind('#ctl-hours', '#out-hours', (v) => `${v} h`);
+}
 
-  // View-only controls repaint without re-running the model.
-  $('#ctl-exag').addEventListener('input', redraw);
-  $('#ctl-floor').addEventListener('input', redraw);
-  $('#ctl-trails').addEventListener('change', redraw);
+function wire() {
+  bindOutputs();
+  $('#run-btn').addEventListener('click', run);
+  $('#stage-retry').addEventListener('click', () => (state.scene ? run() : boot()));
+  $('#play-btn').addEventListener('click', () => {
+    const s = state.scene;
+    if (!s?.field) return;
+    if (s.playing) s.pause(); else s.play();
+    onFrame(s.state());
+  });
+  const scrub = $('#scrub');
+  scrub.addEventListener('pointerdown', () => { state.scrubbing = true; });
+  scrub.addEventListener('pointerup', () => { state.scrubbing = false; });
+  let pending = 0;
+  scrub.addEventListener('input', () => {
+    const s = state.scene;
+    if (!s?.field) return;
+    if (s.playing) s.pause();
+    // re-integrating every particle is ~10-40 ms; coalesce to one per frame
+    cancelAnimationFrame(pending);
+    pending = requestAnimationFrame(() => s.seek(Number(scrub.value)));
+  });
+  $('#speed').addEventListener('change', (e) => { if (state.scene) state.scene.speed = Number(e.target.value); });
+  for (const b of document.querySelectorAll('.vbtn')) {
+    b.addEventListener('click', () => { state.scene?.flyTo(b.dataset.view); setView(b.dataset.view); });
+  }
+  $('#ctl-vex').addEventListener('input', (e) => {
+    state.scene?.setVex(Number(e.target.value));
+    $('#legend-vex').textContent = e.target.value;
+  });
+  $('#ctl-floor').addEventListener('input', (e) => state.scene?.setFloor(Number(e.target.value)));
+  for (const [id, key] of [['#show-smoke', 'smoke'], ['#show-field', 'field'], ['#show-contours', 'contours'], ['#show-fires', 'fires']]) {
+    $(id).addEventListener('change', (e) => state.scene?.setShow(key, e.target.checked));
+  }
+  const lt = $('#legend-toggle');
+  lt.addEventListener('click', () => {
+    const open = lt.getAttribute('aria-expanded') !== 'true';
+    lt.setAttribute('aria-expanded', String(open));
+    $('#legend').dataset.collapsed = String(!open);
+    $('#legend-body').hidden = !open;
+  });
+  if (window.innerWidth < 720) lt.click();
+
+  const preset = (o) => {
+    $('#ctl-hours').value = o.hours;
+    $('#ctl-wind-dir').value = o.dir;
+    $('#ctl-wind-speed').value = o.speed;
+    $('#ctl-release').checked = o.release;
+    for (const id of ['#ctl-hours', '#ctl-wind-dir', '#ctl-wind-speed']) $(id).dispatchEvent(new Event('input'));
+    run();
+  };
+  $('#mode-week').addEventListener('click', () => { if (state.mode !== 'week') enterWeek(); });
+  $('#mode-model').addEventListener('click', () => {
+    if (state.mode === 'model') return;
+    if (state.lastRaw) {
+      applyMode('model');
+      state.scene.pause();
+      state.data = state.scene.setData(state.lastRaw);
+      renderLegend(); buildReceptorLists(); renderArrivals(); renderValidation();
+      renderProvenance(); renderCaveats(); renderSumatra(); renderTicks();
+      $('#scrub').max = String(state.scene.field.tEnd);
+      onFrame(state.scene.state());
+      if (!reduced) state.scene.play();
+    } else run();
+  });
+  $('#preset-release').addEventListener('click', () => preset({ hours: 96, dir: 150, speed: 4.5, release: true }));
+  $('#preset-steady').addEventListener('click', () => preset({ hours: 24, dir: 190, speed: 3, release: false }));
+  $('#preset-west').addEventListener('click', () => preset({ hours: 96, dir: 110, speed: 4.5, release: true }));
 }
 
 async function loadSeasons() {
-  const res = await fetch('/api/history');
-  if (!res.ok) throw new Error(`/api/history returned ${res.status}`);
+  let res;
+  try { res = await fetch('/api/history'); } catch {
+    throw Object.assign(new Error('The model API could not be reached.'), { what: 'GET /api/history' });
+  }
+  if (!res.ok) throw Object.assign(new Error(`/api/history returned ${res.status}`), { what: 'GET /api/history' });
   const { seasons } = await res.json();
   state.seasons = (seasons || []).filter((s) => (s.burned_area_mha_kalimantan || 0) > 0);
   const sel = $('#ctl-year');
@@ -678,16 +761,16 @@ async function loadSeasons() {
   for (const s of state.seasons.slice().reverse()) {
     const o = document.createElement('option');
     o.value = String(s.year);
-    o.textContent = `${s.year} · ${s.enso_phase.replace('_', ' ')} · ${(s.burned_area_mha_kalimantan).toFixed(2)} Mha`;
+    o.textContent = `${s.year} · ${String(s.enso_phase || '').replace('_', ' ')} · ${s.burned_area_mha_kalimantan.toFixed(2)} Mha`;
     sel.appendChild(o);
   }
-  sel.value = '2015';
-  syncDateToYear();
-  sel.addEventListener('change', syncDateToYear);
+  sel.value = state.seasons.some((s) => s.year === 2015) ? '2015' : sel.options[0]?.value;
+  syncDate();
+  if (sel.value === '2015') $('#ctl-date').value = '2015-10-14';
+  sel.addEventListener('change', syncDate);
 }
 
-/** Default the date to that season's peak, which is what people want to see. */
-function syncDateToYear() {
+function syncDate() {
   const y = Number($('#ctl-year').value);
   const s = state.seasons.find((x) => x.year === y);
   const d = $('#ctl-date');
@@ -698,45 +781,53 @@ function syncDateToYear() {
 }
 
 async function boot() {
-  wireOutputs();
-  initDeck();
-
-  $('#run-btn').addEventListener('click', run);
-  $('#reset-view').addEventListener('click', () => {
-    state.deck.setProps({ initialViewState: { ...INITIAL_VIEW, transitionDuration: 600 } });
-  });
-  $('#play-btn').addEventListener('click', () => (state.playing ? pause() : play()));
-  $('#frame-slider').addEventListener('input', (e) => {
-    pause();
-    showFrame(Number(e.target.value));
-  });
-  // Nothing loops while the tab is hidden.
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { pause(); stopClock(); } else { startClock(); }
-  });
-  startClock();
-
+  $('#stage-error').hidden = true;
+  $('#stage-loading').hidden = false;
+  $('#stage-loading-text').textContent = 'Loading the 3D map…';
+  setStatus('pending', 'loading map…');
+  const seasons = loadSeasons().catch((e) => e);
+  const week = loadWeek({ fixture: FIXTURE }).catch((e) => ({ available: false, reason: String(e.message || e) }));
   try {
-    await loadSeasons();
-    await run();
+    if (!state.scene) {
+      const scene = new Scene($('#map'), { budget: small() ? 'med' : 'high', interactive: true, receptors: true, vex: 10 });
+      await scene.init();
+      scene.onFrame = onFrame;
+      scene.onReceptorClick = flyToCity;
+      scene.map.on('rotate', () => { const d = $('#ro-arrow').dataset.dir; if (d) updateArrow(Number(d)); });
+      state.scene = scene;
+      window.__hazeScene = scene;    // handle for debugging from the console
+      setView('home');
+    }
   } catch (err) {
-    $('#stage-loading').hidden = true;
-    $('#stage-error-msg').textContent = String(err.message || err);
-    $('#stage-error').hidden = false;
-    setStatus('error', 'could not start');
+    const what = err.what || err.kind || 'the 3D map';
+    showError(
+      err.kind === 'webgl' ? 'This browser cannot draw the 3D map.' : 'The 3D map could not load.',
+      String(err.message || err),
+      `${what}${err.kind === 'lib' ? ` (MapLibre ${VERSIONS.maplibre}, deck.gl ${VERSIONS.deck}, from unpkg.com)` : ''}`,
+    );
+    setStatus('error', `${what} failed`);
+    return;
   }
+  state.week = await week;
+  if (state.week.available) {
+    $('#stage-loading').hidden = true;
+    enterWeek();
+  }
+  const s = await seasons;
+  if (s instanceof Error) {
+    if (state.week.available) return;     // this week still works without the model
+    showError('The model API did not answer.', s.message, s.what);
+    setStatus('error', 'API failed');
+    return;
+  }
+  // Model-run defaults are the original ones (steady day, wind from 190° at
+  // 3 m/s). They are not tuned to aim smoke at any audience; the presets
+  // make the wind's role explicit instead.
+  if (state.week.available) return;      // model runs on demand from here
+  renderWeekPanels();                    // says why "this week" is unavailable
+  await run();
+  if (!state.week.available) notice(`${state.week.reason || "This week's data is not available."} Showing the model run.`);
 }
 
-$('#stage-retry').addEventListener('click', run);
-
-if (typeof deck === 'undefined') {
-  $('#stage-loading').hidden = true;
-  $('#stage-error-title').textContent = 'The 3D library did not load.';
-  $('#stage-error-msg').textContent =
-    'deck.gl is loaded from a CDN and did not arrive. The rest of the model still '
-    + 'works on the main page.';
-  $('#stage-error').hidden = false;
-  setStatus('error', 'deck.gl missing');
-} else {
-  boot();
-}
+wire();
+boot();

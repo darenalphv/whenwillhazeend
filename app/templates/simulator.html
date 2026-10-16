@@ -4,207 +4,281 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Haze simulator — whenwillhazeend</title>
-<meta name="description" content="A 3D dispersion simulator for Kalimantan haze: a day of smoke over the island, driven by the diurnal collapse and growth of the boundary layer.">
+<meta name="description" content="A 3D simulation of Kalimantan fire smoke over real terrain: particles carried by the model's wind, a draped PM2.5 field, and when the front reaches Kuching, Sibu, Kuala Lumpur and Singapore.">
+<meta name="theme-color" content="#F7F4EE">
 
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23ff7a45'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/static/css/main.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23B43C0C'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/sim3d.css">
 </head>
 <body class="sim3d-body">
 
 <a class="skip-link" href="#controls">Skip to the controls</a>
 
-<header class="topbar">
-  <div class="topbar__inner">
-    <a class="brand" href="/">
-      <span class="brand__dot" aria-hidden="true"></span>
-      whenwillhazeend<span class="brand__tld">.com</span>
-    </a>
-    <nav class="topnav" aria-label="Sections">
-      <a href="/">Back to the model</a>
-    </nav>
-    <div class="status" id="sim-status" role="status" aria-live="polite">
-      <span class="status__dot" data-status="pending"></span>
-      <span class="status__text">loading…</span>
-    </div>
+<header class="sbar">
+  <a class="sbar__brand" href="/">
+    <span class="sbar__dot" aria-hidden="true"></span>whenwillhazeend<span class="sbar__tld">.com</span>
+  </a>
+  <nav class="sbar__nav" aria-label="Site">
+    <a href="/">The forecast</a>
+    <span aria-current="page">Simulator</span>
+  </nav>
+  <div class="sbar__status" id="sim-status" role="status" aria-live="polite">
+    <span class="sbar__statusdot" data-status="pending"></span>
+    <span class="sbar__statustext">loading…</span>
   </div>
+  <a class="alphv-chip" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=header" rel="noopener">
+    <span class="alphv-chip__by">Powered by</span>
+    <img src="/static/brand/alphv-logo.png" width="96" height="24" alt="ALPHV">
+  </a>
 </header>
 
 <main class="sim3d">
 
-  <div class="sim3d__stage">
-    <div id="deck-holder" class="sim3d__canvas">
-      <canvas id="deck-canvas"></canvas>
-    </div>
+  <section class="stage" aria-label="3D map of the haze">
+    <div id="map" class="stage__map"></div>
 
-    <div class="sim3d__overlay sim3d__overlay--tl" id="frame-readout" hidden>
-      <p class="fr__clock"><b id="fr-time">—</b><span id="fr-date"></span></p>
-      <dl class="fr__grid">
-        <div><dt>Mixing layer</dt><dd id="fr-mix">—</dd></div>
-        <div><dt>Peak PM2.5</dt><dd id="fr-max">—</dd></div>
-        <div><dt>Wind</dt><dd id="fr-wind">—</dd></div>
+    <div class="card card--readout" id="readout" hidden>
+      <p class="ro__clock"><b id="ro-time">—</b><span id="ro-date"></span></p>
+      <p class="ro__sub" id="ro-sub">—</p>
+      <dl class="ro__grid">
+        <div><dt id="ro-mix-dt">Mixing layer</dt><dd id="ro-mix">—</dd></div>
+        <div><dt id="ro-max-dt">Peak PM2.5 · modelled</dt><dd id="ro-max">—</dd></div>
+        <div class="ro__windrow"><dt id="ro-wind-dt">Wind (one vector, whole map)</dt>
+          <dd class="ro__wind"><svg class="ro__arrow" id="ro-arrow" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="none" stroke="currentColor" stroke-opacity=".25"/><path d="M16 4 L22 16 L17.5 14.5 L17.5 28 L14.5 28 L14.5 14.5 L10 16 Z" fill="currentColor"/></svg><span id="ro-wind">—</span></dd></div>
       </dl>
-      <p class="fr__note" id="fr-note"></p>
+      <p class="ro__note" id="ro-note"></p>
     </div>
 
-    <div class="sim3d__overlay sim3d__overlay--tr" id="legend" hidden>
-      <p class="legend__title">PM2.5, µg/m³</p>
-      <ul class="legend__scale" id="legend-scale"></ul>
-      <p class="legend__foot">Column height is concentration, at ground level only. A straight edge is where the model grid stops, not where the haze does.</p>
+    <div class="views" id="views" role="group" aria-label="Camera" hidden>
+      <button type="button" class="vbtn" data-view="home">Where you live <span class="vbtn__sub">KL &amp; Selangor</span></button>
+      <button type="button" class="vbtn" data-view="singapore">Singapore</button>
+      <button type="button" class="vbtn" data-view="kalimantan">Kalimantan</button>
+      <button type="button" class="vbtn" data-view="sumatra">Sumatra</button>
     </div>
 
-    <div class="sim3d__overlay sim3d__overlay--b" id="timeline" hidden>
-      <button type="button" class="btn btn--play" id="play-btn" aria-label="Play the simulated day">
-        <span aria-hidden="true">▶</span> Play
+    <div class="card card--legend" id="legend" hidden>
+      <button type="button" class="legend__toggle" id="legend-toggle" aria-expanded="true" aria-controls="legend-body">
+        <span id="legend-title">Surface PM2.5, µg/m³ · modelled</span>
       </button>
-      <input type="range" id="frame-slider" min="0" max="23" step="1" value="0"
-             aria-label="Hour of the simulated day">
-      <output class="timeline__label" id="frame-label" for="frame-slider">00:00</output>
+      <div id="legend-body">
+        <ul class="legend__scale" id="legend-scale"></ul>
+        <ul class="legend__keys">
+          <li><i class="k k--contour"></i>Contours at 35 · 55 · 150 · 250</li>
+          <li id="legend-smoke"><i class="k k--smoke"></i>Smoke, shaded by the model's local value</li>
+          <li><i class="k k--fire"></i><span id="legend-fire">Fire, sized by emission</span></li>
+          <li id="legend-sumatra" hidden><i class="k k--sumatra"></i>Sumatran fire</li>
+        </ul>
+        <p class="legend__foot">A straight edge in the field is where the <span id="legend-grid">model grid</span> stops, not where the haze does. Heights are exaggerated <span id="legend-vex">10</span>×.</p>
+        <p class="legend__attr" id="legend-attr" hidden></p>
+      </div>
     </div>
 
-    <div class="sim3d__loading" id="stage-loading">
+    <div class="fixture-banner" id="fixture-banner" hidden role="status">Fixture data — synthetic, not real readings. For interface testing only.</div>
+
+    <div class="sumatra-chip" id="sumatra-chip" hidden>
+      <b>Model run: Kalimantan fires only.</b> Sumatra's smoke is missing, so Singapore and KL numbers here are an undercount.
+    </div>
+
+    <div class="card card--timeline" id="timeline" hidden>
+      <button type="button" class="tbtn tbtn--play" id="play-btn" aria-label="Play">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+      </button>
+      <div class="tl__track">
+        <input type="range" id="scrub" min="0" max="24" step="0.01" value="0" aria-label="Simulated time">
+        <div class="tl__ticks" id="ticks" aria-hidden="true"></div>
+      </div>
+      <output class="tl__clock" id="tl-clock" for="scrub">+0 h</output>
+      <label class="tl__speed">
+        <span class="sr-only">Playback speed</span>
+        <select id="speed">
+          <option value="0.5">½ h/s</option>
+          <option value="1">1 h/s</option>
+          <option value="2" selected>2 h/s</option>
+          <option value="4">4 h/s</option>
+          <option value="8">8 h/s</option>
+          <option value="12">12 h/s</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="stage__notice" id="stage-notice" hidden></div>
+
+    <div class="stage__loading" id="stage-loading">
       <div class="spinner" aria-hidden="true"></div>
-      <p id="stage-loading-text">Running the dispersion model…</p>
+      <p id="stage-loading-text">Loading the 3D map…</p>
     </div>
 
-    <div class="sim3d__error" id="stage-error" hidden>
+    <div class="stage__error" id="stage-error" hidden role="alert">
       <h2 id="stage-error-title">The simulator could not run.</h2>
       <p id="stage-error-msg"></p>
+      <p class="stage__error-what" id="stage-error-what"></p>
       <button type="button" class="btn btn--ghost" id="stage-retry">Try again</button>
     </div>
-  </div>
+  </section>
 
-  <aside class="sim3d__panel" id="controls" aria-label="Simulation controls">
+  <aside class="panel" id="controls" aria-label="Simulation">
 
-    <h1 class="panel__h1">Haze simulator</h1>
-    <p class="panel__lede">
-      One day of smoke over Kalimantan, hour by hour. Nothing about the fires
-      changes across the day — what changes is the depth of air the smoke is
-      stirred into. That is why haze is worst before dawn.
-    </p>
+    <header class="panel__head">
+      <p class="eyebrow">Smoke transport · 3D</p>
+      <h1 class="panel__h1">Where the smoke goes</h1>
+      <p class="panel__lede">
+        Smoke from Sumatra and Kalimantan, and where it goes. <b>This week</b>
+        replays the past seven days from real fire detections and the CAMS
+        haze model, with official readings where you live. <b>Model run</b> is
+        our own simulation: pick a season and a wind and watch the smoke travel.
+      </p>
+    </header>
 
-    <section class="ctl">
-      <h2 class="ctl__h">The fires</h2>
+    <div class="modes" role="group" aria-label="What to show">
+      <button type="button" class="mode" id="mode-week" data-mode="week" aria-pressed="false">This week<span>Real fires · CAMS haze · official readings</span></button>
+      <button type="button" class="mode" id="mode-model" data-mode="model" aria-pressed="false">Model run<span>Our simulation · any season, any wind</span></button>
+    </div>
 
-      <label class="ctl__row" for="ctl-year">
-        <span>Season</span>
-        <select class="select" id="ctl-year"></select>
-      </label>
-
-      <label class="ctl__row" for="ctl-date">
-        <span>Date</span>
-        <input class="input" type="date" id="ctl-date">
-      </label>
-      <p class="ctl__hint" id="hint-active">—</p>
+    <section class="blk" id="week-unavailable" data-only="week" hidden>
+      <h2 class="blk__h">This week</h2>
+      <p class="muted" id="week-unavailable-msg">This week's haze data is not available right now.</p>
     </section>
 
-    <section class="ctl">
-      <h2 class="ctl__h">The weather</h2>
-
-      <label class="ctl__slider" for="ctl-wind-speed">
-        <span>Wind speed</span><output id="out-wind-speed">3.0 m/s</output>
-        <input type="range" id="ctl-wind-speed" min="0.5" max="12" step="0.5" value="3">
-      </label>
-
-      <label class="ctl__slider" for="ctl-wind-dir">
-        <span>Wind from</span><output id="out-wind-dir">190° S</output>
-        <input type="range" id="ctl-wind-dir" min="0" max="350" step="10" value="190">
-      </label>
-
-      <label class="ctl__slider" for="ctl-veer">
-        <span>Veer</span><output id="out-veer">0°/h</output>
-        <input type="range" id="ctl-veer" min="-15" max="15" step="1" value="0">
-      </label>
-
-      <label class="ctl__slider" for="ctl-mix">
-        <span>Mean mixing height</span><output id="out-mix">800 m</output>
-        <input type="range" id="ctl-mix" min="200" max="2000" step="50" value="800">
-      </label>
-
-      <label class="ctl__slider" for="ctl-rain">
-        <span>Rain</span><output id="out-rain">0 mm</output>
-        <input type="range" id="ctl-rain" min="0" max="60" step="1" value="0">
-      </label>
-
-      <label class="ctl__slider" for="ctl-hours">
-        <span>Run length</span><output id="out-hours">24 h</output>
-        <input type="range" id="ctl-hours" min="12" max="96" step="12" value="24">
-      </label>
-
-      <label class="ctl__check" for="ctl-diurnal">
-        <input type="checkbox" id="ctl-diurnal" checked>
-        <span>Diurnal boundary layer</span>
-      </label>
-
-      <label class="ctl__check" for="ctl-release">
-        <input type="checkbox" id="ctl-release">
-        <span>Release from hour 0 — watch it travel</span>
-      </label>
-      <p class="ctl__hint">
-        Starts the plume from nothing and lets the front move downwind at the
-        wind speed, instead of showing a settled field. Give it 72–96 hours to
-        reach Sarawak and beyond.
-      </p>
-      <p class="ctl__hint">
-        Switch it off to hold the mixing height flat all day. The fires stay
-        identical; watch what happens to the peak anyway.
-      </p>
+    <section class="headline" id="week-headline" data-only="week" hidden>
+      <p class="headline__text" id="week-headline-text"></p>
+      <p class="headline__meta" id="week-headline-meta"></p>
     </section>
 
-    <section class="ctl">
-      <h2 class="ctl__h">The view</h2>
+    <section class="blk" id="week-places" data-only="week" hidden>
+      <h2 class="blk__h">Where you live, at this hour</h2>
+      <p class="blk__hint">Each reading keeps its own index. PSI is Singapore's official index; API (IPU) is Malaysia's; a CAMS value is a modelled US AQI equivalent. They are different scales — do not compare the numbers directly.</p>
+      <h3 class="blk__sub">Kuala Lumpur &amp; Selangor</h3>
+      <ul class="rlist" id="week-my"></ul>
+      <h3 class="blk__sub">Singapore</h3>
+      <ul class="rlist" id="week-sg"></ul>
+    </section>
 
-      <label class="ctl__slider" for="ctl-exag">
-        <span>Height exaggeration</span><output id="out-exag">1.0×</output>
-        <input type="range" id="ctl-exag" min="0.2" max="4" step="0.1" value="1">
-      </label>
+    <section class="blk" id="week-fires" data-only="week" hidden>
+      <h2 class="blk__h">Fires this week</h2>
+      <ul class="fires-list" id="week-fires-list"></ul>
+      <p class="blk__hint" id="week-fires-note"></p>
+    </section>
 
-      <label class="ctl__slider" for="ctl-floor">
-        <span>Hide below</span><output id="out-floor">35 µg/m³</output>
-        <input type="range" id="ctl-floor" min="5" max="250" step="5" value="35">
-      </label>
+    <aside class="callout" id="sumatra-callout" data-only="model" aria-label="Important caveat">
+      <h2 class="callout__h">This model has no Sumatran fires. For Kuala Lumpur and Singapore, that matters most.</h2>
+      <p>The model run is fed <b>Kalimantan fires only</b>. Most of the smoke that closed schools in Singapore and Kuala Lumpur in 2015 came from Sumatra — Riau and Jambi are hundreds of kilometres closer and directly upwind. Whatever this mode shows there is an undercount, and a low number means “this model cannot tell you”, not “the air is fine”. For what actually happened, use <b>This week</b>.</p>
+      <p class="callout__extra" id="sumatra-extra" hidden></p>
+    </aside>
 
-      <label class="ctl__slider" for="ctl-grid">
-        <span>Grid resolution</span><output id="out-grid">56 × 56</output>
-        <input type="range" id="ctl-grid" min="24" max="96" step="8" value="56">
-      </label>
+    <section class="blk" id="receptor-block" data-only="model" hidden>
+      <h2 class="blk__h">Right now, downwind</h2>
+      <p class="blk__hint" id="receptor-hint">Model PM2.5 at each city for the hour on the timeline.</p>
+      <h3 class="blk__sub">Malaysia &amp; Singapore</h3>
+      <ul class="rlist" id="receptor-my"></ul>
+      <h3 class="blk__sub">Indonesia</h3>
+      <ul class="rlist" id="receptor-id"></ul>
+    </section>
 
-      <label class="ctl__check" for="ctl-trails">
-        <input type="checkbox" id="ctl-trails" checked>
-        <span>Smoke trails</span>
-      </label>
+    <section class="blk" id="arrival-block" data-only="model" hidden>
+      <h2 class="blk__h">When the front gets there</h2>
+      <ol class="arrivals" id="arrival-list"></ol>
+      <p class="blk__hint" id="arrival-note"></p>
+    </section>
 
-      <div class="ctl__btns">
-        <button type="button" class="btn btn--primary" id="run-btn">Run simulation</button>
-        <button type="button" class="btn btn--ghost" id="reset-view">Reset camera</button>
+    <section class="alphv-cta" aria-labelledby="alphv-cta-h">
+      <img class="alphv-cta__logo" src="/static/brand/alphv-logo.png" width="96" height="24" alt="ALPHV">
+      <h2 class="alphv-cta__h" id="alphv-cta-h">This simulator is a production system</h2>
+      <p>It runs a published model, renders it on the GPU and reports how far off it is against measured peaks. ALPHV builds systems like it.</p>
+      <p>AI-native systems integrator in Kuala Lumpur, Malaysia, building AI, agents and automation into the core systems businesses run. From business case to production, with one team.</p>
+      <a class="alphv-cta__link" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=cta-simulator" rel="noopener">Talk to ALPHV <span aria-hidden="true">→</span></a>
+    </section>
+
+    <section class="blk" data-only="model">
+      <h2 class="blk__h">The fires</h2>
+      <label class="row" for="ctl-year"><span>Season</span><select class="field" id="ctl-year"></select></label>
+      <label class="row" for="ctl-date"><span>Date</span><input class="field" type="date" id="ctl-date"></label>
+      <p class="blk__hint" id="hint-active">—</p>
+    </section>
+
+    <section class="blk" data-only="model">
+      <h2 class="blk__h">The weather</h2>
+      <div class="presets" role="group" aria-label="Scenarios">
+        <button type="button" class="chip" id="preset-steady">Steady day · wind from 190° S (default)</button>
+        <button type="button" class="chip" id="preset-release">Release 96 h · from 150° SSE, toward Sarawak</button>
+        <button type="button" class="chip" id="preset-west">Release 96 h · from 110° ESE, toward KL &amp; Singapore</button>
       </div>
+      <label class="slider" for="ctl-wind-speed"><span>Wind speed</span><output id="out-wind-speed">3.0 m/s</output>
+        <input type="range" id="ctl-wind-speed" min="0.5" max="12" step="0.5" value="3"></label>
+      <label class="slider" for="ctl-wind-dir"><span>Wind from</span><output id="out-wind-dir">190° S</output>
+        <input type="range" id="ctl-wind-dir" min="0" max="350" step="10" value="190"></label>
+      <label class="slider" for="ctl-veer"><span>Veer</span><output id="out-veer">0°/h</output>
+        <input type="range" id="ctl-veer" min="-15" max="15" step="1" value="0"></label>
+      <label class="slider" for="ctl-mix"><span>Mean mixing height</span><output id="out-mix">800 m</output>
+        <input type="range" id="ctl-mix" min="200" max="2000" step="50" value="800"></label>
+      <label class="slider" for="ctl-rain"><span>Rain</span><output id="out-rain">0 mm</output>
+        <input type="range" id="ctl-rain" min="0" max="60" step="1" value="0"></label>
+      <label class="slider" for="ctl-hours"><span>Run length</span><output id="out-hours">24 h</output>
+        <input type="range" id="ctl-hours" min="12" max="96" step="12" value="24"></label>
+      <label class="check" for="ctl-diurnal"><input type="checkbox" id="ctl-diurnal" checked><span>Diurnal boundary layer</span></label>
+      <label class="check" for="ctl-release"><input type="checkbox" id="ctl-release"><span>Release from hour 0 — watch it travel</span></label>
+      <p class="blk__hint">Whether this smoke reaches you depends on the wind. A wind from the south carries Kalimantan's smoke into Sarawak; it takes a wind from the east-southeast to carry it to Kuala Lumpur and Singapore. The model uses one wind for the whole map, so pick it here — the arrow on the map shows it.</p>
+      <p class="blk__hint">Release mode starts the plume from nothing and lets the front move downwind at the wind speed. Give it 72–96 hours.</p>
+      <button type="button" class="btn btn--primary" id="run-btn">Run simulation</button>
     </section>
 
-    <section class="ctl" id="receptor-block" hidden>
-      <h2 class="ctl__h">Downwind, at this hour</h2>
-      <ul class="receptors" id="receptor-list"></ul>
+    <section class="blk">
+      <h2 class="blk__h">The view</h2>
+      <label class="slider" for="ctl-vex"><span>Height exaggeration</span><output id="out-vex">10×</output>
+        <input type="range" id="ctl-vex" min="1" max="20" step="1" value="10"></label>
+      <label class="slider" for="ctl-floor"><span>Hide field below</span><output id="out-floor">20 µg/m³</output>
+        <input type="range" id="ctl-floor" min="13" max="150" step="1" value="20"></label>
+      <label class="slider" for="ctl-grid" data-only="model"><span>Model grid</span><output id="out-grid">56 × 56</output>
+        <input type="range" id="ctl-grid" min="24" max="80" step="8" value="56"></label>
+      <div class="checks">
+        <label class="check" for="show-smoke" data-only="model"><input type="checkbox" id="show-smoke" checked><span>Smoke particles</span></label>
+        <label class="check" for="show-field"><input type="checkbox" id="show-field" checked><span>Surface field</span></label>
+        <label class="check" for="show-contours"><input type="checkbox" id="show-contours" checked><span>Contours</span></label>
+        <label class="check" for="show-fires"><input type="checkbox" id="show-fires" checked><span>Fires</span></label>
+      </div>
+      <p class="perf" id="perf" aria-live="off">—</p>
     </section>
 
-    <section class="ctl" id="arrival-block" hidden>
-      <h2 class="ctl__h">When the front gets there</h2>
-      <ul class="arrivals" id="arrival-list"></ul>
-      <p class="ctl__hint" id="arrival-note"></p>
-    </section>
-
-    <section class="ctl" id="validation-block" hidden>
-      <h2 class="ctl__h">How wrong is this?</h2>
+    <section class="blk" id="validation-block" data-only="model" hidden>
+      <h2 class="blk__h">How wrong is this?</h2>
       <div id="validation-body"></div>
     </section>
 
-    <section class="ctl">
-      <h2 class="ctl__h">What this is not</h2>
-      <ul class="caveats" id="sim-caveats"><li class="muted">Loading the model's caveats…</li></ul>
+    <section class="blk" id="provenance-block" data-only="model" hidden>
+      <h2 class="blk__h">What is the model's, what is filled in</h2>
+      <ul class="prov" id="provenance"></ul>
     </section>
 
+    <section class="blk" id="week-attr-block" data-only="week" hidden>
+      <h2 class="blk__h">Sources</h2>
+      <ul class="prov" id="week-attr"></ul>
+    </section>
+
+    <section class="blk">
+      <h2 class="blk__h">What this is not</h2>
+      <ul class="caveats" id="sim-caveats"><li class="muted">Loading the model's caveats…</li></ul>
+    </section>
   </aside>
 </main>
 
-<script src="https://unpkg.com/deck.gl@9.0.27/dist.min.js"></script>
+<footer class="alphv-foot">
+  <div class="alphv-foot__in">
+    <a class="alphv-foot__logo" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=footer" rel="noopener">
+      <img src="/static/brand/alphv-logo.png" width="120" height="30" alt="ALPHV">
+    </a>
+    <p class="alphv-foot__line">Powered by ALPHV. AI pays off after the pilot. Not in it.</p>
+    <nav class="alphv-foot__nav" aria-label="Footer">
+      <a href="/">whenwillhazeend.com</a>
+      <a href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=footer" rel="noopener">alphv.com</a>
+    </nav>
+  </div>
+</footer>
+
 <script type="module" src="/static/js/sim3d.js"></script>
 </body>
 </html>
