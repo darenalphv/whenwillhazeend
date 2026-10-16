@@ -241,3 +241,41 @@ body Inter, sentence case; Lucide icons if any; no emoji.
   `rel="noopener"`; open in the same tab.
 - **No dark patterns:** no popups, interstitials, exit-intent, email gates or
   content held hostage. The forecast is free and complete without clicking.
+
+---
+
+## AMENDMENTS — M4: shape changes from the research spec (`research/MODEL_SPEC.md`)
+
+Frontends must handle these as **optional** — render whichever is present.
+
+**Season** (`POST /api/simulate/season`)
+- New top-level `"drought_readiness": 0..1` — the normalised drought state the
+  fire/veil intensity should key off. The drought index moves from KBDI to the
+  Drought Code BMKG uses, so a `kbdi` driver may disappear and a `dc` driver
+  appear. **Key visuals off `drought_readiness`, falling back to the `kbdi`
+  driver value / 800 only if it's absent.**
+- `drivers[]` may include `iod` (Indian Ocean Dipole) and `rain_12wk`.
+
+**Exhaustion** (`POST /api/simulate/exhaustion`)
+- Peat and forest run out on very different timescales once drainage
+  subsidence is modelled, so the single headline splits. New
+  `"headlines": {"peat": {...}, "forest": {...}}`, each
+  `{"label", "exhaustion_year": {"p10","p50","p90","never_pct"}, "remaining_mha_2050"}`.
+  The aggregate `exhaustion_year` stays for compatibility. **When `headlines`
+  is present, show both** — the peat answer is the one that matters for haze.
+
+**Seasons** (`/api/history`)
+- `psi_peak_singapore` is being replaced: it mixed three different metrics.
+  New `"singapore_peaks": {"psi_24h_max", "pm25_1h_max_ugm3", "psi_3h_max", "source"}`
+  — any field may be null. Never label a PM2.5 concentration as a PSI.
+- `excess_deaths_range`, `burned_area_mha_*_range` as in the ranges section above.
+- `enso_phase` may change for 2006 and 2019 (they were ENSO-neutral in the burn
+  window); new optional `"iod_phase"` and `"dmi_peak"`.
+
+**Ownership for the model rebuild** (supersedes the MODEL row above)
+
+| Agent | Owns |
+|---|---|
+| MODEL-SEASON | `app/model/{burn,calibrate,kbdi,meteo,history}.py`, new `app/model/{drought_code,forecast}.py`, `app/model/{hazard_fit,calibration_weather}.json`, `app/data/{seasons,enso,climatology}.json`, new `app/data/iod.json`, new `app/data/loader_season.py`, `scripts/model/season/**`, new tests `tests/test_season_v2.py`, `tests/test_forecast.py`; may **add** the `/api/forecast/*` routes and their schemas |
+| MODEL-EARTH | `app/model/{stock,dispersion,haze3d}.py`, new `app/model/{emissions,transport,health}.py`, `app/data/{fuel_stock,receptors,regions}.json`, `app/data/fires/**`, `app/data/loader.py`, new data files it creates under `app/data/`, `scripts/model/earth/**`, new tests `tests/test_{emissions,stock_v2,transport,health}.py` |
+| Lead | existing `tests/*.py`, `app/data/{provenance.json,README.md}` (reconciled from both reports), `app/model/__init__.py` |
