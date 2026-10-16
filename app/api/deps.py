@@ -38,7 +38,15 @@ COMPONENT_LABELS: dict[str, str] = {
     "app.model.dispersion": "the haze dispersion model",
     "app.model.meteo": "the weather service",
     "app.model.history": "the historical-season summariser",
-    "app.model.kbdi": "the drought-index model",
+    "app.model.kbdi": "the legacy KBDI drought index",
+    "app.model.drought_code": "the Drought Code model",
+    "app.model.forecast": "the forecast-odds model",
+    "app.data.loader_season": "the bundled season record",
+    "app.model.haze3d": "the 3D haze model",
+    "app.model.emissions": "the fire-emissions model",
+    "app.model.transport": "the haze transport model",
+    "app.model.health": "the health-impact model",
+    "app.live": "the live air-quality and fire feeds",
 }
 
 
