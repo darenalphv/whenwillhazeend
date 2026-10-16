@@ -1,26 +1,33 @@
 """Model layer for whenwillhazeend.com.
 
-Two questions, two models:
+The scientific basis for every module is ``research/MODEL_SPEC.md``.
 
-* **How many more days of haze?** -- `simulate_season_end` (`burn.py`), a
-  discrete-time survival model whose daily termination hazard is a logistic in
-  trailing rainfall, the Keetch-Byram drought index, ONI and monsoon progress,
-  Monte-Carlo'd forward on Open-Meteo forecasts and ENSO-conditioned
-  climatology.
-* **How many years until there is nothing left to burn?** --
-  `simulate_exhaustion` (`stock.py`), a stock-and-flow model over five land
-  pools driven by a three-state ENSO Markov chain, in which burned peat is
-  removed permanently.
+* **When does the Kalimantan fire season end?** -- `simulate_season_end`
+  (`burn.py`): a daily-hazard survival model trained on fire end-dates observed
+  by NASA FIRMS (2001-2025), driven by the Drought Code (`drought_code.py`,
+  verified against cffdrs), 12-week and 10-day rainfall, ONI and DMI as
+  published on the forecast date, and a fitted seasonal clock, with per-season
+  frailty for calibrated intervals. No information after the forecast date is
+  used. `forecast.py` turns it into prediction-market-style model odds and a
+  leak-free odds history.
+* **When does Kalimantan run out of peat and forest?** --
+  `simulate_exhaustion` (`stock.py`): peat as a thickness column that loses
+  depth to drainage subsidence as well as fire, plus forest pools, with an
+  ENSO Markov chain and a satellite-consistent burn rate. Peat and forest get
+  separate headlines.
+* **Where does the smoke go?** -- `haze3d.py` over `transport.py` (LPM-3L, a
+  reduced-form 3-layer Lagrangian particle model on ERA5 winds with Sumatra
+  and Kalimantan as sources), `emissions.py` (per-hectare and observed daily
+  emissions) and `dispersion.py` (the snapshot plume). `health.py` publishes
+  the literature's mortality ranges.
 
-Supporting modules: `kbdi` (Keetch & Byram 1968 drought index), `meteo`
-(Open-Meteo client with a never-raising climatological fallback and the
-monsoon phase function), `dispersion` (Gaussian-plume smoke transport to the
-downwind cities), `history` (the observed season record), and `calibrate`
-(the fit of the hazard coefficients, imported lazily because it needs scipy).
+Supporting: `meteo` (weather client that makes no Open-Meteo call unless a
+commercial key is configured, with bundled-ERA5 and climatology fallbacks),
+`kbdi` (legacy, unused), `history`, and `calibrate` (offline; imports scipy
+lazily).
 
 Every module carries its equations and citations in its docstring and a
-``CAVEATS`` list of specific, honest limitations, which the website renders in
-its Methods section.  ``ALL_CAVEATS`` collects them.
+``CAVEATS`` list, which the site renders in its Methods section.
 """
 
 from __future__ import annotations
@@ -52,6 +59,16 @@ __all__ = [
     "kbdi", "meteo", "burn", "stock", "dispersion", "history",
 ]
 
+def _caveats_of(name: str) -> list:
+    """Caveats from a newer module, imported defensively: one broken module
+    must not take the whole model package down with it."""
+    import importlib
+    try:
+        return list(getattr(importlib.import_module(f"app.model.{name}"), "CAVEATS", []))
+    except Exception:  # noqa: BLE001
+        return []
+
+
 #: caveats keyed by module, for the site's mandatory Methods section
 MODULE_CAVEATS = {
     "kbdi": list(kbdi.CAVEATS),
@@ -61,6 +78,9 @@ MODULE_CAVEATS = {
     "dispersion": list(dispersion.CAVEATS),
     "history": list(history.CAVEATS),
 }
+
+for _name in ("drought_code", "forecast", "emissions", "transport", "haze3d", "health"):
+    MODULE_CAVEATS[_name] = _caveats_of(_name)
 
 ALL_CAVEATS = [c for group in MODULE_CAVEATS.values() for c in group]
 
