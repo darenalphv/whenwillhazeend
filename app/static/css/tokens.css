@@ -1,0 +1,86 @@
+/* tokens.css — the light-mode design tokens shared by every page.
+ *
+ * Owned by the MAIN-WEB agent after this seed. Rule for everyone else:
+ * values may be refined, names may not be removed or renamed, because the
+ * simulator page reads them too.
+ *
+ * Contrast ratios are measured, not estimated (WCAG 2.x relative luminance).
+ * "paper" figures are against --paper; the notes say where a colour stops
+ * being safe for body text on the darker surfaces.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces — warm field-report paper, not clinical white */
+  --paper:    #F7F4EE;
+  --paper-2:  #EFEAE1;   /* cards, panels */
+  --paper-3:  #E5DED2;   /* wells, tracks, pressed states */
+  --paper-hi: #FFFFFF;   /* the rare raised surface */
+
+  /* ink */
+  --ink:   #1C1815;   /* 16.1:1 on paper */
+  --ink-2: #3D3630;   /* 10.8:1 */
+  --ink-3: #62584F;   /*  6.3:1 — still AA on paper-3 (5.2:1) */
+  --ink-4: #857A70;   /*  3.8:1 — large text and non-text marks ONLY */
+
+  --line:   #DCD4C7;
+  --line-2: #C9BFB0;
+
+  /* accents */
+  --ember:   #B43C0C;   /* 5.3:1 paper, 4.9 paper-2 — NOT body text on paper-3 */
+  --ember-2: #8F2E08;   /* 7.5:1 — use for text on any surface */
+  --ember-tint: #F4DCCB;
+  --haze:    #7A6347;   /* 5.2:1 paper — smoke, the subject of the site */
+  --haze-tint: #E8DFD1;
+  --cool:    #1F6B85;   /* 5.5:1 — La Niña, rain, things that end fires */
+  --good:    #1E7A55;   /* 4.8:1 paper; large text only on paper-2/3 */
+  --bad:     #B42318;   /* 6.0:1 */
+
+  /* ENSO / IOD phases */
+  --enso-el-nino:  #B43C0C;
+  --enso-neutral:  #857A70;
+  --enso-la-nina:  #1F6B85;
+  --iod-positive:  #9A5B0B;
+  --iod-negative:  #2F5D8C;
+
+  /* fuel pools — distinguishable in deuteranopia (checked in pairs) */
+  --pool-peat-drained:     #B43C0C;
+  --pool-peat-intact:      #C68A14;
+  --pool-primary-forest:   #2E7D4F;
+  --pool-secondary-forest: #3E7FA3;
+  --pool-scrub-grass:      #9C7F55;
+
+  /* AQI (US EPA PM2.5 bands), tuned to read on paper */
+  --aqi-good:      #3E9E6E;
+  --aqi-moderate:  #D4A017;
+  --aqi-usg:       #E07B22;
+  --aqi-unhealthy: #C9332A;
+  --aqi-very:      #7E3B8C;
+  --aqi-hazardous: #6A1B2A;
+
+  /* type */
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-ui:      "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* geometry */
+  --radius:    12px;
+  --radius-sm: 8px;
+  --maxw:      1180px;
+  --gutter:    clamp(1rem, 4vw, 2rem);
+
+  /* elevation: offset + soft blur, never a zero-offset halo */
+  --shadow-1: 0 1px 2px rgba(60, 45, 30, .06), 0 2px 8px rgba(60, 45, 30, .05);
+  --shadow-2: 0 2px 4px rgba(60, 45, 30, .06), 0 10px 28px rgba(60, 45, 30, .09);
+
+  /* motion */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --t-fast: 140ms;
+  --t-mid:  260ms;
+  --t-slow: 520ms;
+
+  --tap: 44px;   /* minimum touch target, from the audit */
+}
+
+::selection { background: var(--ember-tint); color: var(--ink); }
