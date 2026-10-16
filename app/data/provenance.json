@@ -288,7 +288,7 @@
       "url": null,
       "coverage": "current season",
       "status": "modelled",
-      "notes": "Shares of simulated seasons, not a market. History points use only weather observed up to each date, so they can differ from the odds shown live that day. Automatic resolution needs season-to-date FIRMS counts (a free NASA key), which are not configured."
+      "notes": "Proportions of simulated seasons — not a market; no money is involved. History points use only weather observed up to each date, so they can differ from the odds shown live that day. Automatic resolution needs season-to-date FIRMS counts (a free NASA key), which are not configured."
     },
     {
       "id": "live_nea",

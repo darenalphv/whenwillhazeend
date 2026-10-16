@@ -83,7 +83,7 @@
     <div class="fixture-banner" id="fixture-banner" hidden role="status">Fixture data — synthetic, not real readings. For interface testing only.</div>
 
     <div class="sumatra-chip" id="sumatra-chip" hidden>
-      <b>Model run: Kalimantan fires only.</b> Sumatra's smoke is missing, so Singapore and KL numbers here are an undercount.
+      <b>Model run: Kalimantan fires only.</b> No Sumatran emissions are bundled for this date, so Singapore and KL numbers here are an undercount.
     </div>
 
     <div class="card card--timeline" id="timeline" hidden>
@@ -167,8 +167,8 @@
     </section>
 
     <aside class="callout" id="sumatra-callout" data-only="model" aria-label="Important caveat">
-      <h2 class="callout__h">This model has no Sumatran fires. For Kuala Lumpur and Singapore, that matters most.</h2>
-      <p>The model run is fed <b>Kalimantan fires only</b>. Most of the smoke that closed schools in Singapore and Kuala Lumpur in 2015 came from Sumatra — Riau and Jambi are hundreds of kilometres closer and directly upwind. Whatever this mode shows there is an undercount, and a low number means “this model cannot tell you”, not “the air is fine”. For what actually happened, use <b>This week</b>.</p>
+      <h2 class="callout__h" id="sumatra-callout-h">What a model run can tell you about Kuala Lumpur and Singapore</h2>
+      <p id="sumatra-callout-p">Model runs use observed daily fire emissions from <b>Sumatra and Kalimantan</b> where they are bundled (1997–2023 and this week), and Kalimantan’s synthesised season clusters otherwise. Studies disagree about how much of Singapore’s haze comes from each island: climatological studies favour Sumatra, while one using 2015’s actual winds found Central Kalimantan as important for west Singapore and dominant in the east. The model runs high near burning peat, misses some days, and uses a monthly wind average for this year, so treat its KL and Singapore numbers as indicative. For what actually happened, use <b>This week</b>.</p>
       <p class="callout__extra" id="sumatra-extra" hidden></p>
     </aside>
 

@@ -363,13 +363,33 @@ function renderCaveats() {
   }
 }
 
+/* The callout follows the run's actual sources. It used to say "no Sumatran
+   fires" unconditionally, which became false once observed emissions for both
+   islands were bundled -- and then contradicted itself one line later. */
 function renderSumatra() {
   const n = state.data.sources.filter((s) => s.region === 'sumatra').length;
+  const k = state.data.sources.filter((s) => s.region === 'kalimantan').length;
+  state.hasSumatra = n > 0;
+  const h = $('#sumatra-callout-h');
+  const p = $('#sumatra-callout-p');
   const ex = $('#sumatra-extra');
   if (n) {
-    ex.textContent = `This run does include ${n} Sumatran fire${n > 1 ? 's' : ''}, ringed in blue on the map. Check the model's caveats for how complete that set is.`;
-    ex.hidden = false;
-  } else ex.hidden = true;
+    h.textContent = 'This run includes fires in Sumatra and Kalimantan.';
+    p.textContent = `It uses observed daily emissions. Of the ${state.data.sources.length} largest source cells drawn, `
+      + `${n} are in Sumatra (ringed in blue) and ${k} in Kalimantan. `
+      + 'Studies disagree about how much of Singapore’s haze comes '
+      + 'from each island, and this model runs high near burning peat, misses some days and uses a '
+      + 'monthly wind average for this year, so treat its KL and Singapore numbers as indicative. '
+      + 'For what actually happened, use This week.';
+  } else {
+    h.textContent = 'This run has no Sumatran fires. For Kuala Lumpur and Singapore, that matters.';
+    p.textContent = 'No observed emissions are bundled for this date, so the run uses Kalimantan’s '
+      + 'synthesised season clusters only. Sumatra is closer to KL and Singapore and often upwind, so a '
+      + 'low number there means “this model cannot tell you”, not “the air is fine”. For what actually '
+      + 'happened, use This week.';
+  }
+  ex.hidden = true;
+  setView(state.view);  // re-evaluate the chip now that the sources are known
 }
 
 function renderTicks() {
@@ -402,7 +422,8 @@ function renderTicks() {
 function setView(name) {
   state.view = name;
   for (const b of document.querySelectorAll('.vbtn')) b.setAttribute('aria-pressed', String(b.dataset.view === name));
-  $('#sumatra-chip').hidden = state.mode !== 'model' || !(name === 'singapore' || name === 'home' || name === 'strait-city');
+  $('#sumatra-chip').hidden = state.mode !== 'model' || state.hasSumatra !== false
+    || !(name === 'singapore' || name === 'home' || name === 'strait-city');
 }
 
 /* -------------------------------------------------------------- run */
@@ -476,14 +497,14 @@ async function run() {
     renderSumatra();
     renderTicks();
     const c = data.conditions;
-    $('#hint-active').textContent = `${data.sources_used} clusters burning on this date`
+    $('#hint-active').textContent = `${data.sources_used} fire source cells active on this date`
       + (data.sources_inactive_on_date ? `, ${data.sources_inactive_on_date} more elsewhere in the season` : '')
       + (data.sources_dropped ? ` · ${data.note}` : '')
       + ` · layer ${c.night_mixing_height_m}–${c.day_mixing_height_m} m`;
     const sp = c.hours >= 72 ? 4 : 2;     // a run plays through in ~12-25 s
     $('#speed').value = String(sp);
     state.scene.speed = sp;
-    setStatus('ok', `${data.sources_used} fires · ${c.hours} h · ${c.release_from_start ? 'release' : 'steady state'}`);
+    setStatus('ok', `${data.sources_used} source cells · ${c.hours} h · ${c.release_from_start ? 'release' : 'steady state'}`);
     onFrame(state.scene.state());
     notice(state.scene.notices.length ? state.scene.notices.join(' ') : null);
     if (!reduced) state.scene.play();

@@ -241,12 +241,16 @@ export async function mountBurningMap(container, o = {}) {
       scene.o.receptors = false;
       const data = scene.setData(j);
       const d = new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-      cap.textContent = `Model run, not this week's data · ${data.sources_used} Kalimantan fires burning ${d} · wind from ${opt.windFromDeg}°`;
+      const bySrc = (r) => (data.sources || []).filter((s) => s.region === r).length;
+      const nS = bySrc('sumatra'); const nK = bySrc('kalimantan');
+      const fires = nS ? `fires in Sumatra (${nS}) and Kalimantan (${nK})` : `${nK || data.sources_used} Kalimantan fires`;
+      cap.textContent = `Model run, not this week's data · ${fires} on ${d} · wind from ${opt.windFromDeg}°`;
       meta = {
         mode: 'model', fellBackFrom: opt.mode === 'week' ? (week?.reason || 'unavailable') : null,
         year, date, sources: data.sources_used, windFromDeg: opt.windFromDeg,
         windSpeedMs: opt.windSpeedMs, reducedMotion: reduced,
-        caveat: 'Kalimantan fires only; Sumatran smoke is not modelled.',
+        caveat: nS ? 'Indicative model run with fires in Sumatra and Kalimantan; not measurements.'
+                   : 'Kalimantan fires only for this date; Sumatran smoke is not modelled.',
       };
     }
     scene.setShow('contours', false);
