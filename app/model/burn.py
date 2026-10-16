@@ -597,6 +597,12 @@ def simulate_season_end(as_of: str, region: str = "kalimantan",
         "season_definition": model.get("season_definition"),
         "model_error_days": skill.get("rmse_days_forecast"),
         "state_source": state_source,
+        # The last day of observed (not simulated) weather behind this run, and
+        # why live weather was not used -- explicit, so clients never have to
+        # parse state_source prose.
+        "weather_through": ((as_of_d - timedelta(days=st["pre_days"])).isoformat()
+                            if st["feats"] is not None else None),
+        "fallback_reason": wx.get("fallback_reason"),
         "monsoon_onset_climatology": _onset_climatology(model, as_of_d),
         "caveats": caveats,
     }

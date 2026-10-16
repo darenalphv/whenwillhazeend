@@ -267,7 +267,9 @@ def build_observed(days: int = 7) -> dict:
                 caveats.append(f"The model returns identical values for {', '.join(names[:-1])} and "
                                f"{names[-1]}: one model estimate, not {len(group)} separate readings.")
 
-    attribution = [_nea_attribution(nea_data["fetched_at"] if nea_data else None), cams.attribution()]
+    attribution = [_nea_attribution(nea_data["fetched_at"] if nea_data else None)]
+    if modelled:  # credit CAMS only when its data is actually on the page
+        attribution.append(cams.attribution())
 
     return {
         "as_of": iso(end),
