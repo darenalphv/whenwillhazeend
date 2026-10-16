@@ -328,6 +328,21 @@ function whenIdle() {
   });
 }
 
+/**
+ * Camera padding for the hero scene, so on desktop the area of interest (the
+ * Strait, KL and Singapore) sits to the right of the answer panel instead of
+ * underneath it. On narrow screens the panel stacks above the map; no padding.
+ */
+function scenePadding(host) {
+  const panel = $('.plate__panel');
+  if (!panel || window.innerWidth < 760) return undefined;
+  const h = host.getBoundingClientRect();
+  const p = panel.getBoundingClientRect();
+  const left = Math.max(0, Math.round(p.right - h.left + 24));
+  // never pad away more than ~60% of the scene
+  return { top: 0, right: 0, bottom: 0, left: Math.min(left, Math.round(h.width * 0.6)) };
+}
+
 async function mountHeroScene() {
   const host = $('#hero-scene');
   const plate = $('#plate');
@@ -345,14 +360,22 @@ async function mountHeroScene() {
     const narrow = window.innerWidth < 760;
     const lowMem = navigator.deviceMemory && navigator.deviceMemory < 4;
     sceneHandle = await mod.mountBurningMap(host, {
+      mode: 'week',        // the real past 7 days; falls back to a model run and says so
+      fallback: true,
+      caption: true,       // one line naming what is on screen and its sources
+      pins: true,
       autoplay: true,
       orbit: true,
       interactive: false,
       budget: narrow || lowMem ? 'low' : 'med',
+      padding: scenePadding(host),
     });
     host.classList.add('is-live');
     sceneLive = true;
-    plate.dataset.scene = '3d';
+    // Record what is actually on screen. A model run is not this week's data,
+    // and the embed's caption says so; this keeps the page state honest too.
+    const meta = (sceneHandle && sceneHandle.meta) || {};
+    plate.dataset.scene = meta.fixture ? '3d (fixture)' : `3d (${meta.mode || 'unknown'})`;
     if (store.season) renderVeilCaption(hazeReading(store.season), store.season);
     // once the fade is done, the veil underneath stops spending frames
     setTimeout(() => { if (veil && sceneLive) veil.setCovered(true); }, 1600);
