@@ -138,3 +138,106 @@ proportional to `emission_g_s`, and injected inside `injection_m`. The
 **numbers** a user reads (receptor values, peak PM2.5) always come from
 `frames[].values`, never from counting particles. A straight edge in the
 concentration field is the edge of the model grid — say so in the legend.
+
+---
+
+## AMENDMENTS — 2026-10-16: marketing funnel, forecast odds, 3D hero
+
+The site's purpose is now explicit: **a top-of-funnel asset for ALPHV
+Technologies** (alphv.com). The hooks are the 3D burning map and a
+prediction-market-style forecast. The funnel works *because* the site is
+credible — nothing below may compromise the honesty rules above.
+
+### M1. The 3D burning map is the hero (MAIN-WEB + SIM3D-WEB)
+
+SIM3D-WEB exposes an embeddable mode:
+
+```js
+import { mountBurningMap } from '/static/js/sim3d/embed.js';
+const handle = await mountBurningMap(containerEl, {
+  year: 2015, date: '2015-10-14',   // or omit for the current season
+  autoplay: true, orbit: true,      // slow cinematic camera
+  interactive: false,               // hero: no panels, gestures off
+  budget: 'low' | 'med',            // particle budget
+});
+handle.destroy();
+```
+
+It loads MapLibre / deck.gl **dynamically** (never blocking first paint),
+pauses offscreen and on tab hide, and resolves/rejects its promise so the
+caller can fall back. Under `prefers-reduced-motion` it renders one still
+frame.
+
+MAIN-WEB places it full-bleed behind the hero. **The answer renders first**,
+as text, on a paper panel; the haze veil is the instant fallback; the 3D scene
+fades in over it when ready and stays the veil on no-WebGL, reduced motion,
+`saveData`, or a failed load. LCP must be the answer, not the canvas.
+
+### M2. Forecast odds — prediction-market style (MAIN-WEB; data from MODEL)
+
+Prediction-market *presentation* of the model's own probabilities. Visual
+style only:
+
+- **Never use the name, logo or colours of Polymarket** or any other market.
+- **No money, no trading.** No "buy", "bet", "wager", "trade", "position" or
+  "shares" anywhere, no order book. This is a Malaysian business; it must not
+  read as gambling.
+- Label it plainly: *Model odds. Not a market — no money changes hands. Each
+  percentage is the share of N simulated seasons.*
+
+UI: binary cards ("Will the haze season end by 30 Nov 2026?" — YES % / NO %
+bar), a multi-outcome "Which week does it end?" distribution, an
+**odds-over-time chart** (the signature element), and a **resolution
+criteria** box per market stating exactly what "ended" means and what source
+resolves it. A share action per market (Web Share API, copy-link fallback).
+
+New endpoints (MODEL implements; may add the routes):
+
+```
+GET /api/forecast/odds    -> {
+  "as_of", "season_active", "n_sims",
+  "markets": [{"id", "question", "threshold_date", "yes", "no"}],
+  "distribution": {"bucket": "week", "outcomes": [{"label", "start", "end", "p"}]},
+  "resolution": {"definition", "source"},
+  "model_error_days": 25.5,
+  "caveats": [...]
+}
+GET /api/forecast/history -> {
+  "series": [{"as_of", "p50_end_date", "markets": {"<market id>": p, ...}}],
+  "method": "...", "computed_at": "...", "caveats": [...]
+}
+```
+
+**History must not leak the future.** A point "as of D" may only use weather
+observed up to D; beyond D it uses climatology/forecast as the live model
+would have. Using archived actual weather after D would make the chart look
+prescient and would be a fabrication of skill.
+
+### M3. ALPHV attribution and funnel (MAIN-WEB and SIM3D-WEB, each on their page)
+
+Brand rules (from the ALPHV brand system — these override the site's own
+look *inside the ALPHV elements only*): blue `#0100FE`, black, white; **zero
+radius; no shadows; flat fills; borders separate**; headline Archivo
+Expanded Medium uppercase (Google Fonts `Archivo` at `wdth` 125, weight 500),
+body Inter, sentence case; Lucide icons if any; no emoji.
+
+- **Logo:** the real full-colour lockup is at `/static/brand/alphv-logo.png`
+  (160×40 — display at most 120×30, prefer 96×24). Full-colour lockup sits **on
+  `#FFFFFF` only** — not on the warm paper. Never redraw, recolour, crop,
+  shadow or approximate the mark.
+- **Placements:** small "Powered by ALPHV" in the header (logo on a white
+  chip); a contextual CTA block after the odds section (main page) and after
+  the arrivals panel (simulator); a white footer band on both pages.
+- **Copy — use only what alphv.com itself claims:** "AI-native systems
+  integrator in Kuala Lumpur, Malaysia, building AI, agents and automation into
+  the core systems businesses run"; "From business case to production, with
+  one team"; "AI pays off after the pilot. Not in it." ALPHV voice: flat,
+  declarative, no marketing adjectives, no exclamation marks. Do not invent
+  clients, numbers or capabilities. The honest pitch: this site is itself a
+  production system — live weather, a calibrated simulation, a published error
+  rate — and ALPHV builds systems like it.
+- **Links:** `https://alphv.com/?utm_source=whenwillhazeend&utm_medium=referral&utm_campaign=haze2026&utm_content=<placement>`
+  with placement ∈ `header | cta-odds | cta-simulator | footer | methods`.
+  `rel="noopener"`; open in the same tab.
+- **No dark patterns:** no popups, interstitials, exit-intent, email gates or
+  content held hostage. The forecast is free and complete without clicking.
