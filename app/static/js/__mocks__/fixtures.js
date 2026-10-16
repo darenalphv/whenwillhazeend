@@ -88,6 +88,60 @@ const SEASONS = SEASON_SEED.map(([year, phase, oni, s, p, e, idn, kal, peat, hs]
   };
 });
 
+/* CONTRACT_V2 range objects. ILLUSTRATIVE ONLY: the values are patterned
+ * (12,345 / 45,678 / 98,765 …) and the "studies" are named Mock Study A–D with
+ * 10.0000/ DOIs, so nobody can mistake this harness for the literature. */
+const MOCK_RANGES = {
+  2015: {
+    excess_deaths_range: {
+      low: 12345, high: 98765, central: null,
+      estimates: [
+        { value: 98765, region: 'ID+MY+SG', source: 'Mock Study A (illustrative)', doi: '10.0000/MOCK-A' },
+        { value: 45678, region: 'ID+MY+SG', source: 'Mock Study B (illustrative)', doi: '10.0000/MOCK-B' },
+        { value: 12345, region: 'ID only', source: 'Mock Study C (illustrative)', doi: '10.0000/MOCK-C' },
+      ],
+      note: 'MOCK NOTE: estimates differ mainly in the concentration-response function and the modelled exposure.',
+    },
+    burned_area_mha_kalimantan_range: {
+      low: 0.555, high: 0.999, central: null,
+      estimates: [
+        { value: 0.555, source: 'Mock Survey D (illustrative)', doi: '10.0000/MOCK-D' },
+        { value: 0.777, source: 'Mock Survey E (illustrative)', doi: '10.0000/MOCK-E' },
+        { value: 0.999, source: 'Mock Survey F (illustrative)', doi: '10.0000/MOCK-F' },
+      ],
+      note: 'MOCK NOTE: products disagree on small and peat-understorey burns.',
+    },
+    burned_area_mha_indonesia_range: {
+      low: 2.222, high: 3.333, central: null,
+      estimates: [
+        { value: 2.222, source: 'Mock Survey D (illustrative)', doi: '10.0000/MOCK-D' },
+        { value: 3.333, source: 'Mock Survey F (illustrative)', doi: '10.0000/MOCK-F' },
+      ],
+      note: 'MOCK NOTE: shape only.',
+    },
+  },
+  1997: {
+    excess_deaths_range: {
+      low: 33333, high: 222222, central: null,
+      estimates: [
+        { value: 222222, region: 'ID+MY+SG', source: 'Mock Study A (illustrative)', doi: '10.0000/MOCK-A' },
+        { value: 111111, region: 'ID+MY+SG', source: 'Mock Study B (illustrative)', doi: '10.0000/MOCK-B' },
+        { value: 33333, region: 'ID only', source: 'Mock Study C (illustrative)', doi: '10.0000/MOCK-C' },
+      ],
+      note: 'MOCK NOTE: shape only. Real ranges come from the MODEL agent.',
+    },
+    burned_area_mha_kalimantan_range: {
+      low: 1.111, high: 1.888, central: null,
+      estimates: [
+        { value: 1.111, source: 'Mock Survey G (illustrative)', doi: '10.0000/MOCK-G' },
+        { value: 1.888, source: 'Mock Survey H (illustrative)', doi: '10.0000/MOCK-H' },
+      ],
+      note: 'MOCK NOTE: shape only.',
+    },
+  },
+};
+for (const s of SEASONS) Object.assign(s, MOCK_RANGES[s.year] || {});
+
 const SEASON_SUMMARY = {
   n_seasons: SEASONS.length,
   first_year: SEASONS[0].year,
@@ -299,6 +353,10 @@ const DRIVER_TEMPLATES = [
     explain: 'Recent rain has wetted the surface fuels, though not deep enough to reach the peat.',
   },
   {
+    id: 'iod', name: 'Indian Ocean Dipole', unit: 'degC', direction: 'prolongs',
+    explain: 'MOCK: a positive dipole cools the eastern Indian Ocean and dries out western Indonesia.',
+  },
+  {
     id: 'enforcement', name: 'Enforcement / moratorium', unit: 'index', direction: 'shortens',
     explain: 'Burn bans and canal blocking reduce new ignitions but do not stop fires already alight.',
   },
@@ -337,6 +395,7 @@ function seasonSim(body) {
     0.12 + 0.16 * Math.abs(oni),
     0.26 - 0.05 * Math.max(0, oni),
     0.16,
+    0.07,
     scenario === 'strict_moratorium' ? 0.22 : 0.09,
   ];
   const total = raw.reduce((a, c) => a + c, 0);
@@ -345,6 +404,7 @@ function seasonSim(body) {
     Number(oni.toFixed(2)),
     Number(Math.max(0.02, 0.28 - oni * 0.07).toFixed(2)),
     Math.round(Math.max(0, 22 - oni * 7)),
+    0.42,
     scenario === 'strict_moratorium' ? 0.8 : scenario === 'no_enforcement' ? 0.1 : 0.4,
   ];
   const drivers = DRIVER_TEMPLATES.map((t, i) => ({
@@ -358,6 +418,7 @@ function seasonSim(body) {
     as_of: asOf,
     region: b.region || 'kalimantan',
     oni,                 // the live route echoes the resolved ONI
+    drought_readiness: 0.83,   // CONTRACT M4 (MOCK value)
     active: true,
     days_remaining: { p10, p50, p90, mean },
     end_date: { p10: addDays(asOf, p10), p50: addDays(asOf, p50), p90: addDays(asOf, p90) },
@@ -449,6 +510,10 @@ function exhaustionSim(body) {
         estimated: true,
       };
     }),
+    headlines: {   // CONTRACT M4, MOCK values
+      peat: { label: 'Peat', exhaustion_year: { p10: p10 && p10 - 111, p50: p50 && p50 - 111, p90: p90 && p90 - 111, never_pct: neverPct }, remaining_mha_2050: 3.21 },
+      forest: { label: 'Forest', exhaustion_year: { p10, p50, p90, never_pct: neverPct }, remaining_mha_2050: 12.3 },
+    },
     cumulative_burned_mha_by_2050: Number((0.363 * 24 * (1 - burnRed)).toFixed(3)),
     cumulative_pm25_kt: Number((198 * horizon * (1 - burnRed)).toFixed(1)),
     assumptions: {
@@ -693,9 +758,183 @@ const PROVENANCE = {
 
 /* ------------------------------------------------------------------ router */
 
-export function mockResponse(path, method = 'GET', body = null) {
+/* ---------------------------------------------------- forecast odds (M2) */
+
+function oddsMock() {
+  const season = seasonSim({ scenario: 'baseline', oni: 1.1 });
+  const daily = season.daily_end_probability;
+  const still = (iso) => {
+    let v = 1;
+    for (const d of daily) { if (d.date <= iso) v = d.p_still_burning; else break; }
+    return v;
+  };
+  const asOf = season.as_of;
+  const d0 = new Date(asOf + 'T00:00:00Z');
+  const markets = [];
+  for (let k = 0; k < 3; k++) {
+    const end = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1 + k, 0)).toISOString().slice(0, 10);
+    const yes = Number((1 - still(end)).toFixed(3));
+    markets.push({ id: `end-by-${end}`, question: `MOCK: Will the haze season end by ${end}?`, threshold_date: end, yes, no: Number((1 - yes).toFixed(3)) });
+  }
+  const outcomes = [];
+  let cur = addDays(asOf, 1);
+  for (let w = 0; w < 10; w++) {
+    const e = addDays(cur, 6);
+    const p = daily.filter((d) => d.date >= cur && d.date <= e).reduce((a, d) => a + d.p_end, 0);
+    outcomes.push({ label: `MOCK wk ${w + 1}`, start: cur, end: e, p: Number(p.toFixed(3)) });
+    cur = addDays(e, 1);
+  }
+  return {
+    as_of: asOf,
+    season_active: true,
+    n_sims: 4321,
+    markets,
+    distribution: { bucket: 'week', outcomes },
+    resolution: {
+      definition: 'MOCK DEFINITION: the season has ended when the illustrative hotspot count stays below an illustrative threshold for an illustrative number of days.',
+      source: 'MOCK SOURCE — not a real resolution source',
+    },
+    model_error_days: 12.3,
+    caveats: ['MOCK RESPONSE: odds from a front-end fixture, not from the model.'],
+  };
+}
+
+function oddsHistoryMock() {
+  const odds = oddsMock();
+  const series = [];
+  const rng = mulberry32(4242);
+  const n = 30;
+  for (let i = n - 1; i >= 0; i--) {
+    const asOf = addDays(odds.as_of, -i);
+    const drift = i / n;
+    const m = {};
+    odds.markets.forEach((mk, j) => {
+      const v = mk.yes - drift * (0.35 - j * 0.08) + (rng() - 0.5) * 0.04;
+      m[mk.id] = Number(Math.min(0.99, Math.max(0.01, v)).toFixed(3));
+    });
+    series.push({ as_of: asOf, p50_end_date: addDays(asOf, 30 + Math.round(drift * 9)), markets: m });
+  }
+  return {
+    series,
+    method: 'MOCK METHOD: an invented random walk, not a recomputation.',
+    computed_at: odds.as_of,
+    caveats: ['MOCK RESPONSE: this history is invented for layout only.'],
+  };
+}
+
+/* ------------------------------------------------ this week (M5), MOCK */
+
+function weekSeries(endIso, peakIso, peak, base, rng, stepH = 1) {
+  const end = Date.parse(endIso);
+  const pk = Date.parse(peakIso);
+  const out = [];
+  for (let t = end - 7 * 86400000; t <= end; t += stepH * 3600000) {
+    const dd = (t - pk) / 86400000;
+    const v = base + (peak - base) * Math.exp(-(dd * dd) / 3.2) + (rng() - 0.5) * 8;
+    out.push({ t: new Date(t).toISOString(), v: Math.max(5, Math.round(v)) });
+  }
+  return out;
+}
+const maxPt = (series) => series.reduce((b, p) => (p.v > b.v ? p : b), series[0]);
+
+function observedMock() {
+  const end = new Date();
+  end.setUTCMinutes(0, 0, 0);
+  const endIso = end.toISOString();
+  const day = (n, h) => new Date(end.getTime() - n * 86400000 + (h - end.getUTCHours()) * 3600000).toISOString();
+  const rng = mulberry32(77);
+  const sg = [['sg-west', 'MOCK West', 205, 1.27, 103.70], ['sg-north', 'MOCK North', 168, 1.41, 103.82],
+    ['sg-central', 'MOCK Central', 174, 1.35, 103.82], ['sg-east', 'MOCK East', 151, 1.35, 103.94], ['sg-south', 'MOCK South', 162, 1.29, 103.82]];
+  const places = sg.map(([id, name, peak, lat, lon]) => {
+    const series = weekSeries(endIso, day(2, 8), peak, 70, rng);
+    const pm = weekSeries(endIso, day(2, 6), Math.round(peak * 1.4), 40, rng);
+    return {
+      id, name, country: 'SG', lat, lon,
+      official: { index: 'PSI', averaging: '24h', series, max: maxPt(series), band: peak > 200 ? 'Very Unhealthy' : 'Unhealthy',
+        source: 'MOCK — stands in for NEA via data.gov.sg', licence: 'Singapore Open Data Licence v1.0', url: 'https://data.gov.sg/' },
+      pm25: { averaging: '1h', series: pm, max: maxPt(pm), source: 'MOCK — stands in for NEA' },
+      modelled: null,
+    };
+  });
+  const cell = weekSeries(endIso, day(3, 6), 272, 110, mulberry32(9));
+  const klang = weekSeries(endIso, day(3, 9), 248, 105, mulberry32(10));
+  for (const [id, name, series] of [['my-kuala-lumpur', 'MOCK Kuala Lumpur', cell], ['my-shah-alam', 'MOCK Shah Alam', cell],
+    ['my-petaling-jaya', 'MOCK Petaling Jaya', cell], ['my-klang', 'MOCK Klang', klang]]) {
+    places.push({
+      id, name, country: 'MY', lat: 3.1, lon: 101.6,
+      official: null, pm25: null,
+      modelled: { index: 'US AQI (modelled, CAMS)', series, pm25_series: [], max: maxPt(series), band: 'Very Unhealthy',
+        source: 'MOCK — stands in for CAMS via Open-Meteo', grid_km: 40 },
+    });
+  }
+  const w = places[0].official.max;
+  return {
+    as_of: endIso,
+    window: { start: new Date(end.getTime() - 7 * 86400000).toISOString(), end: endIso },
+    places,
+    headline: {
+      text: `MOCK: Singapore’s West region reached a 24-hour PSI of ${w.v}, “Very Unhealthy”, on ${new Date(w.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Singapore' })}. Measured by NEA.`,
+      place_id: 'sg-west', index: 'PSI', measured: true, value: w.v, t: w.t, band: 'Very Unhealthy',
+    },
+    caveats: ['MOCK RESPONSE: invented readings for layout only. Not NEA, DOE or CAMS data.'],
+  };
+}
+
+function hotspotsMock() {
+  const rng = mulberry32(5);
+  const by_day = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    by_day.push({ date: d, kalimantan: Math.round(1200 + rng() * 900), sumatra: Math.round(500 + rng() * 500), peninsular_malaysia: Math.round(rng() * 12) });
+  }
+  return {
+    as_of: new Date().toISOString(),
+    source: 'MOCK — stands in for NASA FIRMS VIIRS NRT',
+    attribution: 'MOCK attribution: NASA FIRMS (LANCE NRT).',
+    count_by_region: { kalimantan: 12345, sumatra: 6789, peninsular_malaysia: 42 },
+    frp_gw_by_region: { kalimantan: 98.7, sumatra: 54.3, peninsular_malaysia: 0.1 },
+    by_day,
+    clusters: { type: 'FeatureCollection', features: [] },
+    caveats: ['MOCK RESPONSE: invented detection counts.'],
+  };
+}
+
+function notFound(path) {
+  const e = new Error(`mock: ${path} is not available in v1 mode`);
+  e.name = 'ApiError';
+  e.status = 404;
+  e.detail = 'Not Found';
+  return e;
+}
+
+/** Strip every optional CONTRACT_V2 field, to prove the page renders without them. */
+function stripV2(path, res) {
+  if (res && Array.isArray(res.seasons)) {
+    for (const s of res.seasons) for (const k of Object.keys(s)) if (k.endsWith('_range')) delete s[k];
+  }
+  if (res && res.season) for (const k of Object.keys(res.season)) if (k.endsWith('_range')) delete res.season[k];
+  if (res && 'drought_readiness' in res) delete res.drought_readiness;
+  if (res && 'headlines' in res) delete res.headlines;
+  if (res && Array.isArray(res.drivers)) {
+    res.drivers = res.drivers.filter((d) => d.id !== 'iod');
+    const tot = res.drivers.reduce((a, d) => a + d.contribution, 0) || 1;
+    for (const d of res.drivers) d.contribution = Number((d.contribution / tot).toFixed(3));
+  }
+  return res;
+}
+
+export function mockResponse(path, method = 'GET', body = null, opts = {}) {
+  const res = route(path, method, body, opts);
+  return opts.v1 ? stripV2(path, res) : res;
+}
+
+function route(path, method = 'GET', body = null, opts = {}) {
   const [clean, query] = path.split('?');
   const params = new URLSearchParams(query || '');
+  if (clean === '/api/now/observed') { if (opts.v1) throw notFound(clean); return observedMock(); }
+  if (clean === '/api/now/hotspots') { if (opts.v1) throw notFound(clean); return hotspotsMock(); }
+  if (clean === '/api/forecast/odds') { if (opts.v1) throw notFound(clean); return oddsMock(); }
+  if (clean === '/api/forecast/history') { if (opts.v1) throw notFound(clean); return oddsHistoryMock(); }
 
   if (clean === '/api/health') {
     return { status: 'ok', version: '0.0.0-mock', live_weather_available: false, mock: true };

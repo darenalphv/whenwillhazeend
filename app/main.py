@@ -9,9 +9,11 @@ climatology and says so in its response.
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -40,6 +42,35 @@ Nothing here is a fallback or a filler value: if a model cannot run, the
 endpoint returns 503 and says which component failed.
 """
 
+# Every module the API reaches through deps.call(). Imported once, single-
+# threaded, before the first request: route handlers run in a thread pool, and
+# concurrent first imports of the same package tripped Python's import-lock
+# deadlock detection (_DeadlockError) after every reload.
+_WARM_MODULES = (
+    "app.data.loader", "app.data.loader_season",
+    "app.model.meteo", "app.model.kbdi", "app.model.drought_code",
+    "app.model.burn", "app.model.forecast", "app.model.history",
+    "app.model.stock", "app.model.emissions", "app.model.transport",
+    "app.model.dispersion", "app.model.haze3d", "app.model.health",
+    "app.live",
+)
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    for name in _WARM_MODULES:
+        try:
+            importlib.import_module(name)
+        except ModuleNotFoundError as exc:
+            if exc.name != name:  # the module exists; one of its imports doesn't
+                log.warning("warm import of %s failed: %s", name, exc)
+        except Exception as exc:  # noqa: BLE001
+            # One broken model must cost only its own endpoints (they 503 with
+            # the component named), never the whole app's startup.
+            log.warning("warm import of %s failed (%s); its endpoints will 503", name, exc)
+    yield
+
+
 app = FastAPI(
     title="whenwillhazeend",
     description=DESCRIPTION,
@@ -47,9 +78,24 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
+    lifespan=_lifespan,
 )
 
 app.include_router(api_router)
+
+# Live "this week" data (NEA, FIRMS, CAMS). Wired here so it switches on as
+# soon as the router exists; a broken router is logged, never silently hidden.
+try:
+    from app.api.routes_live import router as _live_router
+except ModuleNotFoundError as exc:
+    if exc.name not in ("app.api.routes_live",):
+        log.warning("live-data router failed to import: %s", exc)
+    _live_router = None
+except Exception as exc:  # noqa: BLE001
+    log.warning("live-data router failed to import: %s", exc)
+    _live_router = None
+if _live_router is not None:
+    app.include_router(_live_router)
 
 # The haze3d payloads run to several hundred KB of JSON; gzip cuts that ~6x.
 app.add_middleware(GZipMiddleware, minimum_size=1024)

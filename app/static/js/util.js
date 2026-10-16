@@ -4,6 +4,9 @@
  * ./__mocks__/fixtures.js instead of the network. Extra knobs:
  *   ?mock=1&mockfail=history,dispersion   -> those endpoints throw a 503
  *   ?mock=1&mockdelay=1200                -> artificial latency, to see skeletons
+ *   ?mock=1&mockv1=1                      -> strip every optional CONTRACT_V2 field
+ *                                            (ranges, iod driver, odds) to check
+ *                                            the page still renders without them
  * Default is OFF; with no query string the page talks to the real API.
  */
 
@@ -11,6 +14,14 @@ export const QS = new URLSearchParams(location.search);
 export const MOCK = QS.get('mock') === '1';
 const MOCK_FAIL = (QS.get('mockfail') || '').split(',').map(s => s.trim()).filter(Boolean);
 const MOCK_DELAY = Number(QS.get('mockdelay') || 0);
+const MOCK_V1 = QS.get('mockv1') === '1';
+
+/* In-flight requests, so the status chip can pulse only while one is real. */
+let inflight = 0;
+function bumpInflight(d) {
+  inflight = Math.max(0, inflight + d);
+  document.dispatchEvent(new CustomEvent('wwhe:inflight', { detail: { count: inflight } }));
+}
 
 export const REDUCED_MOTION =
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -37,7 +48,7 @@ export function describeError(err, what) {
     if (err.status) return `The ${label}request failed with HTTP ${err.status}${detail}.`;
     return `Could not reach the ${label}API — ${tail(err.message)}.`;
   }
-  return `Something went wrong loading the ${label}data — ${tail(err && err.message ? err.message : err)}.`;
+  return `Something went wrong loading the ${what || 'data'} — ${tail(err && err.message ? err.message : err)}.`;
 }
 
 /* ------------------------------------------------------------------- fetch */
@@ -54,7 +65,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * Call the API. `path` is an absolute API path such as "/api/history".
  * Options: { method, body, timeout }
  */
-export async function api(path, { method = 'GET', body = null, timeout = 30000 } = {}) {
+export async function api(path, opts = {}) {
+  bumpInflight(1);
+  try {
+    return await apiInner(path, opts);
+  } finally {
+    bumpInflight(-1);
+  }
+}
+
+async function apiInner(path, { method = 'GET', body = null, timeout = 30000 } = {}) {
   if (MOCK) {
     if (MOCK_DELAY) await sleep(MOCK_DELAY);
     const key = path.split('?')[0].replace(/^\/api\//, '').split('/')[0];
@@ -64,7 +84,7 @@ export async function api(path, { method = 'GET', body = null, timeout = 30000 }
       });
     }
     const mod = await fixtures();
-    return mod.mockResponse(path, method, body);
+    return mod.mockResponse(path, method, body, { v1: MOCK_V1 });
   }
 
   const ctrl = new AbortController();
@@ -240,9 +260,12 @@ export async function withPanel(name, what, fn, root = document) {
 
 /** Tween a number into a node. Instant when the user prefers reduced motion. */
 export function animateNumber(node, to, { from = null, duration = 700, format = fmtInt } = {}) {
+  if (to === null || to === undefined) { if (node) node.textContent = format(to); return; }
   if (!node) return;
   const start = from !== null ? from : Number(node.dataset.value || 0);
-  if (REDUCED_MOTION || !Number.isFinite(start) || start === to) {
+  // Reduced motion keeps the change visible but makes it near-instant.
+  if (REDUCED_MOTION) duration = Math.min(duration, 120);
+  if (!Number.isFinite(start) || start === to || !Number.isFinite(Number(to))) {
     node.textContent = format(to);
     node.dataset.value = String(to);
     return;
@@ -275,25 +298,113 @@ function cssVar(name, fallback) {
 }
 
 export const COLOR = {
-  get ink() { return cssVar('--ink', '#f2ede6'); },
-  get ink2() { return cssVar('--ink-2', '#c3bbb1'); },
-  get ink3() { return cssVar('--ink-3', '#948c83'); },
-  get line() { return cssVar('--line', '#2a2624'); },
-  get ember() { return cssVar('--ember', '#ff7a45'); },
-  get amber() { return cssVar('--amber', '#f5b942'); },
-  get cool() { return cssVar('--cool', '#5ec8e5'); },
+  get ink() { return cssVar('--ink', '#1C1815'); },
+  get ink2() { return cssVar('--ink-2', '#3D3630'); },
+  get ink3() { return cssVar('--ink-3', '#62584F'); },
+  get ink4() { return cssVar('--ink-4', '#857A70'); },
+  get line() { return cssVar('--line', '#DCD4C7'); },
+  get line2() { return cssVar('--line-2', '#C9BFB0'); },
+  get paper() { return cssVar('--paper', '#F7F4EE'); },
+  get paperHi() { return cssVar('--paper-hi', '#FFFFFF'); },
+  get ember() { return cssVar('--ember', '#B43C0C'); },
+  get ember2() { return cssVar('--ember-2', '#8F2E08'); },
+  get haze() { return cssVar('--haze', '#7A6347'); },
+  get hazeTint() { return cssVar('--haze-tint', '#E8DFD1'); },
+  get amber() { return cssVar('--amber', '#9A5B0B'); },
+  get cool() { return cssVar('--cool', '#1F6B85'); },
+  get(name, fallback) { return cssVar(name, fallback); },
   enso(phase) {
-    return cssVar(`--enso-${(phase || 'neutral').replace('_', '-')}`, '#9b938a');
+    return cssVar(`--enso-${(phase || 'neutral').replace('_', '-')}`, '#857A70');
   },
   pool(id) {
-    return cssVar(`--pool-${String(id || '').replace(/_/g, '-')}`, '#c9772f');
+    return cssVar(`--pool-${String(id || '').replace(/_/g, '-')}`, '#9C7F55');
   },
   aqi(category) {
-    const key = String(category || '').toLowerCase()
-      .replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
-    return cssVar(`--aqi-${key}`, '#9b938a');
+    const key = AQI_KEY[String(category || '').toLowerCase()]
+      || String(category || '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+    return cssVar(`--aqi-${key}`, '#857A70');
   },
 };
+
+const AQI_KEY = {
+  good: 'good',
+  moderate: 'moderate',
+  'unhealthy for sensitive groups': 'usg',
+  unhealthy: 'unhealthy',
+  'very unhealthy': 'very',
+  hazardous: 'hazardous',
+};
+
+/** Mix two hex colours; t in 0..1. Returns an rgb() string. */
+export function mixHex(a, b, t) {
+  const A = hexToRgb(a), B = hexToRgb(b);
+  const k = clamp(t, 0, 1);
+  const c = A.map((v, i) => Math.round(v + (B[i] - v) * k));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
+
+export function hexToRgb(h) {
+  const s = String(h).replace('#', '').trim();
+  const v = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+  return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16)];
+}
+
+/** Hex colour with alpha, for Chart.js fills. */
+export function withAlpha(hex, a) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/* --------------------------------------------------- range inputs, painted */
+
+/** Sets --fill so WebKit can draw the filled part of a range track. */
+export function paintRange(input) {
+  if (!input || input.type !== 'range') return;
+  const min = Number(input.min || 0), max = Number(input.max || 100);
+  const v = Number(input.value);
+  const f = max > min ? ((v - min) / (max - min)) * 100 : 0;
+  input.style.setProperty('--fill', `${clamp(f, 0, 100)}%`);
+}
+
+export function paintAllRanges(root = document) {
+  for (const r of root.querySelectorAll('input[type="range"]')) paintRange(r);
+}
+
+/* ------------------------------------------- CONTRACT_V2 range objects */
+
+/**
+ * A literature range object ({low, high, estimates[], note}) if the API sent
+ * a usable one for `key`, else null. Callers fall back to the v1 scalar.
+ */
+export function rangeOf(obj, key) {
+  const r = obj && obj[`${key}_range`];
+  if (!r || typeof r !== 'object') return null;
+  const low = Number(r.low), high = Number(r.high);
+  if (!Number.isFinite(low) || !Number.isFinite(high)) return null;
+  const estimates = Array.isArray(r.estimates)
+    ? r.estimates.filter((e) => e && Number.isFinite(Number(e.value))) : [];
+  return {
+    low: Math.min(low, high),
+    high: Math.max(low, high),
+    central: r.central != null && Number.isFinite(Number(r.central)) ? Number(r.central) : null,
+    estimates,
+    note: r.note || null,
+  };
+}
+
+/** "5×" style factor between the extremes of a range, or null if trivial. */
+export function foldOf(range) {
+  if (!range || !(range.low > 0)) return null;
+  const f = range.high / range.low;
+  return f >= 1.15 ? f : null;
+}
+
+export function doiUrl(doi) {
+  if (!doi || typeof doi !== 'string') return null;
+  const d = doi.trim();
+  if (!/^10\.\d{4,9}\//.test(d) || d.startsWith('10.0000/')) return null;   // 10.0000 = mock
+  return `https://doi.org/${encodeURI(d)}`;
+}
 
 export const POOL_ORDER = [
   'peat_drained', 'peat_intact', 'primary_forest', 'secondary_forest', 'scrub_grass',

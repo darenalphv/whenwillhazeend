@@ -5,514 +5,771 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>When will the haze end?</title>
 <meta name="description" content="A daily-hazard model of the Kalimantan fire season: how many days until this year's haze ends, and how many years until there is nothing left to burn.">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F7F4EE">
 <meta property="og:title" content="When will the haze end?">
 <meta property="og:description" content="A model of the Kalimantan fire season — days remaining, and the year the fuel runs out.">
 <meta property="og:type" content="website">
 
-<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0a09'/%3E%3Ccircle cx='16' cy='18' r='8' fill='%23ff7a45' opacity='.85'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F7F4EE'/%3E%3Crect y='20' width='32' height='12' fill='%233B392E'/%3E%3Ccircle cx='21' cy='15' r='6' fill='%23CF5F2B'/%3E%3C/svg%3E">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+<link rel="preload" as="image" href="/static/brand/alphv-logo.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="/static/css/tokens.css">
 <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
 
-<div class="grain" aria-hidden="true"></div>
-<div class="smoke" aria-hidden="true"></div>
-
 <a class="skip-link" href="#hero">Skip to the answer</a>
 
-<header class="topbar">
-  <div class="topbar__inner">
-    <a class="brand" href="#hero">
-      <span class="brand__dot" aria-hidden="true"></span>
-      whenwillhazeend<span class="brand__tld">.com</span>
+<header class="masthead">
+  <div class="masthead__inner wrap">
+    <a class="brand" href="#hero" aria-label="whenwillhazeend.com, back to the answer">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect y="20" width="32" height="12" fill="currentColor"/>
+        <circle cx="21" cy="14" r="6"/>
+      </svg>
+      <span>whenwillhazeend<span class="brand__tld">.com</span></span>
     </a>
-    <nav class="topnav" aria-label="Sections">
+    <nav class="nav" aria-label="Sections">
+      <a href="#now">This week</a>
       <a href="#map-section">Map</a>
       <a href="#history">History</a>
       <a href="#playground">Playground</a>
+      <a href="#odds">Odds</a>
       <a href="#drivers">Drivers</a>
       <a href="#methods">Methods</a>
+      <a href="/simulator">3D simulator</a>
     </nav>
-    <div class="status" id="api-status" role="status" aria-live="polite">
-      <span class="status__dot" data-status="pending"></span>
+    <a class="alphv-chip" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=header" rel="noopener">
+      <span class="alphv-chip__label">Powered by</span>
+      <img src="/static/brand/alphv-logo.png" width="96" height="24" alt="ALPHV">
+    </a>
+    <p class="status" id="api-status" role="status" aria-live="polite">
+      <span class="status__dot" data-status="pending" aria-hidden="true"></span>
       <span class="status__text">connecting…</span>
-    </div>
+    </p>
   </div>
+  <p class="mock-strip" id="mock-strip" hidden>
+    Mock mode: every figure on this page is an invented development fixture, not model output.
+  </p>
 </header>
 
 <main id="main">
 
-  <!-- ============================================================ 1. HERO -->
-  <section id="hero" class="section hero" aria-labelledby="hero-h">
-    <p class="eyebrow">Kalimantan &middot; modelled as of <span id="hero-asof">—</span></p>
-    <h1 id="hero-h" class="hero__question">When will the haze end?</h1>
+  <!-- ================================================================ hero -->
+  <section id="hero" class="hero" data-panel="season" aria-labelledby="hero-h">
+    <div class="plate" id="plate">
+      <div class="plate__scene" id="hero-scene" aria-hidden="true"></div>
+      <div class="plate__inner wrap">
+       <div class="plate__panel">
+        <div class="local" data-panel="now-headline" aria-live="polite">
+          <div data-state="loading" class="local__loading"><span class="busy" aria-hidden="true"></span>Checking this week’s air in Kuala Lumpur and Singapore…</div>
+          <div data-state="error" hidden></div>
+          <div data-state="ok" hidden>
+            <p class="local__text"><span class="local__label">This week</span> <span id="local-text"></span></p>
+            <p class="local__meta" id="local-meta"></p>
+          </div>
+        </div>
+        <h1 id="hero-h" class="hero__q">When will the haze end?</h1>
 
-    <div class="hero__card" data-panel="season">
-      <div data-state="loading" class="hero__loading">
-        <div class="skeleton skeleton--hero"></div>
-        <div class="skeleton skeleton--line" style="width:62%"></div>
-        <div class="skeleton skeleton--line" style="width:44%"></div>
-        <p class="loading-note">Running the daily-hazard simulation…</p>
+        <div data-state="loading" class="hero__loading">
+          <div class="skeleton skeleton--hero"></div>
+          <div class="skeleton skeleton--line" style="width:min(36rem,90%)"></div>
+          <p class="loading-note"><span class="busy" aria-hidden="true"></span>Running the daily-hazard simulation…</p>
+        </div>
+
+        <div data-state="error" class="panel-error panel-error--plate" hidden>
+          <h2 class="panel-error__title">The season model did not answer.</h2>
+          <p class="panel-error__msg"></p>
+          <p class="panel-error__hint">The fires are unaffected by this outage.
+            <button type="button" class="btn btn--ghost" data-retry="season">Try again</button></p>
+        </div>
+
+        <div data-state="ok" hidden class="answer-block">
+          <p class="answer">
+            <span class="answer__approx" aria-hidden="true">≈</span><span
+              class="answer__num" id="hero-days">—</span><span class="answer__unit" id="hero-unit">more days</span>
+          </p>
+          <p class="answer__scope" id="hero-scope">until the <strong>Kalimantan fire season</strong> ends, by the model’s median.
+            That is not a date for clear air in Kuala Lumpur or Singapore: Sumatra burns too, and the
+            wind decides whose sky the smoke reaches. Haze can clear before that date or linger after it.</p>
+          <dl class="answer__meta">
+            <div><dt>80% interval</dt><dd id="hero-interval">—</dd></div>
+            <div><dt>Median end date</dt><dd id="hero-enddate">—</dd></div>
+            <div><dt>Confidence</dt><dd id="hero-confidence">—</dd></div>
+            <div><dt>Modelled on</dt><dd id="hero-asof">—</dd></div>
+          </dl>
+          <p class="answer__reason" id="hero-reason"></p>
+        </div>
+       </div>
       </div>
+      <div class="plate__land" aria-hidden="true"></div>
+    </div>
 
-      <div data-state="error" class="panel-error" hidden>
-        <h2 class="panel-error__title">The season model did not answer.</h2>
-        <p class="panel-error__msg"></p>
-        <p class="panel-error__hint">The fires are unaffected by this outage. <button type="button" class="btn btn--ghost" data-retry="season">Try again</button></p>
+    <div class="wrap hero__under">
+      <p class="plate__caption" id="veil-caption">The sky above is drawn from the model's reading once it arrives.</p>
+
+      <div data-state="loading" class="readout readout--loading">
+        <div class="skeleton skeleton--block" style="height:140px"></div>
       </div>
-
-      <div data-state="ok" hidden>
-        <p class="hero__answer">
-          <span class="hero__approx" aria-hidden="true">≈</span><span
-            class="hero__days" id="hero-days">—</span><span class="hero__unit">more days</span>
-        </p>
-        <p class="hero__meta">
-          80% interval <b id="hero-interval">—</b>
-          <span class="dot-sep" aria-hidden="true">•</span>
-          median end date <b id="hero-enddate">—</b>
-          <span class="dot-sep" aria-hidden="true">•</span>
-          confidence <b id="hero-confidence">—</b>
-        </p>
-        <p class="hero__reason" id="hero-reason"></p>
-
-        <div class="hero__row">
-          <div class="countdown" id="hero-countdown" aria-label="Time remaining to the median end date">
+      <div data-state="ok" hidden class="readout">
+        <div class="readout__count">
+          <h2 class="readout__h">Until the median end date</h2>
+          <div class="countdown" id="hero-countdown" role="timer" aria-label="Time remaining to the median end date">
             <div class="countdown__cell"><b data-unit="days">—</b><span>days</span></div>
-            <div class="countdown__cell"><b data-unit="hours">—</b><span>hrs</span></div>
+            <div class="countdown__cell"><b data-unit="hours">—</b><span>hours</span></div>
             <div class="countdown__cell"><b data-unit="minutes">—</b><span>min</span></div>
             <div class="countdown__cell"><b data-unit="seconds">—</b><span>sec</span></div>
           </div>
-          <figure class="survival">
-            <figcaption>Probability the season is <em>still</em> burning</figcaption>
-            <div id="survival-spark" class="survival__spark"></div>
-          </figure>
+          <p class="readout__flags" id="hero-flags"></p>
         </div>
-
-        <p class="hero__flags" id="hero-flags"></p>
+        <figure class="survival">
+          <figcaption class="readout__h">Chance the season is <em>still</em> burning</figcaption>
+          <div id="survival-spark" class="survival__plot"></div>
+        </figure>
       </div>
     </div>
+  </section>
 
-    <!-- the second, darker answer -->
-    <div class="hero__card hero__card--grim" data-panel="exhaustion-hero">
+
+  <!-- ======================================================= this week (M5) -->
+  <section id="now" class="section section--now" aria-labelledby="now-h">
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="now-h" class="section__title">This week, where you live</h2>
+        <p class="section__lede">
+          The last seven days of air in Singapore and the Klang Valley, and the fires behind it.
+          Each chart uses one index only: Singapore’s PSI, Malaysia’s API (IPU), or a modelled
+          US AQI. They are different scales, so they never share an axis.
+        </p>
+      </header>
+
+      <div class="now" data-panel="now">
+        <div data-state="loading">
+          <div class="now-grid">
+            <div class="skeleton skeleton--block" style="height:260px"></div>
+            <div class="skeleton skeleton--block" style="height:260px"></div>
+          </div>
+          <p class="loading-note"><span class="busy" aria-hidden="true"></span>Fetching this week’s readings…</p>
+        </div>
+        <div data-state="error" class="panel-error" hidden>
+          <h3 class="panel-error__title">This week’s readings are not available.</h3>
+          <p class="panel-error__msg"></p>
+          <p class="panel-error__hint">For official readings, see
+            <a href="https://www.haze.gov.sg/" rel="noopener noreferrer" target="_blank">haze.gov.sg</a> (Singapore) and
+            <a href="https://eqms.doe.gov.my/APIMS/main" rel="noopener noreferrer" target="_blank">APIMS</a> (Malaysia).
+            <button type="button" class="btn btn--ghost" data-retry="now">Try again</button></p>
+        </div>
+        <div data-state="ok" hidden>
+          <p class="now-window" id="now-window"></p>
+          <div class="now-grid" id="now-charts"></div>
+        </div>
+      </div>
+
+      <div class="fires-week" data-panel="now-hotspots">
+        <h3 class="figure__title">The fires behind it</h3>
+        <div data-state="loading"><div class="skeleton skeleton--line" style="width:70%"></div></div>
+        <div data-state="error" class="odds-empty" hidden><p class="panel-error__msg"></p></div>
+        <div data-state="ok" hidden>
+          <dl class="fires-week__counts" id="fires-counts"></dl>
+          <div class="chart-holder chart-holder--fires"><canvas id="chart-fires" role="img" aria-label="Satellite fire detections per day by region over the last seven days"></canvas></div>
+          <p class="figure__sub" id="fires-note"></p>
+        </div>
+      </div>
+
+      <div class="now-sources">
+        <h3 class="now-sources__h">Where these numbers come from</h3>
+        <ul class="now-sources__list" id="now-sources">
+          <li><b>Singapore PSI and PM2.5</b>: National Environment Agency, via
+            <a href="https://data.gov.sg/" rel="noopener noreferrer" target="_blank">data.gov.sg</a>,
+            under the Singapore Open Data Licence v1.0. Measured.</li>
+          <li><b>Malaysia API (IPU)</b>: Department of Environment Malaysia. Where this page has no
+            official DOE reading it says so; the official figures are on
+            <a href="https://eqms.doe.gov.my/APIMS/main" rel="noopener noreferrer" target="_blank">APIMS</a>.</li>
+          <li><b>Modelled US AQI and PM2.5</b>: Copernicus Atmosphere Monitoring Service (CAMS), via
+            <a href="https://open-meteo.com/en/docs/air-quality-api" rel="noopener noreferrer" target="_blank">Open-Meteo</a>,
+            CC BY 4.0. A forecast model on a grid of about 40 km, not a measurement.</li>
+          <li><b>Fire detections</b>: NASA FIRMS, VIIRS near-real-time (LANCE NRT).
+            <a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener noreferrer" target="_blank">firms.modaps.eosdis.nasa.gov</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== the other ending -->
+  <section class="ending wrap" data-panel="exhaustion-hero" aria-labelledby="ending-h">
+    <h2 id="ending-h" class="ending__h">And then there is the other ending.</h2>
+    <div class="ending__body">
       <div data-state="loading">
-        <div class="skeleton skeleton--line" style="width:40%"></div>
+        <div class="skeleton skeleton--line" style="width:60%"></div>
         <div class="skeleton skeleton--sub"></div>
       </div>
       <div data-state="error" class="panel-error" hidden>
-        <h2 class="panel-error__title">The fuel-exhaustion model did not answer.</h2>
+        <h3 class="panel-error__title">The fuel-exhaustion model did not answer.</h3>
         <p class="panel-error__msg"></p>
         <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="exhaustion">Try again</button></p>
       </div>
       <div data-state="ok" hidden>
-        <p class="grim__label">And then there is the other ending</p>
-        <p class="grim__answer">
-          <span class="grim__lead">Kalimantan runs out of things to burn in</span>
-          <b id="grim-year">—</b>
+        <p class="ending__answer">
+          <span class="ending__lead">Kalimantan runs out of things to burn in</span>
+          <b class="ending__year" id="grim-year">—</b>
         </p>
-        <p class="grim__meta">
-          80% interval <b id="grim-interval">—</b>
-          <span class="dot-sep" aria-hidden="true">•</span>
-          <span id="grim-never">—</span>
-          <span class="dot-sep" aria-hidden="true">•</span>
-          <b id="grim-cum">—</b> Mha burned by 2050
-        </p>
-        <p class="grim__note" id="grim-note"></p>
+        <dl class="ending__meta">
+          <div><dt>80% interval</dt><dd id="grim-interval">—</dd></div>
+          <div><dt>Runs that never get there</dt><dd id="grim-never">—</dd></div>
+          <div><dt>Burned by 2050</dt><dd><span id="grim-cum">—</span> Mha</dd></div>
+        </dl>
+        <p class="ending__note" id="grim-note"></p>
       </div>
     </div>
-
-    <p class="hero__tolls" data-panel="toll">
-      <span data-state="loading"><span class="skeleton skeleton--line" style="width:70%"></span></span>
-      <span data-state="error" hidden class="panel-error panel-error--inline"><span class="panel-error__msg"></span></span>
-      <span data-state="ok" hidden id="toll-text"></span>
-    </p>
   </section>
 
-  <!-- ============================================================= 2. MAP -->
-  <section id="map-section" class="section" aria-labelledby="map-h">
-    <header class="section__head">
-      <h2 id="map-h" class="section__title"><span class="section__num">02</span> Where it burns</h2>
-      <p class="section__lede">
-        Provinces shaded by peat area — peat is what makes Kalimantan smoke rather than simply
-        burn. Drag the year slider to replay a season's fire clusters, sized by area and
-        coloured by what was burning.
-      </p>
-    </header>
+  <!-- ======================================================== the human toll -->
+  <section class="toll wrap" data-panel="toll" aria-label="The human toll">
+    <div data-state="loading">
+      <div class="skeleton skeleton--line" style="width:80%"></div>
+      <div class="skeleton skeleton--line" style="width:55%"></div>
+    </div>
+    <div data-state="error" hidden class="panel-error panel-error--inline"><p class="panel-error__msg"></p></div>
+    <div data-state="ok" hidden>
+      <p class="toll__text" id="toll-text"></p>
+      <div id="toll-ranges" class="toll__ranges"></div>
+    </div>
+  </section>
 
-    <div class="map-wrap" data-panel="map">
-      <div data-state="loading" class="map-skeleton">
-        <div class="skeleton skeleton--block"></div>
-        <p class="loading-note">Loading provinces and fire clusters…</p>
-      </div>
-      <div data-state="error" class="panel-error" hidden>
-        <h3 class="panel-error__title">The map data did not load.</h3>
-        <p class="panel-error__msg"></p>
-        <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="map">Try again</button></p>
-      </div>
 
-      <div data-state="ok" hidden class="map-grid">
-        <div class="map-panel">
-          <div id="map" role="application" aria-label="Map of Kalimantan fire clusters"></div>
-          <p class="map-cta">
-            This map is flat and shows one year at a time.
-            <a href="/simulator">Open the 3D haze simulator</a> to watch a single
-            day of smoke rise and settle over the island.
-          </p>
-          <div class="map-legend" id="map-legend" aria-hidden="false"></div>
-        </div>
+  <!-- ================================================================ odds -->
+  <section id="odds" class="section section--odds" aria-labelledby="odds-h">
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="odds-h" class="section__title">The odds, as the model sees them</h2>
+        <p class="section__lede">
+          The same simulation as the answer above, asked as yes-or-no questions. Each percentage
+          is a count, not an opinion: the share of simulated seasons in which it happened.
+        </p>
+        <p class="odds-disclaimer" id="odds-disclaimer">Model odds. Not a market — no money changes hands. Each percentage is the share of <span id="odds-n">N</span> simulated seasons.</p>
+      </header>
 
-        <div class="map-side">
-          <div class="control">
-            <div class="control__head">
-              <label for="year-slider">Fire season</label>
-              <output class="control__value" id="year-out" for="year-slider">—</output>
-            </div>
-            <input type="range" id="year-slider" min="0" max="0" step="1" value="0"
-                   aria-describedby="year-summary">
-            <div class="control__row">
-              <button type="button" class="btn btn--play" id="year-play" aria-pressed="false">
-                <span class="btn__icon" aria-hidden="true">▶</span><span class="btn__label">Replay years</span>
-              </button>
-              <span class="control__hint" id="year-loading" hidden>loading…</span>
-            </div>
-            <dl class="year-summary" id="year-summary"></dl>
+      <div class="odds" data-panel="odds">
+        <div data-state="loading">
+          <div class="odds-grid">
+            <div class="skeleton skeleton--block" style="height:220px"></div>
+            <div class="skeleton skeleton--block" style="height:220px"></div>
+            <div class="skeleton skeleton--block" style="height:220px"></div>
           </div>
+          <p class="loading-note"><span class="busy" aria-hidden="true"></span>Reading the odds off the simulation…</p>
+        </div>
+        <div data-state="error" class="panel-error" hidden>
+          <h3 class="panel-error__title">Odds are not available yet.</h3>
+          <p class="panel-error__msg"></p>
+          <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="odds">Try again</button></p>
+        </div>
+        <div data-state="ok" hidden>
+          <p class="odds-source" id="odds-source"></p>
+          <div class="odds-grid" id="odds-markets"></div>
 
-          <div class="control" data-panel="dispersion">
-            <div class="control__head">
-              <label for="plume-toggle" class="control__label">Smoke plume</label>
-              <span class="switch">
-                <input type="checkbox" id="plume-toggle">
-                <span class="switch__track" aria-hidden="true"></span>
-              </span>
-            </div>
-            <p class="control__sub">
-              A Gaussian plume driven from this year's fires with one wind vector. Illustrative,
-              not a forecast.
-            </p>
-            <div class="plume-controls" id="plume-controls" hidden>
-              <div class="control__head">
-                <label for="wind-dir">Wind from</label>
-                <output class="control__value" id="wind-dir-out">—</output>
-              </div>
-              <input type="range" id="wind-dir" min="0" max="350" step="10" value="140">
-              <div class="control__head">
-                <label for="wind-speed">Wind speed</label>
-                <output class="control__value" id="wind-speed-out">—</output>
-              </div>
-              <input type="range" id="wind-speed" min="0.5" max="12" step="0.5" value="3.5">
-              <div data-state="loading" hidden class="control__hint">modelling dispersion…</div>
-              <div data-state="error" hidden class="panel-error panel-error--inline">
-                <span class="panel-error__msg"></span>
+          <div class="odds-lower">
+            <figure class="odds-dist" id="odds-dist-fig">
+              <figcaption class="figure__cap">
+                <h3 class="figure__title">Which week does it end?</h3>
+                <p class="figure__sub" id="odds-dist-sub">Share of simulated seasons ending in each week.</p>
+              </figcaption>
+              <ol class="dist" id="odds-dist"></ol>
+            </figure>
+
+            <figure class="odds-history" data-panel="odds-history">
+              <figcaption class="figure__cap">
+                <h3 class="figure__title">How the odds have moved</h3>
+                <p class="figure__sub" id="odds-history-sub">Each line is one question, re-asked every day with only the weather known on that day.</p>
+              </figcaption>
+              <div data-state="loading"><div class="skeleton skeleton--block" style="height:260px"></div></div>
+              <div data-state="error" class="odds-empty" hidden>
+                <p class="panel-error__msg"></p>
               </div>
               <div data-state="ok" hidden>
-                <table class="receptor-table" id="receptor-table">
-                  <caption class="sr-only">Modelled PM2.5 at downwind cities</caption>
-                  <thead><tr><th scope="col">City</th><th scope="col">PM2.5</th><th scope="col">Category</th></tr></thead>
-                  <tbody></tbody>
-                </table>
+                <div class="legend" id="odds-history-legend"></div>
+                <div class="chart-holder chart-holder--odds"><canvas id="chart-odds" role="img" aria-label="Line chart of each question's model probability over time"></canvas></div>
+                <p class="figure__sub" id="odds-history-method"></p>
+              </div>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= ALPHV, after odds -->
+  <aside class="alphv alphv-cta" aria-labelledby="alphv-cta-h">
+    <div class="wrap alphv-cta__inner">
+      <div class="alphv-cta__brand">
+        <img src="/static/brand/alphv-logo.png" width="120" height="30" alt="ALPHV" loading="lazy">
+      </div>
+      <div class="alphv-cta__body">
+        <h2 id="alphv-cta-h" class="alphv__h">AI pays off after the pilot. Not in it.</h2>
+        <p>
+          This forecast is a production system: live weather, a calibrated simulation and a
+          published error rate. ALPHV builds systems like it. ALPHV is an AI-native systems
+          integrator in Kuala Lumpur, Malaysia, building AI, agents and automation into the core
+          systems businesses run. From business case to production, with one team.
+        </p>
+        <a class="alphv__btn" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=cta-odds" rel="noopener">Visit alphv.com</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================================================================= map -->
+  <section id="map-section" class="section" aria-labelledby="map-h">
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="map-h" class="section__title">Where it burns</h2>
+        <p class="section__lede">
+          Provinces shaded by peat area — peat is what makes Kalimantan smoke rather than simply
+          burn. Move through the seasons to replay each year's fire clusters, lit in the order
+          they started, sized by area and coloured by what was burning.
+        </p>
+      </header>
+
+      <div class="map-wrap" data-panel="map">
+        <div data-state="loading" class="map-skeleton">
+          <div class="skeleton skeleton--block skeleton--map"></div>
+          <p class="loading-note"><span class="busy" aria-hidden="true"></span>Loading provinces and fire clusters…</p>
+        </div>
+        <div data-state="error" class="panel-error" hidden>
+          <h3 class="panel-error__title">The map data did not load.</h3>
+          <p class="panel-error__msg"></p>
+          <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="map">Try again</button></p>
+        </div>
+
+        <div data-state="ok" hidden class="map-grid">
+          <div class="map-main">
+            <div class="map-frame">
+              <div id="map" role="region" aria-label="Map of Kalimantan provinces and the selected year's fire clusters"></div>
+              <p class="map-frame__note" id="map-basemap-note" hidden></p>
+            </div>
+
+            <div class="year-control" aria-labelledby="year-label">
+              <div class="year-control__head">
+                <label id="year-label" for="year-slider">Fire season</label>
+                <output class="year-control__year" id="year-out" for="year-slider">—</output>
+                <span class="year-control__busy" id="year-loading" hidden><span class="busy" aria-hidden="true"></span>loading</span>
+              </div>
+              <div class="year-control__row">
+                <button type="button" class="btn btn--icon" id="year-prev" aria-label="Previous season">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                </button>
+                <div class="year-rail">
+                  <div class="year-rail__bars" id="year-bars" aria-hidden="true"></div>
+                  <input type="range" id="year-slider" min="0" max="0" step="1" value="0"
+                         aria-describedby="year-summary">
+                  <div class="year-rail__ends" aria-hidden="true"><span id="year-first">—</span><span id="year-last">—</span></div>
+                </div>
+                <button type="button" class="btn btn--icon" id="year-next" aria-label="Next season">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                </button>
+              </div>
+              <div class="year-control__actions">
+                <button type="button" class="btn btn--ghost btn--play" id="year-play" aria-pressed="false">
+                  <svg class="btn__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
+                  <span class="btn__label">Replay every season</span>
+                </button>
+                <span class="year-control__key">Bars above the slider: burned area each year, coloured by ENSO phase.</span>
               </div>
             </div>
+
+            <div class="map-legend" id="map-legend"></div>
           </div>
+
+          <aside class="map-side">
+            <dl class="year-summary" id="year-summary" aria-live="polite"></dl>
+
+            <div class="plume" data-panel="dispersion">
+              <label class="switch" for="plume-toggle">
+                <input type="checkbox" id="plume-toggle" role="switch">
+                <span class="switch__track" aria-hidden="true"></span>
+                <span class="switch__label">Show the smoke plume</span>
+              </label>
+              <p class="plume__sub">
+                A Gaussian plume driven from this year's fires with one wind vector. Illustrative,
+                not a forecast.
+              </p>
+              <div class="plume__controls" id="plume-controls" hidden>
+                <div class="control">
+                  <div class="control__head">
+                    <label for="wind-dir">Wind from</label>
+                    <output class="control__value" id="wind-dir-out" for="wind-dir">—</output>
+                  </div>
+                  <input type="range" id="wind-dir" min="0" max="350" step="10" value="140">
+                </div>
+                <div class="control">
+                  <div class="control__head">
+                    <label for="wind-speed">Wind speed</label>
+                    <output class="control__value" id="wind-speed-out" for="wind-speed">—</output>
+                  </div>
+                  <input type="range" id="wind-speed" min="0.5" max="12" step="0.5" value="3.5">
+                </div>
+                <div data-state="loading" hidden class="loading-note"><span class="busy" aria-hidden="true"></span>Modelling dispersion…</div>
+                <div data-state="error" hidden class="panel-error panel-error--inline">
+                  <p class="panel-error__msg"></p>
+                </div>
+                <div data-state="ok" hidden>
+                  <table class="data-table receptor-table" id="receptor-table">
+                    <caption class="sr-only">Modelled PM2.5 at downwind cities</caption>
+                    <thead><tr><th scope="col">City</th><th scope="col" class="num">PM2.5</th><th scope="col">Category</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <p class="map-cta">
+              This map is flat and shows one year at a time.
+              <a href="/simulator">Open the 3D haze simulator</a> to watch a single day of smoke
+              rise and settle over the island.
+            </p>
+          </aside>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========================================================= 3. HISTORY -->
+  <!-- ============================================================= history -->
   <section id="history" class="section" aria-labelledby="hist-h">
-    <header class="section__head">
-      <h2 id="hist-h" class="section__title"><span class="section__num">03</span> Every season since 1997</h2>
-      <p class="section__lede">
-        The pattern is not subtle: El Niño years burn wide and burn long, La Niña years barely
-        register. That is the whole forecast, and it has been the whole forecast for decades.
-      </p>
-    </header>
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="hist-h" class="section__title">Every season on record</h2>
+        <p class="section__lede">
+          The pattern is not subtle: El Niño years burn wide and burn long, La Niña years barely
+          register. That is the whole forecast, and it has been the whole forecast for decades.
+        </p>
+      </header>
 
-    <div class="chart-card" data-panel="history">
-      <div data-state="loading">
-        <div class="skeleton skeleton--block"></div>
-        <p class="loading-note">Loading the season record…</p>
-      </div>
-      <div data-state="error" class="panel-error" hidden>
-        <h3 class="panel-error__title">The history endpoint did not answer.</h3>
-        <p class="panel-error__msg"></p>
-        <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="history">Try again</button></p>
-      </div>
-      <div data-state="ok" hidden>
-        <div class="chart-block">
-          <h3 class="chart-title">Burned area in Kalimantan, with the ONI index</h3>
-          <p class="chart-sub">Bars: burned area (Mha), coloured by ENSO phase. Line: peak Oceanic Niño Index, right axis. Click a bar to load that year on the map.</p>
-          <div class="chart-holder chart-holder--tall"><canvas id="chart-burned"></canvas></div>
-          <div class="legend" id="enso-legend"></div>
+      <div class="history" data-panel="history">
+        <div data-state="loading">
+          <div class="skeleton skeleton--block" style="height:320px"></div>
+          <p class="loading-note"><span class="busy" aria-hidden="true"></span>Loading the season record…</p>
         </div>
-
-        <div class="chart-block">
-          <h3 class="chart-title">When each season ran</h3>
-          <p class="chart-sub">Every season's burn window laid across the calendar. Late June to early November, year after year.</p>
-          <div class="chart-holder chart-holder--gantt"><canvas id="chart-gantt"></canvas></div>
+        <div data-state="error" class="panel-error" hidden>
+          <h3 class="panel-error__title">The history endpoint did not answer.</h3>
+          <p class="panel-error__msg"></p>
+          <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="history">Try again</button></p>
         </div>
+        <div data-state="ok" hidden>
+          <dl class="stat-row" id="history-stats"></dl>
 
-        <dl class="stat-row" id="history-stats"></dl>
+          <figure class="figure">
+            <figcaption class="figure__cap">
+              <h3 class="figure__title">Burned area in Kalimantan, with the ONI index</h3>
+              <p class="figure__sub" id="burned-sub">Bars: burned area (Mha), coloured by ENSO phase; the wide pale bar behind is all of Indonesia. Line: peak Oceanic Niño Index, right axis. Select a bar to load that year on the map.</p>
+            </figcaption>
+            <div class="legend" id="enso-legend"></div>
+            <div class="chart-holder chart-holder--tall"><canvas id="chart-burned" role="img" aria-label="Bar chart of burned area per year coloured by ENSO phase, with the peak ONI index as a line"></canvas></div>
+          </figure>
+
+          <figure class="figure">
+            <figcaption class="figure__cap">
+              <h3 class="figure__title">When each season ran</h3>
+              <p class="figure__sub">Every season's burn window laid across the calendar, most recent at the top. Late June to early November, year after year.</p>
+            </figcaption>
+            <div class="chart-holder chart-holder--gantt" id="gantt-holder"><canvas id="chart-gantt" role="img" aria-label="Timeline of each fire season's start and end dates"></canvas></div>
+          </figure>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ====================================================== 4. PLAYGROUND -->
+  <!-- ========================================================== playground -->
   <section id="playground" class="section" aria-labelledby="play-h">
-    <header class="section__head">
-      <h2 id="play-h" class="section__title"><span class="section__num">04</span> Change the inputs</h2>
-      <p class="section__lede">
-        The model is not an oracle; it is a set of assumptions with a sigmoid attached. Move the
-        assumptions and watch the two answers move. Nothing here is a policy recommendation.
-      </p>
-    </header>
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="play-h" class="section__title">Change the inputs</h2>
+        <p class="section__lede">
+          The model is not an oracle; it is a set of assumptions with a sigmoid attached. Move the
+          assumptions and watch the two answers move. Nothing here is a policy recommendation.
+        </p>
+      </header>
 
-    <div class="play-grid">
-      <form class="play-controls" id="sim-form" novalidate>
-        <div class="control">
-          <div class="control__head">
-            <label for="sim-oni">ONI (El Niño index)</label>
-            <output class="control__value" id="sim-oni-out">—</output>
+      <div class="play-grid">
+        <form class="play-controls" id="sim-form" novalidate>
+          <fieldset class="fieldset">
+            <legend>This season</legend>
+            <div class="control">
+              <div class="control__head">
+                <label for="sim-oni">ONI (El Niño index)</label>
+                <output class="control__value" id="sim-oni-out" for="sim-oni">—</output>
+              </div>
+              <input type="range" id="sim-oni" min="-2.5" max="2.8" step="0.1" value="1.1" aria-describedby="sim-oni-sub">
+              <p class="control__sub" id="sim-oni-sub">A warm Pacific (positive) delays the monsoon. 2015 peaked at +2.6.</p>
+            </div>
+            <div class="control">
+              <label class="control__head" for="sim-scenario">Scenario</label>
+              <select id="sim-scenario" class="select">
+                <option value="baseline">Baseline</option>
+                <option value="no_enforcement">No enforcement</option>
+                <option value="strict_moratorium">Strict moratorium</option>
+                <option value="monsoon_early">Monsoon arrives early</option>
+                <option value="monsoon_late">Monsoon arrives late</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend>The long run</legend>
+            <div class="control">
+              <div class="control__head">
+                <label for="sim-burnred">Burning reduced by</label>
+                <output class="control__value" id="sim-burnred-out" for="sim-burnred">—</output>
+              </div>
+              <input type="range" id="sim-burnred" min="0" max="100" step="5" value="0" aria-describedby="sim-burnred-sub">
+              <p class="control__sub" id="sim-burnred-sub">Enforcement, canal blocking, alternatives to fire-clearing.</p>
+            </div>
+            <div class="control">
+              <div class="control__head">
+                <label for="sim-restore">Restoration rate</label>
+                <output class="control__value" id="sim-restore-out" for="sim-restore">—</output>
+              </div>
+              <input type="range" id="sim-restore" min="0" max="0.5" step="0.01" value="0.05" aria-describedby="sim-restore-sub">
+              <p class="control__sub" id="sim-restore-sub">Peat rewetted per year. Rewetting lowers burn risk; it does not rebuild the carbon.</p>
+            </div>
+            <div class="control">
+              <div class="control__head">
+                <label for="sim-defor">Deforestation rate</label>
+                <output class="control__value" id="sim-defor-out" for="sim-defor">—</output>
+              </div>
+              <input type="range" id="sim-defor" min="0" max="0.45" step="0.01" value="0.13" aria-describedby="sim-defor-sub">
+              <p class="control__sub" id="sim-defor-sub">Forest converted per year.</p>
+            </div>
+            <div class="control">
+              <div class="control__head">
+                <label for="sim-horizon">Projection horizon</label>
+                <output class="control__value" id="sim-horizon-out" for="sim-horizon">—</output>
+              </div>
+              <input type="range" id="sim-horizon" min="50" max="300" step="25" value="300" aria-describedby="sim-horizon-sub">
+              <p class="control__sub" id="sim-horizon-sub">How far the stock-and-flow model is run. Shorten it below the
+                answer and the model stops being able to give one — a property of the horizon, not of the fires.</p>
+            </div>
+          </fieldset>
+
+          <div class="play-actions">
+            <button type="submit" class="btn btn--primary" id="sim-run">Run the model</button>
+            <button type="button" class="btn btn--ghost" id="sim-reset">Reset to baseline</button>
           </div>
-          <input type="range" id="sim-oni" min="-2.5" max="2.8" step="0.1" value="1.1">
-          <p class="control__sub">Warm Pacific (positive) delays the monsoon. 2015 peaked at +2.6.</p>
-        </div>
+        </form>
 
-        <div class="control">
-          <div class="control__head">
-            <label for="sim-burnred">Burning reduced by</label>
-            <output class="control__value" id="sim-burnred-out">—</output>
-          </div>
-          <input type="range" id="sim-burnred" min="0" max="100" step="5" value="0">
-          <p class="control__sub">Enforcement, canal blocking, alternatives to fire-clearing.</p>
-        </div>
+        <div class="play-results" aria-live="polite">
+          <article class="result" data-panel="sim-season">
+            <h3 class="result__title">This season</h3>
+            <div data-state="loading">
+              <div class="skeleton skeleton--line" style="width:55%"></div>
+              <div class="skeleton skeleton--line" style="width:35%"></div>
+            </div>
+            <div data-state="error" class="panel-error panel-error--inline" hidden>
+              <p class="panel-error__msg"></p>
+            </div>
+            <div data-state="ok" hidden>
+              <p class="result__big"><span id="sim-days">—</span><span class="result__unit">days</span></p>
+              <dl class="result__meta">
+                <div><dt>80% interval</dt><dd id="sim-interval">—</dd></div>
+                <div><dt>Median end</dt><dd id="sim-end">—</dd></div>
+                <div><dt>Confidence</dt><dd id="sim-confidence">—</dd></div>
+              </dl>
+              <p class="result__delta" id="sim-delta"></p>
+            </div>
+          </article>
 
-        <div class="control">
-          <div class="control__head">
-            <label for="sim-restore">Restoration rate</label>
-            <output class="control__value" id="sim-restore-out">—</output>
-          </div>
-          <input type="range" id="sim-restore" min="0" max="0.5" step="0.01" value="0.05">
-          <p class="control__sub">Mha of peat rewetted per year. Rewetting lowers burn risk; it does not rebuild the carbon.</p>
+          <article class="result" data-panel="sim-exhaustion">
+            <h3 class="result__title">Fuel exhaustion</h3>
+            <div data-state="loading">
+              <div class="skeleton skeleton--line" style="width:55%"></div>
+              <div class="skeleton skeleton--block" style="height:150px"></div>
+            </div>
+            <div data-state="error" class="panel-error panel-error--inline" hidden>
+              <p class="panel-error__msg"></p>
+            </div>
+            <div data-state="ok" hidden>
+              <p class="result__big"><span id="sim-year">—</span></p>
+              <dl class="result__meta">
+                <div><dt>80% interval</dt><dd id="sim-year-interval">—</dd></div>
+                <div class="result__meta-wide"><dt>Runs that never get there</dt><dd id="sim-never">—</dd></div>
+              </dl>
+              <div class="chart-holder chart-holder--traj"><canvas id="chart-traj" role="img" aria-label="Fan chart of remaining burnable stock over the projection horizon"></canvas></div>
+              <table class="data-table pool-table" id="pool-table">
+                <caption class="sr-only">Remaining burnable stock by fuel pool</caption>
+                <thead><tr><th scope="col">Pool</th><th scope="col" class="num">Gone by (p50)</th><th scope="col" class="num">Left in 2050</th></tr></thead>
+                <tbody></tbody>
+              </table>
+              <p class="result__foot" id="sim-cum"></p>
+            </div>
+          </article>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="control">
-          <div class="control__head">
-            <label for="sim-defor">Deforestation rate</label>
-            <output class="control__value" id="sim-defor-out">—</output>
-          </div>
-          <input type="range" id="sim-defor" min="0" max="0.45" step="0.01" value="0.13">
-          <p class="control__sub">Mha of forest converted per year.</p>
+  <!-- ============================================================= drivers -->
+  <section id="drivers" class="section" aria-labelledby="drv-h">
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="drv-h" class="section__title">What is holding the season open</h2>
+        <p class="section__lede">
+          Each driver's portion of the termination hazard's log-odds magnitude. Together they make one —
+          they describe how the model is weighting things, not how the atmosphere is.
+        </p>
+      </header>
+
+      <div class="drivers-panel" data-panel="drivers">
+        <div data-state="loading">
+          <div class="skeleton skeleton--line" style="width:80%"></div>
+          <div class="skeleton skeleton--line" style="width:66%"></div>
+          <div class="skeleton skeleton--line" style="width:50%"></div>
         </div>
-
-        <div class="control">
-          <div class="control__head">
-            <label for="sim-horizon">Projection horizon</label>
-            <output class="control__value" id="sim-horizon-out">—</output>
-          </div>
-          <input type="range" id="sim-horizon" min="50" max="300" step="25" value="300">
-          <p class="control__sub">How far the stock-and-flow model is run. Shorten it below the
-            answer and the model stops being able to give one — that is a property of the horizon,
-            not of the fires.</p>
+        <div data-state="error" class="panel-error" hidden>
+          <h3 class="panel-error__title">No drivers to show.</h3>
+          <p class="panel-error__msg"></p>
         </div>
-
-        <div class="control">
-          <div class="control__head">
-            <label for="sim-scenario">Scenario</label>
-          </div>
-          <select id="sim-scenario" class="select">
-            <option value="baseline">Baseline</option>
-            <option value="no_enforcement">No enforcement</option>
-            <option value="strict_moratorium">Strict moratorium</option>
-            <option value="monsoon_early">Monsoon arrives early</option>
-            <option value="monsoon_late">Monsoon arrives late</option>
-          </select>
+        <div data-state="ok" hidden>
+          <p class="drivers-scope" id="drivers-scope"></p>
+          <ul class="drivers" id="drivers-list"></ul>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="play-actions">
-          <button type="submit" class="btn btn--primary" id="sim-run">Run the model</button>
-          <button type="button" class="btn btn--ghost" id="sim-reset">Reset to baseline</button>
-        </div>
-      </form>
+  <!-- ============================================================= methods -->
+  <section id="methods" class="section section--methods" aria-labelledby="meth-h">
+    <div class="wrap">
+      <header class="section__head">
+        <h2 id="meth-h" class="section__title">Methods, caveats &amp; provenance</h2>
+        <p class="section__lede">
+          This section is not collapsed, and it is not an appendix. Everything above is a model
+          output. Here is what the model does, what it cannot do, and where its numbers come from.
+        </p>
+      </header>
 
-      <div class="play-results">
-        <div class="result-card" data-panel="sim-season">
-          <h3 class="result-card__title">This season</h3>
+      <div class="methods-grid">
+        <article class="methods-block">
+          <h3 class="methods-h">How the season number is produced</h3>
+          <p>
+            A discrete-time daily survival model. For each day after today the model computes a
+            termination hazard from recent rainfall, the Keetch–Byram Drought Index, the ONI index
+            and the progress of the northeast monsoon, then Monte-Carlos thousands of trajectories.
+            The headline is the median of the simulated end dates; the interval is the 10th to 90th
+            percentile.
+          </p>
+          <h3 class="methods-h">How the exhaustion year is produced</h3>
+          <p>
+            A stock-and-flow model over five fuel pools, with ENSO evolving as a three-state Markov
+            chain. "Exhausted" means burnable stock has fallen below 5% of its 2025 value. It is
+            arithmetic on assumptions, carried out to a horizon far beyond anything anyone can
+            forecast. It is here to show a direction, not a date.
+          </p>
+          <h3 class="methods-h">How the picture at the top is drawn</h3>
+          <p>
+            The haze over the answer is not decoration. Its density is set from the season model's
+            Keetch–Byram Drought Index and its probability that the season is still burning two
+            weeks from now. A wet season leaves the sky clear; a bad one hides the far treeline
+            and turns the sun into an orange disc you can look at directly, which is what the real
+            thing does. Where the browser can run it, a 3D model of the island's smoke fades in
+            over that sky once the answer has loaded; it never replaces the answer.
+          </p>
+          <h3 class="methods-h">How the odds are counted</h3>
+          <p>
+            Each percentage in the odds section is the share of the season model's simulated
+            trajectories in which the event happened. There is no market behind it, nobody stakes
+            anything, and the numbers move only when the model's inputs do.
+          </p>
+          <h3 class="methods-h">Who built it</h3>
+          <p>
+            This site is built and run by
+            <a href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=methods" rel="noopener">ALPHV Technologies</a>,
+            an AI-native systems integrator in Kuala Lumpur. The model, its caveats and its
+            error rate are published here in full either way.
+          </p>
+        </article>
+
+        <article class="methods-block">
+          <h3 class="methods-h">What this is not</h3>
+          <p>
+            It is not an air-quality service. If you need to know whether it is safe to go outside
+            today, use your national agency's measured readings, not a model on a website with a
+            joke for a domain name.
+          </p>
+          <p>
+            The haze is not a natural disaster with a season attached. It is drained peat, cleared
+            land and a market for both. The worst seasons on record are associated with tens of
+            thousands of excess deaths across Indonesia, Malaysia and Singapore, and with billions
+            of dollars of economic loss. Where published studies disagree on those figures, the
+            page shows the disagreement rather than the most dramatic number. They are not a
+            punchline.
+          </p>
+        </article>
+
+        <article class="methods-block methods-block--wide" data-panel="caveats">
+          <h3 class="methods-h">Caveats, as returned by each endpoint</h3>
           <div data-state="loading">
-            <div class="skeleton skeleton--line" style="width:55%"></div>
-            <div class="skeleton skeleton--line" style="width:35%"></div>
+            <div class="skeleton skeleton--line" style="width:90%"></div>
+            <div class="skeleton skeleton--line" style="width:75%"></div>
           </div>
           <div data-state="error" class="panel-error panel-error--inline" hidden>
             <p class="panel-error__msg"></p>
           </div>
           <div data-state="ok" hidden>
-            <p class="result-card__big"><span id="sim-days">—</span><span class="result-card__unit">days</span></p>
-            <p class="result-card__meta">
-              80% interval <b id="sim-interval">—</b><br>
-              median end <b id="sim-end">—</b><span class="dot-sep" aria-hidden="true">•</span>confidence <b id="sim-confidence">—</b>
-            </p>
-            <p class="result-card__delta" id="sim-delta"></p>
+            <div id="caveats-groups" class="caveat-columns"></div>
           </div>
-        </div>
+        </article>
 
-        <div class="result-card" data-panel="sim-exhaustion">
-          <h3 class="result-card__title">Fuel exhaustion</h3>
+        <article class="methods-block methods-block--wide" data-panel="provenance">
+          <h3 class="methods-h">Data provenance</h3>
           <div data-state="loading">
-            <div class="skeleton skeleton--line" style="width:55%"></div>
-            <div class="skeleton skeleton--block" style="height:150px"></div>
+            <div class="skeleton skeleton--line" style="width:85%"></div>
+            <div class="skeleton skeleton--line" style="width:70%"></div>
           </div>
           <div data-state="error" class="panel-error panel-error--inline" hidden>
             <p class="panel-error__msg"></p>
+            <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="provenance">Try again</button></p>
           </div>
           <div data-state="ok" hidden>
-            <p class="result-card__big"><span id="sim-year">—</span></p>
-            <p class="result-card__meta">
-              80% interval <b id="sim-year-interval">—</b>
-              <span class="dot-sep" aria-hidden="true">•</span>
-              <span id="sim-never">—</span>
-            </p>
-            <div class="chart-holder chart-holder--traj"><canvas id="chart-traj"></canvas></div>
-            <table class="pool-table" id="pool-table">
-              <caption class="sr-only">Remaining burnable stock by fuel pool</caption>
-              <thead><tr><th scope="col">Pool</th><th scope="col">Gone by (p50)</th><th scope="col">Left in 2050</th></tr></thead>
+            <p class="methods-note" id="prov-note"></p>
+            <div id="prov-synth"></div>
+            <div id="prov-counts" class="prov-counts"></div>
+            <table class="data-table prov-table" id="prov-table">
+              <thead><tr><th scope="col">Dataset</th><th scope="col">Source as reported</th><th scope="col">Status</th></tr></thead>
               <tbody></tbody>
             </table>
-            <p class="result-card__meta" id="sim-cum"></p>
           </div>
-        </div>
+        </article>
       </div>
-    </div>
-  </section>
-
-  <!-- ========================================================= 5. DRIVERS -->
-  <section id="drivers" class="section" aria-labelledby="drv-h">
-    <header class="section__head">
-      <h2 id="drv-h" class="section__title"><span class="section__num">05</span> What is holding the season open</h2>
-      <p class="section__lede">
-        Each driver's share of the termination hazard's log-odds magnitude. Shares sum to 1 —
-        they describe how the model is weighting things, not how the atmosphere is.
-      </p>
-    </header>
-
-    <div class="drivers-card" data-panel="drivers">
-      <div data-state="loading">
-        <div class="skeleton skeleton--line" style="width:80%"></div>
-        <div class="skeleton skeleton--line" style="width:66%"></div>
-        <div class="skeleton skeleton--line" style="width:50%"></div>
-      </div>
-      <div data-state="error" class="panel-error" hidden>
-        <h3 class="panel-error__title">No drivers to show.</h3>
-        <p class="panel-error__msg"></p>
-      </div>
-      <div data-state="ok" hidden>
-        <p class="drivers-scope" id="drivers-scope"></p>
-        <ul class="drivers" id="drivers-list"></ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================= 6. METHODS -->
-  <section id="methods" class="section section--methods" aria-labelledby="meth-h">
-    <header class="section__head">
-      <h2 id="meth-h" class="section__title"><span class="section__num">06</span> Methods, caveats &amp; provenance</h2>
-      <p class="section__lede">
-        This section is not collapsed, and it is not an appendix. Everything above is a model
-        output. Here is what the model does, what it cannot do, and where its numbers come from.
-      </p>
-    </header>
-
-    <div class="methods-grid">
-      <article class="methods-block">
-        <h3 class="methods-h">How the season number is produced</h3>
-        <p>
-          A discrete-time daily survival model. For each day after today the model computes a
-          termination hazard from recent rainfall, the Keetch–Byram Drought Index, the ONI index
-          and the progress of the northeast monsoon, then Monte-Carlos thousands of trajectories.
-          The headline is the median of the simulated end dates; the interval is the 10th to 90th
-          percentile.
-        </p>
-        <h3 class="methods-h">How the exhaustion year is produced</h3>
-        <p>
-          A stock-and-flow model over five fuel pools, with ENSO evolving as a three-state Markov
-          chain. "Exhausted" means burnable stock has fallen below 5% of its 2025 value. It is
-          arithmetic on assumptions, carried out to a horizon far beyond anything anyone can
-          forecast. It is here to show a direction, not a date.
-        </p>
-      </article>
-
-
-      <article class="methods-block">
-        <h3 class="methods-h">What this is not</h3>
-        <p>
-          It is not an air-quality service. If you need to know whether it is safe to go outside
-          today, use your national agency's measured readings, not a model on a website with a
-          joke for a domain name.
-        </p>
-        <p>
-          The haze is not a natural disaster with a season attached. It is drained peat, cleared
-          land and a market for both. The 2015 event alone is associated with on the order of
-          100,000 excess deaths across Indonesia, Malaysia and Singapore, and with tens of
-          billions of dollars of economic loss — figures carried in the history section above,
-          straight, because they are not a punchline.
-        </p>
-      </article>
-
-      <article class="methods-block methods-block--wide" data-panel="caveats">
-        <h3 class="methods-h">Caveats, as returned by each endpoint</h3>
-        <div data-state="loading">
-          <div class="skeleton skeleton--line" style="width:90%"></div>
-          <div class="skeleton skeleton--line" style="width:75%"></div>
-        </div>
-        <div data-state="error" class="panel-error panel-error--inline" hidden>
-          <p class="panel-error__msg"></p>
-        </div>
-        <div data-state="ok" hidden>
-          <div id="caveats-groups" class="caveat-columns"></div>
-        </div>
-      </article>
-
-      <article class="methods-block methods-block--wide" data-panel="provenance">
-        <h3 class="methods-h">Data provenance</h3>
-        <p class="methods-note" id="prov-note"></p>
-        <div data-state="loading">
-          <div class="skeleton skeleton--line" style="width:85%"></div>
-          <div class="skeleton skeleton--line" style="width:70%"></div>
-        </div>
-        <div data-state="error" class="panel-error panel-error--inline" hidden>
-          <p class="panel-error__msg"></p>
-          <p class="panel-error__hint"><button type="button" class="btn btn--ghost" data-retry="provenance">Try again</button></p>
-        </div>
-        <div data-state="ok" hidden>
-          <div id="prov-synth"></div>
-          <div id="prov-counts" class="prov-counts"></div>
-          <table class="prov-table" id="prov-table">
-            <thead><tr><th scope="col">Dataset</th><th scope="col">Source as reported</th><th scope="col">Status</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </article>
-
     </div>
   </section>
 </main>
 
 <footer class="footer">
-  <p>
-    Built as a modelling exercise. Every number on this page is fetched from this site's own API
-    and is only as good as the data behind it.
-  </p>
-  <p class="footer__mock" id="mock-banner" hidden>
-    <strong>Mock mode is on.</strong> All figures on this page come from a development fixture,
-    not from the model. Remove <code>?mock=1</code> from the URL to use the real API.
-  </p>
+  <div class="wrap footer__site">
+    <p>
+      Built as a modelling exercise. Every number on this page is fetched from this site's own API
+      and is only as good as the data behind it.
+    </p>
+    <p class="footer__mock" id="mock-banner" hidden>
+      <strong>Mock mode is on.</strong> All figures on this page come from a development fixture,
+      not from the model. Remove <code>?mock=1</code> from the address to use the real API.
+    </p>
+  </div>
+  <div class="alphv alphv-band">
+    <div class="wrap alphv-band__inner">
+      <a class="alphv-band__logo" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=footer" rel="noopener">
+        <img src="/static/brand/alphv-logo.png" width="96" height="24" alt="ALPHV — alphv.com" loading="lazy">
+      </a>
+      <p class="alphv-band__text">Built by ALPHV Technologies. AI-native systems integrator in Kuala Lumpur, Malaysia. From business case to production, with one team.</p>
+      <a class="alphv-band__link" href="https://alphv.com/?utm_source=whenwillhazeend&amp;utm_medium=referral&amp;utm_campaign=haze2026&amp;utm_content=footer" rel="noopener">alphv.com</a>
+    </div>
+  </div>
 </footer>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="module" src="/static/js/app.js"></script>
 </body>

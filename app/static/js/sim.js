@@ -9,7 +9,7 @@ import {
   api, REDUCED_MOTION, describeError,
   $, el, panel, setPanelState,
   fmtDate, fmtInt, fmtNum, fmtSig, animateNumber, debounce, titleCase,
-  horizonOf, exhaustionYearText, neverText,
+  horizonOf, exhaustionYearText, neverText, paintAllRanges,
 } from './util.js';
 import { renderTrajectory } from './charts.js';
 
@@ -91,6 +91,7 @@ function applyDefaults() {
   $(FIELDS.horizon).value = String(defaults.horizon);
   const sel = $(FIELDS.scenario);
   if ([...sel.options].some((o) => o.value === defaults.scenario)) sel.value = defaults.scenario;
+  paintAllRanges($('#sim-form'));
 }
 
 function readInputs() {
@@ -226,7 +227,7 @@ function renderExhaustion(res) {
   const answer = exhaustionYearText(res);
 
   const node = $('#sim-year');
-  node.classList.toggle('result-card__big--text', !answer.reached);
+  node.classList.toggle('result__big--text', !answer.reached);
   if (answer.reached) {
     node.textContent = '';
     animateNumber(node, answer.value, { format: (v) => String(Math.round(v)) });
@@ -246,12 +247,12 @@ function renderExhaustion(res) {
     tbody.append(el('tr', {}, [
       el('td', { text: pool.label || titleCase(pool.id || '—') }),
       el('td', {
-        class: pool.exhaustion_year_p50 == null ? 'pool-table__unreached' : null,
+        class: pool.exhaustion_year_p50 == null ? 'num is-unreached' : 'num',
         text: pool.exhaustion_year_p50 != null
           ? String(pool.exhaustion_year_p50)
           : (lastYear ? `not by ${lastYear}` : `not within ${fmtInt(years)} yrs`),
       }),
-      el('td', { text: pool.remaining_mha_2050 != null ? `${fmtNum(pool.remaining_mha_2050, 2)} Mha` : '—' }),
+      el('td', { class: 'num', text: pool.remaining_mha_2050 != null ? `${fmtNum(pool.remaining_mha_2050, 2)} Mha` : '—' }),
     ]));
   }
 

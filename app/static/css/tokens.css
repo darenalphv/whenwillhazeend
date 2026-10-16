@@ -81,6 +81,61 @@
   --t-slow: 520ms;
 
   --tap: 44px;   /* minimum touch target, from the audit */
+
+  /* ---- additions by MAIN-WEB (2026-10-16). Additive only. ------------- */
+
+  /* type scale. Nothing functional goes below --fs-min (12px). */
+  --fs-min:   0.75rem;    /* 12px — axis ticks, legend keys */
+  --fs-small: 0.8125rem;  /* 13px — labels, captions */
+  --fs-body:  1rem;
+  --fs-lede:  1.1875rem;
+
+  /* tracking: only for the rare caps label at >= 13px; never tiny + wide */
+  --track-caps: 0.04em;
+
+  /* the hero plate — haze as a warm grey-ochre veil over a pale sky.
+     No text is ever drawn on these (the answer sits on a paper panel), but
+     every veil colour keeps relative luminance >= 0.42 so it could carry
+     ink-2 at 5:1 if a later layout needs it to. */
+  --sky-clear:     #EEF0EA;
+  --sky-clear-low: #F6F0E3;
+  --sky-haze:      #DDCFB8;
+  --sky-haze-low:  #CDB48E;
+  --veil:          #E6DFD2;
+  --veil-dense:    #C4AE88;
+  --sun-clear:     #FFF7E6;
+  --sun-haze:      #CF5F2B;
+  --land-near:     #3B392E;
+  --land-mid:      #6E6B58;
+  --land-far:      #9C9783;
+
+  /* dispersion plume bands (µg/m³), drawn translucent over the light map */
+  --plume-35:  #D6AE5C;
+  --plume-55:  #C3833A;
+  --plume-150: #A04E26;
+  --plume-250: #6B2617;
+
+  /* peat choropleth ramp ends */
+  --peat-lo: #EFE7D8;
+  --peat-hi: #8A5A2E;
+
+  /* map surface tints applied to the OpenFreeMap positron style */
+  --map-land:  #F2EDE3;
+  --map-water: #D5DEDE;
+  --map-label: #4A433C;
+
+  /* reduced-motion: state changes are kept, but this short */
+  --t-reduced: 110ms;
+
+  /* legacy aliases. Older stylesheets (sim3d.css) reference the dark-mode
+     surface names; they now resolve to paper so nothing renders black. */
+  --bg:      var(--paper);
+  --bg-1:    var(--paper-2);
+  --bg-2:    var(--paper-2);
+  --bg-3:    var(--paper-3);
+  --bg-sunk: var(--paper-3);
+  --amber:   #9A5B0B;
 }
+
 
 ::selection { background: var(--ember-tint); color: var(--ink); }
