@@ -41,6 +41,8 @@ export class Fires {
         top: Math.max(150, s.injection_m?.[1] ?? 600),
         sumatra: s.region === 'sumatra',
         on: Array.isArray(s.on) ? s.on : null,   // [start h, end h] in "this week" mode
+        daily: Array.isArray(s.daily) ? s.daily : null,   // detections per local day
+        day0: s.day0 ?? null,                    // hour (scene time) of daily[0]'s midnight
         ground: 0,
       };
     });
@@ -64,12 +66,24 @@ export class Fires {
   update(rt, vex, windAt, still, night = 0.5, tModel = 0) {
     const { flame, glow, col, emb, M, E } = this;
     const w = [0, 0];
+    let active = 0;
     for (let i = 0; i < this.info.length; i += 1) {
       const f = this.info[i];
       // lit only on the days FIRMS detected it, with a 3 h fade either side
-      const act = f.on
-        ? Math.max(0, Math.min(1, (tModel - f.on[0]) / 3, (f.on[1] - tModel) / 3))
-        : 1;
+      let act = 1;
+      if (f.daily) {
+        // lit on the local days FIRMS detected it, cross-fading over the last
+        // ~3.6 h of each day into the next
+        const x = (tModel - f.day0) / 24;
+        const d = Math.floor(x);
+        const on = (k) => (k >= 0 && k < f.daily.length && f.daily[k] > 0 ? 1 : 0);
+        const a0 = on(d);
+        const k = Math.min(1, Math.max(0, (x - d - 0.85) / 0.15));
+        act = a0 + (on(d + 1) - a0) * k * k * (3 - 2 * k);
+      } else if (f.on) {
+        act = Math.max(0, Math.min(1, (tModel - f.on[0]) / 3, (f.on[1] - tModel) / 3));
+      }
+      if (act > 0.5) active += 1;
       const g = (f.ground + 40) * vex;
       const flick = still ? 1 : 1 + 0.28 * (0.6 * Math.sin(rt * 5.3 + f.ph) + 0.4 * Math.sin(rt * 12.6 + f.ph * 1.7));
       const breathe = still ? 1 : 1 + 0.12 * Math.sin(rt * 1.1 + f.ph);
@@ -134,5 +148,6 @@ export class Fires {
         emb.col[j * 4 + 3] = 255 * (1 - a) ** 0.8 * (still ? 0.8 : 1) * act;
       }
     }
+    this.active = active;
   }
 }

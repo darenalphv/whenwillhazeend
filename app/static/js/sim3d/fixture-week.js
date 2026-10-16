@@ -14,7 +14,7 @@ function rng(seed) {
   return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 }
 
-export function makeFixture(endIso = new Date().toISOString().slice(0, 10)) {
+export function makeFixture(endIso = new Date().toISOString().slice(0, 10), { noField = false } = {}) {
   const end = Date.parse(`${endIso}T00:00:00Z`);
   const start = end - 7 * 24 * H;
   const r = rng(20261016);
@@ -67,6 +67,7 @@ export function makeFixture(endIso = new Date().toISOString().slice(0, 10)) {
         properties: {
           count: 5 + Math.floor(r() * 120),
           frp_mw: Math.round((50 + r() * 900) * frpScale),
+          daily: Array.from({ length: 8 }, (_, d) => (d >= d0 && d <= d1 ? 1 + Math.floor(r() * 20) : 0)),
           first_date: new Date(start + d0 * 24 * H).toISOString().slice(0, 10),
           last_date: new Date(start + d1 * 24 * H).toISOString().slice(0, 10),
           region,
@@ -94,7 +95,10 @@ export function makeFixture(endIso = new Date().toISOString().slice(0, 10)) {
     },
     pm25: null, modelled: null,
   });
-  const my = (id, name, lat, lon, bias) => ({
+  const portal = { name: 'APIMS - Air Pollutant Index Management System (DOE Malaysia)', url: 'https://eqms.doe.gov.my/APIMS/main', index: 'API', note: 'FIXTURE' };
+  const my = (id, name, lat, lon, bias) => (noField ? {
+    id, name, country: 'MY', lat, lon, official: null, pm25: null, modelled: null, official_portal: portal,
+  } : {
     id, name, country: 'MY', lat, lon, official: null, pm25: null,
     modelled: {
       index: 'US AQI (modelled, CAMS)', series: series(myAqi(bias), 3), pm25_series: [],
@@ -114,7 +118,7 @@ export function makeFixture(endIso = new Date().toISOString().slice(0, 10)) {
   ];
 
   return {
-    field: {
+    field: noField ? null : {
       grid, frames, units: 'µg/m³ PM2.5',
       source: 'FIXTURE (synthetic)', attribution: 'FIXTURE — synthetic data, not CAMS',
       caveats: ['FIXTURE: synthetic field for interface development. Not an observation or a model run.'],
@@ -122,7 +126,9 @@ export function makeFixture(endIso = new Date().toISOString().slice(0, 10)) {
     hotspots: {
       as_of: new Date(end).toISOString(), source: 'FIXTURE (synthetic)',
       attribution: 'FIXTURE — synthetic hotspots, not NASA FIRMS',
-      count_by_region: {}, frp_gw_by_region: {}, by_day: [],
+      window: { start: new Date(start).toISOString(), end: new Date(end).toISOString(), days: 7 },
+      count_by_region: { kalimantan: 0, sumatra: 0 }, frp_gw_by_region: {},
+      by_day: Array.from({ length: 8 }, (_, d) => ({ date: new Date(start + d * 24 * H).toISOString().slice(0, 10) })),
       clusters: { type: 'FeatureCollection', features: feats },
       caveats: ['FIXTURE: synthetic hotspots.'],
     },

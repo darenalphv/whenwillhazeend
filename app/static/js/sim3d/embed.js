@@ -16,6 +16,12 @@
  * mode: no wind field comes with the data, and the contract forbids
  * inventing one. If this week's data is unavailable the embed falls back to
  * a model run (fallback: true, the default) and says so in meta and caption.
+ * "This week" degrades rather than disappears: with the fire detections but
+ * no haze field (the launch configuration: no CAMS licence) it still runs —
+ * real fires lit day by day, Singapore's official PSI, KL marked "no public
+ * reading", no haze drawn, and the caption says the haze field is
+ * unavailable. Only if the fire detections are missing too does it fall
+ * back to the model run.
  *   handle.destroy();
  *
  * Same engine and the same visual truth rules as the simulator page: the
@@ -80,10 +86,10 @@ const CAPTION_CSS = `
 .hz-embed .rpin__v{font:500 14px/1.2 "IBM Plex Mono",ui-monospace,monospace;color:#1C1815}
 .hz-embed .rpin__tag{font:400 11px/1.2 "Public Sans",system-ui,sans-serif;color:#62584F}
 .hz-embed .rpin__stem{width:1px;height:12px;background:#3D3630}
-.hz-embed__cap{position:absolute;left:12px;bottom:12px;z-index:2;max-width:calc(100% - 64px);
+.hz-embed__cap{box-sizing:border-box;position:absolute;left:12px;bottom:12px;z-index:2;max-width:calc(100% - 64px);
   font:500 11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;color:#3D3630;
   background:rgba(255,255,255,.88);border:1px solid #DCD4C7;border-radius:6px;padding:4px 8px;pointer-events:none}
-@media (max-width:640px){.hz-embed__cap{font-size:11px;bottom:8px;left:8px;max-width:calc(100% - 52px)}}
+@media (max-width:640px){.hz-embed__cap{font-size:11px;bottom:8px;left:8px;max-width:calc(100% - 56px)}}
 `;
 
 function injectCss() {
@@ -103,7 +109,7 @@ export async function mountBurningMap(container, o = {}) {
   const opt = {
     mode: 'week',
     fallback: true,
-    fixture: false,           // synthetic week data, for integration tests only
+    fixture: false,           // true | 'nofield': synthetic week data, integration tests only
     pins: true,               // KL and Singapore readings in "this week" mode
     year: undefined,
     date: undefined,
@@ -208,13 +214,23 @@ export async function mountBurningMap(container, o = {}) {
     if (week && week.available) {
       scene.setWeek(week);
       scene.speed = 8;               // the week in ~21 s
+      // open on the first hour the pinned cities have a reading, not on a
+      // blank "no reading" pin
+      const t1 = scene.firstReadingT();
+      if (t1 > 0) scene.seek(t1);
       meta = {
         mode: 'week', fixture: !!week.fixture, headline: week.headline,
+        hasField: week.hasField, fieldReason: week.fieldReason || null,
+        fires: week.sources.length, countByRegion: week.hotspots?.count_by_region || null,
         window: { start: new Date(week.t0).toISOString(), hours: week.tEnd },
         attribution: week.attribution, reducedMotion: reduced,
       };
+      const sg = week.places.some((p) => p.country === 'SG' && p.official) ? ' · Singapore: NEA PSI (measured)' : '';
       scene.onFrame = (st) => {
-        cap.textContent = `${week.fixture ? 'FIXTURE DATA, NOT REAL · ' : ''}This week · ${fmtD(week.t0 + st.t * 3.6e6)} MYT · haze: CAMS (modelled) · fires: NASA FIRMS (measured)`;
+        const when = `${fmtD(week.t0 + st.t * 3.6e6)} MYT`;
+        cap.textContent = week.hasField
+          ? `${week.fixture ? 'FIXTURE DATA, NOT REAL · ' : ''}This week · ${when} · haze: CAMS (modelled) · fires: NASA FIRMS (measured)${sg}`
+          : `${week.fixture ? 'FIXTURE DATA, NOT REAL · ' : ''}This week · ${when} · fires: NASA FIRMS satellite detections (measured)${sg} · haze field unavailable, so no haze is drawn`;
       };
     } else {
       if (opt.mode === 'week' && !opt.fallback) throw fail('api', week?.reason || "this week's data is unavailable");

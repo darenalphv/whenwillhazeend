@@ -26,7 +26,7 @@ const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const small = () => window.innerWidth < 720 || window.matchMedia('(pointer: coarse)').matches;
 
 const state = { scene: null, data: null, seasons: [], running: false, view: 'home', scrubbing: false, mode: 'model', week: null, lastRaw: null };
-const FIXTURE = new URLSearchParams(location.search).get('fixture') === 'week';
+const FIXTURE = { week: true, 'week-nofield': 'nofield' }[new URLSearchParams(location.search).get('fixture')] || false;
 const TZ = 'Asia/Kuala_Lumpur';   // MYT and SGT are both UTC+8
 
 /* ------------------------------------------------------------ status */
@@ -82,16 +82,20 @@ function onFrameWeek(s) {
   const exact = a < 0.005 || a > 0.995 || k0 === k1;
   $('#ro-time').textContent = c.time;
   $('#ro-date').textContent = `${c.date} · MYT/SGT`;
-  $('#ro-sub').textContent = `${exact ? `CAMS frame ${a > 0.5 ? k1 : k0}` : `between CAMS frames ${k0} and ${k1}`}`;
-  $('#ro-mix').textContent = `${state.scene.fires.info.filter((x) => x.on && t >= x.on[0] && t <= x.on[1]).length} burning`;
-  $('#ro-max').textContent = `${fmt(f.scalarAt(t, 'max_pm25'))} µg/m³`;
-  $('#ro-note').textContent = 'Haze: CAMS model (modelled). Fires: NASA FIRMS detections (measured), lit on the days they were seen.';
+  const fr = state.week.hasField ? 'CAMS frame' : '3-hour step';
+  $('#ro-sub').textContent = `${exact ? `${fr} ${a > 0.5 ? k1 : k0}` : `between ${fr}s ${k0} and ${k1}`}`;
+  const w = state.week;
+  $('#ro-mix').textContent = `${fmt(state.scene.fires.active || 0)} bins lit · measured`;
+  $('#ro-max').textContent = w.hasField ? `${fmt(f.scalarAt(t, 'max_pm25'))} µg/m³` : 'not available';
+  $('#ro-note').textContent = w.hasField
+    ? 'Haze: CAMS model (modelled). Fires: NASA FIRMS detections (measured), lit on the days they were seen.'
+    : `No haze is drawn: ${w.fieldReason || 'the haze field is unavailable.'} That is missing data, not clean air. Fires: NASA FIRMS detections (measured), lit on the days they were seen.`;
   if (!state.scrubbing) $('#scrub').value = String(t);
   $('#tl-clock').textContent = `${c.date} ${c.time}`;
   setPlayIcon(s.playing);
   renderPlaces(c.ms);
   const fps = s.fps ? Math.round(Math.min(s.fps, 240)) : 0;
-  $('#perf').textContent = reduced ? 'Still frame (reduced motion)' : `No smoke particles this mode — no wind field to carry them · ${fps} fps`;
+  $('#perf').textContent = reduced ? 'Still frame (reduced motion)' : `No drifting smoke in this mode — no wind field to carry it · ${fps} fps`;
 }
 
 function onFrame(s) {
@@ -501,12 +505,18 @@ function applyMode(m) {
   document.body.dataset.mode = m;
   for (const b of document.querySelectorAll('.mode')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
   const week = m === 'week';
-  $('#legend-title').textContent = week ? 'PM2.5, µg/m³ · modelled (CAMS)' : 'Surface PM2.5, µg/m³ · modelled';
+  const noField = week && state.week?.available && !state.week.hasField;
+  $('#legend-title').textContent = noField ? 'Fires this week · measured' : (week ? 'PM2.5, µg/m³ · modelled (CAMS)' : 'Surface PM2.5, µg/m³ · modelled');
+  $('#legend-scale').hidden = noField;
+  $('#legend-contour').hidden = noField;
+  $('#legend-nofield').hidden = !noField;
+  $('#legend-edge').hidden = noField;
+  $('#mode-week-sub').textContent = noField ? 'Real fires · official readings' : 'Real fires · CAMS haze · official readings';
   $('#legend-fire').textContent = week ? 'Fire detected by satellite (NASA FIRMS, measured), lit on the days it was seen' : 'Fire, sized by emission';
   $('#legend-smoke').hidden = week;
   $('#legend-grid').textContent = week ? 'CAMS extract' : 'model grid';
-  $('#ro-mix-dt').textContent = week ? 'Fires now' : 'Mixing layer';
-  $('#ro-max-dt').textContent = week ? 'Peak PM2.5 · modelled' : 'Peak PM2.5 · modelled';
+  $('#ro-mix-dt').textContent = week ? 'Fires today' : 'Mixing layer';
+  $('#ro-max-dt').textContent = noField ? 'Haze field' : 'Peak PM2.5 · modelled';
   $('#ro-wind-dt').parentElement.hidden = week;
   const attr = $('#legend-attr');
   attr.hidden = !week || !state.week?.available;
@@ -531,16 +541,21 @@ function placeRow(p) {
 
 function renderPlaces(ms) {
   for (const li of document.querySelectorAll('#week-my li, #week-sg li')) {
+    if (!li._p) continue;           // the APIMS link row
     const r = readingAt(li._p, ms);
     const key = r ? `${r.value}|${r.label}` : 'none';
     if (li._last === key) continue;
     li._last = key;
-    if (!r) {
-      li._els.v.innerHTML = '— <small>no reading</small>';
-      li._els.cat.textContent = 'No reading for this time.';
+    if (!r || r.noReading) {
+      li._els.v.innerHTML = '— <small>no public reading</small>';
       li._els.dot.style.background = 'transparent';
+      li._els.dot.style.boxShadow = 'inset 0 0 0 2px var(--ink-4)';
+      li._els.cat.textContent = r
+        ? 'This site has no licensed feed for Malaysia\'s official API (IPU). No data here is not clean air.'
+        : 'No reading for this hour.';
       continue;
     }
+    li._els.dot.style.boxShadow = '';
     li._els.dot.style.background = getComputedStyle(document.documentElement).getPropertyValue(r.band.token).trim() || r.band.hex;
     li._els.v.innerHTML = '';
     li._els.v.append(`${fmt(r.value)} `);
@@ -572,6 +587,17 @@ function renderWeekPanels() {
   my.textContent = '';
   sg.textContent = '';
   for (const p of places) (p.country === 'SG' ? sg : my).appendChild(placeRow(p));
+  const portal = ok ? (w.portals?.MY || places.find((p) => p.official_portal)?.official_portal) : null;
+  if (portal && places.some((p) => p.country === 'MY' && !p.official && !p.modelled)) {
+    const li = document.createElement('li');
+    li.className = 'rlist__portal';
+    const a = document.createElement('a');
+    a.href = portal.url;
+    a.rel = 'noopener';
+    a.textContent = 'Official API (IPU) readings for KL and Selangor: APIMS, DOE Malaysia';
+    li.appendChild(a);
+    my.appendChild(li);
+  }
 
   const hs = ok ? w.hotspots : null;
   $('#week-fires').hidden = !hs;
@@ -593,7 +619,7 @@ function renderWeekPanels() {
   }
   const attr = $('#week-attr');
   attr.textContent = '';
-  for (const a of ok ? w.attribution : []) {
+  for (const a of ok ? (w.attributionFull?.length ? w.attributionFull : w.attribution) : []) {
     const li = document.createElement('li');
     li.textContent = a;
     attr.appendChild(li);
@@ -605,7 +631,9 @@ function renderWeekCaveats() {
   const ul = $('#sim-caveats');
   ul.textContent = '';
   const list = [
-    'No wind field comes with this week\'s data, so this mode draws no drifting smoke particles. The haze you see is the CAMS model\'s PM2.5 field, interpolated between its 3-hourly frames.',
+    state.week.hasField
+      ? 'This mode draws no drifting smoke particles. The haze you see is the CAMS model\'s PM2.5 field, interpolated between its 3-hourly frames.'
+      : `No haze is drawn in this mode. ${state.week.fieldReason || 'The haze field is unavailable.'} Its absence on the map is missing data, not clean air; the official readings in the panel are the measure of the air.`,
     'Fire markers are satellite detections binned for display. Their size follows fire radiative power; their column heights are illustrative.',
     ...(state.week.caveats || []),
   ];
@@ -627,6 +655,8 @@ function enterWeek() {
   state.scene.pause();
   state.scene.setWeek(w);
   state.data = state.scene.data;
+  const t1 = state.scene.firstReadingT();
+  if (t1 > 0) state.scene.seek(t1);
   const f = state.scene.field;
   $('#scrub').max = String(f.tEnd);
   $('#scrub').step = 'any';
@@ -636,7 +666,7 @@ function enterWeek() {
   renderWeekTicks();
   $('#speed').value = '8';
   state.scene.speed = 8;
-  setStatus('ok', `this week · ${w.sources.length} fire bins${w.fixture ? ' · FIXTURE' : ''}`);
+  setStatus('ok', `this week · ${w.sources.length} fire bins${w.hasField ? '' : ' · no haze field'}${w.fixture ? ' · FIXTURE' : ''}`);
   onFrame(state.scene.state());
   notice(state.scene.notices.length ? state.scene.notices.join(' ') : null);
   if (!reduced) state.scene.play();

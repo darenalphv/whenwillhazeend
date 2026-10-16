@@ -96,7 +96,7 @@ export class Scene {
     this.map = new maplibregl.Map({
       container: this.el,
       style,
-      center: v.center,
+      center: small && v === VIEWS.home ? [104.2, 0.75] : v.center,
       zoom: v.zoom - (small ? 0.75 : 0),
       pitch: v.pitch,
       bearing: v.bearing,
@@ -151,6 +151,9 @@ export class Scene {
   setData(resp) {
     const data = adapt(resp);
     this.mode = 'model';
+    this.noField = false;
+    this.surface.setVisible(this.show.field);
+    this.surface.setContoursVisible(this.show.contours);
     this.week = null;
     this.show.smoke = this.showSmokePref ?? true;
     this.data = data;
@@ -199,6 +202,11 @@ export class Scene {
     this.fires.configure(week.sources, this.elev);
     this.sumatra = [];
     this.surface.setField(this.field);
+    // No haze field (e.g. no CAMS licence): draw none, and keep the sky a
+    // neutral overcast rather than letting it read as clean air.
+    this.noField = !week.hasField;
+    this.surface.setVisible(!this.noField && this.show.field);
+    this.surface.setContoursVisible(!this.noField && this.show.contours);
     this.t = 0;
     this.clock = 0;
     this.field.setTime(0);
@@ -304,6 +312,22 @@ export class Scene {
     this.watchPinZoom();
   }
 
+  /** Earliest scene time at which a pinned place has a reading (week mode). */
+  firstReadingT() {
+    if (this.mode !== 'week') return 0;
+    let best = Infinity;
+    for (const m of this.markers) {
+      const sr = m.place?.official?.series || m.place?.modelled?.series || [];
+      if (sr.length) best = Math.min(best, (Date.parse(sr[0].t) - this.week.t0) / 3.6e6);
+    }
+    let t = Number.isFinite(best) ? best : 0;
+    // FIRMS's first local day is partial (the window starts mid-afternoon),
+    // so open on the first full day rather than on a near-empty map
+    const s0 = this.week.sources.find((x) => x.daily && x.day0 != null);
+    if (s0 && s0.daily.length > 2) t = Math.max(t, s0.day0 + 24);
+    return Math.max(0, Math.min(this.field.tEnd, t));
+  }
+
   /** Receptor PM2.5 at time t from receptor_series (exact at frame times). */
   receptorAt(r, t) {
     const [k0, k1, a] = this.field.bracket(t);
@@ -321,17 +345,21 @@ export class Scene {
         const key = r ? `${r.value}|${r.label}|${r.tag}` : 'none';
         if (key === m.last) continue;
         m.last = key;
-        if (!r) {
+        if (!r || r.noReading) {
           m.v.textContent = '—';
-          m.tag.textContent = 'no reading';
+          m.tag.textContent = r
+            ? (this.el.clientWidth < 520 ? 'no public reading' : 'no public reading · see APIMS')
+            : 'no reading for this hour';
           m.dot.style.background = 'transparent';
-          m.el.setAttribute('aria-label', `${m.place.name}: no reading for this time`);
+          m.dot.style.boxShadow = 'inset 0 0 0 2px #857A70';
+          if (this.o.interactive) m.el.setAttribute('aria-label', `${m.place.name}: ${r ? 'no public reading; official readings are on APIMS' : 'no reading for this hour'}`);
           continue;
         }
+        m.dot.style.boxShadow = '';
         m.v.textContent = Math.round(r.value).toLocaleString();
         m.tag.textContent = `${r.label} · ${r.tag}`;
         m.dot.style.background = cssVar(r.band.token, r.band.hex);
-        m.el.setAttribute('aria-label', `${m.place.name}: ${r.label} ${Math.round(r.value)}, ${r.tag}, ${r.band.name}`);
+        if (this.o.interactive) m.el.setAttribute('aria-label', `${m.place.name}: ${r.label} ${Math.round(r.value)}, ${r.tag}, ${r.band.name}`);
       }
       return;
     }
@@ -368,6 +396,8 @@ export class Scene {
       };
     }
     const v = VIEWS[name] || VIEWS.overview;
+    // narrow screens: nudge the Strait framing so KL's pin is not clipped
+    if (small && (name === 'home' || name === 'overview')) return { ...v, center: [104.2, 0.75], zoom: v.zoom + dz };
     return { ...v, zoom: v.zoom + dz };
   }
 
@@ -398,8 +428,8 @@ export class Scene {
     this.t = Math.max(0, Math.min(this.field.tEnd, t));
     this.clock = this.t;
     this.field.setTime(this.t);
-    this.smoke.reset(this.clock);
-    this.surface.update(true);
+    if (this.mode !== 'week') this.smoke.reset(this.clock);
+    this.surface.update(!this.noField);
     this.renderStill();
     this.emit(true);
   }
@@ -550,6 +580,10 @@ export class Scene {
   }
 
   updateSky() {
+    if (this.noField) {
+      if (this.haze !== 0.3) { this.haze = 0.3; this.map.setSky(skySpec(0.3)); }
+      return;
+    }
     const c = this.map.getCenter();
     const bg = Math.max(12, this.field.bg || 0);
     const v = Math.max(this.field.sample(c.lng, c.lat), bg);

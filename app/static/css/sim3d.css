@@ -403,6 +403,9 @@ body[data-mode="model"] [data-only="week"] { display: none !important; }
   background: var(--bad); color: #fff; font: 600 var(--sim-fs-s) var(--font-ui);
   padding: .5rem .9rem; border-radius: var(--radius-sm); box-shadow: var(--sim-shadow); max-width: calc(100% - 2rem); text-align: center;
 }
+.legend__nofield { margin: 0 0 .5rem; padding: .45rem .55rem; background: var(--paper-2); border-radius: var(--radius-sm); font-size: var(--sim-fs-xs); color: var(--ink-2); line-height: 1.45; }
+.rlist__portal { padding: .5rem 0; }
+.rlist__portal a { display: inline-flex; align-items: center; min-height: var(--tap); color: var(--ember-2); font-size: var(--sim-fs-s); font-weight: 600; }
 .legend__attr { margin: .45rem 0 0; padding-top: .45rem; border-top: 1px solid var(--line); font-size: var(--sim-fs-xs); color: var(--ink-3); line-height: 1.45; }
 .vbtn__sub { display: block; font-weight: 400; font-size: var(--sim-fs-xs); color: inherit; opacity: .8; }
 

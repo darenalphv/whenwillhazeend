@@ -68,13 +68,14 @@
       </button>
       <div id="legend-body">
         <ul class="legend__scale" id="legend-scale"></ul>
+        <p class="legend__nofield" id="legend-nofield" hidden>No haze is drawn: the haze field is not available. That is missing data, not clean air.</p>
         <ul class="legend__keys">
-          <li><i class="k k--contour"></i>Contours at 35 · 55 · 150 · 250</li>
+          <li id="legend-contour"><i class="k k--contour"></i>Contours at 35 · 55 · 150 · 250</li>
           <li id="legend-smoke"><i class="k k--smoke"></i>Smoke, shaded by the model's local value</li>
           <li><i class="k k--fire"></i><span id="legend-fire">Fire, sized by emission</span></li>
           <li id="legend-sumatra" hidden><i class="k k--sumatra"></i>Sumatran fire</li>
         </ul>
-        <p class="legend__foot">A straight edge in the field is where the <span id="legend-grid">model grid</span> stops, not where the haze does. Heights are exaggerated <span id="legend-vex">10</span>×.</p>
+        <p class="legend__foot" id="legend-edge">A straight edge in the field is where the <span id="legend-grid">model grid</span> stops, not where the haze does. Heights are exaggerated <span id="legend-vex">10</span>×.</p>
         <p class="legend__attr" id="legend-attr" hidden></p>
       </div>
     </div>
@@ -129,14 +130,14 @@
       <h1 class="panel__h1">Where the smoke goes</h1>
       <p class="panel__lede">
         Smoke from Sumatra and Kalimantan, and where it goes. <b>This week</b>
-        replays the past seven days from real fire detections and the CAMS
-        haze model, with official readings where you live. <b>Model run</b> is
+        replays the past seven days: real satellite fire detections, official
+        readings where you live, and the CAMS haze model when it is available. <b>Model run</b> is
         our own simulation: pick a season and a wind and watch the smoke travel.
       </p>
     </header>
 
     <div class="modes" role="group" aria-label="What to show">
-      <button type="button" class="mode" id="mode-week" data-mode="week" aria-pressed="false">This week<span>Real fires · CAMS haze · official readings</span></button>
+      <button type="button" class="mode" id="mode-week" data-mode="week" aria-pressed="false">This week<span id="mode-week-sub">Real fires · CAMS haze · official readings</span></button>
       <button type="button" class="mode" id="mode-model" data-mode="model" aria-pressed="false">Model run<span>Our simulation · any season, any wind</span></button>
     </div>
 
