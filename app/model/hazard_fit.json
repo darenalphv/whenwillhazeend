@@ -1,0 +1,365 @@
+{
+  "coefficients": {
+    "b0": -3.60073,
+    "b1": 0.00843,
+    "b2": -5.5406,
+    "b3": -0.15913,
+    "b4": 5.98514
+  },
+  "coefficients_mle": {
+    "b0": -2.40278,
+    "b1": 0.01096,
+    "b2": -8.01644,
+    "b3": -0.20762,
+    "b4": 3.47053
+  },
+  "rmse_days": 14.18,
+  "rmse_days_mle_only": 18.2,
+  "rmse_days_loo": 17.97,
+  "rmse_days_forecast": 25.48,
+  "mean_observed_duration_days": 103.1,
+  "sd_observed_duration_days": 41.2,
+  "naive_rmse_days_mean_predictor": 41.25,
+  "n_seasons": 27,
+  "n_daily_observations": 2811,
+  "negative_log_likelihood": 0.029546,
+  "weather_source": "observed",
+  "weather_provenance": "open-meteo archive (ERA5)",
+  "weather_record": [
+    "1996-01-01",
+    "2026-04-20"
+  ],
+  "centroid": {
+    "lat": -2.21,
+    "lon": 113.92
+  },
+  "fitted_at": "2026-09-18",
+  "target_is_rainfall_derived": true,
+  "target_note": "Season start/end dates in app/data/seasons.json are derived from an ERA5 rainfall rule, not from observed fire-episode dates. Fitting a hazard model that contains a rainfall term against those durations is partly circular, so the in-sample RMSE overstates real skill. See `ablations` for how much of the skill survives removing every rainfall term, and `anchor_seasons` for the three seasons whose dates come from documented episodes.",
+  "ablations": {
+    "no_rainfall_terms (b1=b2=0)": {
+      "rmse_days": 24.55,
+      "coefficients": {
+        "b0": -6.31629,
+        "b1": 0.0,
+        "b2": 0.0,
+        "b3": -0.76644,
+        "b4": 7.90188
+      }
+    },
+    "no_climate_terms (b3=b4=0)": {
+      "rmse_days": 18.34,
+      "coefficients": {
+        "b0": -2.80566,
+        "b1": 0.01998,
+        "b2": -7.2096,
+        "b3": 0.0,
+        "b4": 0.0
+      }
+    },
+    "monsoon_climatology_only (b1=b2=b3=0)": {
+      "rmse_days": 29.63,
+      "coefficients": {
+        "b0": -6.86969,
+        "b1": 0.0,
+        "b2": 0.0,
+        "b3": 0.0,
+        "b4": 12.0
+      }
+    }
+  },
+  "anchor_seasons": [
+    {
+      "year": 1997,
+      "observed_days": 194,
+      "predicted_days": 180,
+      "residual_days": -14
+    },
+    {
+      "year": 2015,
+      "observed_days": 131,
+      "predicted_days": 129,
+      "residual_days": -2
+    },
+    {
+      "year": 2019,
+      "observed_days": 95,
+      "predicted_days": 96,
+      "residual_days": 1
+    }
+  ],
+  "anchor_rmse_days": 8.19,
+  "zero_season_check": [
+    {
+      "year": 2010,
+      "observed_days": 0,
+      "kbdi_1_sep": 258.3,
+      "monsoon_progress_1_sep": 0.043,
+      "model_says_active": true,
+      "oni": -1.57
+    },
+    {
+      "year": 2022,
+      "observed_days": 0,
+      "kbdi_1_sep": 139.2,
+      "monsoon_progress_1_sep": 0.043,
+      "model_says_active": false,
+      "oni": -0.89
+    }
+  ],
+  "residuals": [
+    {
+      "year": 1997,
+      "observed_days": 194,
+      "predicted_days": 180,
+      "residual_days": -14,
+      "forecast_days": 177,
+      "oni": 2.34,
+      "phase": "el_nino"
+    },
+    {
+      "year": 1998,
+      "observed_days": 105,
+      "predicted_days": 45,
+      "residual_days": -60,
+      "forecast_days": 64,
+      "oni": -1.31,
+      "phase": "la_nina"
+    },
+    {
+      "year": 1999,
+      "observed_days": 108,
+      "predicted_days": 109,
+      "residual_days": 1,
+      "forecast_days": 102,
+      "oni": -1.35,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2000,
+      "observed_days": 93,
+      "predicted_days": 91,
+      "residual_days": -2,
+      "forecast_days": 84,
+      "oni": -0.76,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2001,
+      "observed_days": 94,
+      "predicted_days": 98,
+      "residual_days": 4,
+      "forecast_days": 110,
+      "oni": -0.33,
+      "phase": "neutral"
+    },
+    {
+      "year": 2002,
+      "observed_days": 168,
+      "predicted_days": 159,
+      "residual_days": -9,
+      "forecast_days": 162,
+      "oni": 1.19,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2003,
+      "observed_days": 135,
+      "predicted_days": 140,
+      "residual_days": 5,
+      "forecast_days": 147,
+      "oni": 0.29,
+      "phase": "neutral"
+    },
+    {
+      "year": 2004,
+      "observed_days": 136,
+      "predicted_days": 131,
+      "residual_days": -5,
+      "forecast_days": 132,
+      "oni": 0.64,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2005,
+      "observed_days": 126,
+      "predicted_days": 128,
+      "residual_days": 2,
+      "forecast_days": 123,
+      "oni": -0.57,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2006,
+      "observed_days": 126,
+      "predicted_days": 123,
+      "residual_days": -3,
+      "forecast_days": 108,
+      "oni": 0.88,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2007,
+      "observed_days": 97,
+      "predicted_days": 99,
+      "residual_days": 2,
+      "forecast_days": 77,
+      "oni": -1.57,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2008,
+      "observed_days": 110,
+      "predicted_days": 117,
+      "residual_days": 7,
+      "forecast_days": 136,
+      "oni": -0.57,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2009,
+      "observed_days": 153,
+      "predicted_days": 143,
+      "residual_days": -10,
+      "forecast_days": 148,
+      "oni": 1.31,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2011,
+      "observed_days": 141,
+      "predicted_days": 136,
+      "residual_days": -5,
+      "forecast_days": 114,
+      "oni": -1.02,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2012,
+      "observed_days": 135,
+      "predicted_days": 145,
+      "residual_days": 10,
+      "forecast_days": 144,
+      "oni": 0.39,
+      "phase": "neutral"
+    },
+    {
+      "year": 2013,
+      "observed_days": 82,
+      "predicted_days": 81,
+      "residual_days": -1,
+      "forecast_days": 64,
+      "oni": -0.34,
+      "phase": "neutral"
+    },
+    {
+      "year": 2014,
+      "observed_days": 115,
+      "predicted_days": 110,
+      "residual_days": -5,
+      "forecast_days": 102,
+      "oni": 0.7,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2015,
+      "observed_days": 131,
+      "predicted_days": 129,
+      "residual_days": -2,
+      "forecast_days": 144,
+      "oni": 2.45,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2016,
+      "observed_days": 66,
+      "predicted_days": 69,
+      "residual_days": 3,
+      "forecast_days": 92,
+      "oni": -0.51,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2017,
+      "observed_days": 54,
+      "predicted_days": 61,
+      "residual_days": 7,
+      "forecast_days": 67,
+      "oni": -0.61,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2018,
+      "observed_days": 88,
+      "predicted_days": 94,
+      "residual_days": 6,
+      "forecast_days": 103,
+      "oni": 1.04,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2019,
+      "observed_days": 95,
+      "predicted_days": 96,
+      "residual_days": 1,
+      "forecast_days": 117,
+      "oni": 0.72,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2020,
+      "observed_days": 71,
+      "predicted_days": 45,
+      "residual_days": -26,
+      "forecast_days": 99,
+      "oni": -1.11,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2021,
+      "observed_days": 23,
+      "predicted_days": 37,
+      "residual_days": 14,
+      "forecast_days": 78,
+      "oni": -0.91,
+      "phase": "la_nina"
+    },
+    {
+      "year": 2023,
+      "observed_days": 86,
+      "predicted_days": 89,
+      "residual_days": 3,
+      "forecast_days": 102,
+      "oni": 1.9,
+      "phase": "el_nino"
+    },
+    {
+      "year": 2024,
+      "observed_days": 26,
+      "predicted_days": 36,
+      "residual_days": 10,
+      "forecast_days": 78,
+      "oni": -0.29,
+      "phase": "neutral"
+    },
+    {
+      "year": 2025,
+      "observed_days": 26,
+      "predicted_days": 35,
+      "residual_days": 9,
+      "forecast_days": 87,
+      "oni": -0.61,
+      "phase": "la_nina"
+    }
+  ],
+  "caveats": [
+    "The season start and end dates this model is fitted against are not observations of fire. Published per-season episode dates barely exist, so the bundled dataset derives them from an ERA5 rainfall rule. A hazard model containing a rainfall term is therefore fitted partly to its own input, and the in-sample RMSE flatters it. The ablation that removes every rainfall term is the number to look at, together with the three seasons (1997, 2015, 2019) whose dates come from documented episodes.",
+    "There are at most about thirty observed Kalimantan fire seasons on record and five free parameters. That is enough to fit and barely enough to validate. Judge the model by the leave-one-out and forecast-mode errors, not by the in-sample one.",
+    "The published start and end dates of historical seasons are themselves modelled quantities, usually a threshold on a satellite hotspot count. Move the threshold and every observed duration moves by days to weeks, and the fitted coefficients move with them.",
+    "The fit uses ERA5 reanalysis rainfall at one point for the whole of Kalimantan. ERA5 has a known wet bias over tropical land and cannot see the patchiness of convective rain, so the fitted rainfall coefficient is an effective, island-scale one, not the true local sensitivity of a smouldering front to being rained on.",
+    "Land use changed enormously across the fitted period. Peatland drainage, the 2011 moratorium, the 2016 peat restoration agency and the spread of oil palm all mean a 1997 season and a 2023 season are not draws from the same process. A single stationary coefficient set papers over that.",
+    "The fit is leveraged by a handful of extreme El Nino years, because those are the long seasons. The uncertainty on the ONI coefficient is much larger than its point estimate suggests.",
+    "Parameter uncertainty is not propagated into the published forecast interval. The p10-p90 band on the site is weather uncertainty only; including coefficient uncertainty would widen it materially.",
+    "Perfect-foresight RMSE flatters the model: it is the error when the weather for the rest of the season is already known. What a visitor to the site is exposed to is the forecast-mode error, which is roughly twice as large."
+  ]
+}

@@ -1,0 +1,192 @@
+/* sim3d.css — the 3D haze simulator page.
+   Rides on main.css's tokens; defines only what this layout adds. */
+
+.sim3d-body { overflow: hidden; }
+.sim3d-body .smoke,
+.sim3d-body .grain { display: none; }   /* the map is the atmosphere here */
+
+.sim3d {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 27rem;
+  height: calc(100dvh - 3.1rem);
+  min-height: 34rem;
+}
+
+/* ------------------------------------------------------------------ stage */
+
+.sim3d__stage { position: relative; min-width: 0; background: var(--bg-sunk); }
+.sim3d__canvas { position: absolute; inset: 0; }
+.sim3d__canvas canvas { width: 100%; height: 100%; display: block; outline: none; }
+
+.sim3d__overlay {
+  position: absolute; z-index: 5;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: .75rem .9rem;
+  max-width: min(22rem, calc(100% - 2rem));
+}
+.sim3d__overlay--tl { top: 1rem; left: 1rem; }
+.sim3d__overlay--tr { top: 1rem; right: 1rem; }
+.sim3d__overlay--b {
+  left: 50%; bottom: 1rem; transform: translateX(-50%);
+  display: flex; align-items: center; gap: .9rem;
+  width: min(42rem, calc(100% - 2rem)); max-width: none;
+}
+
+/* frame readout */
+.fr__clock {
+  margin: 0 0 .5rem; font-family: var(--font-mono);
+  display: flex; align-items: baseline; gap: .5rem;
+}
+.fr__clock b { font-size: 1.5rem; color: var(--ink); letter-spacing: -.02em; }
+.fr__clock span { font-size: .8rem; color: var(--ink-3); }
+
+.fr__grid { margin: 0; display: grid; gap: .35rem .9rem; grid-template-columns: 1fr 1fr; }
+.fr__grid > div { display: flex; flex-direction: column; gap: .05rem; }
+.fr__grid dt { font-size: .7rem; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; }
+.fr__grid dd { margin: 0; font-size: .92rem; font-variant-numeric: tabular-nums; color: var(--ink); }
+.fr__note { margin: .6rem 0 0; font-size: .82rem; color: var(--ink-2); max-width: 22ch; }
+
+/* legend */
+.legend__title {
+  margin: 0 0 .45rem; font-size: .72rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.legend__scale { list-style: none; margin: 0; padding: 0; display: grid; gap: .28rem; }
+.legend__scale li { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--ink-2); }
+.legend__scale i { width: 14px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.legend__foot { margin: .55rem 0 0; font-size: .72rem; color: var(--ink-4); }
+
+/* timeline */
+.timeline__label {
+  font-family: var(--font-mono); font-size: 1rem; color: var(--ink);
+  font-variant-numeric: tabular-nums; min-width: 4.2rem; text-align: right;
+}
+.sim3d__overlay--b input[type="range"] { flex: 1; min-width: 0; }
+
+/* loading + error */
+.sim3d__loading, .sim3d__error {
+  position: absolute; inset: 0; z-index: 8;
+  display: grid; place-content: center; justify-items: center; gap: .9rem;
+  text-align: center; padding: 2rem;
+  background: color-mix(in srgb, var(--bg-sunk) 88%, transparent);
+}
+.sim3d__error h2 { margin: 0; font-size: 1.15rem; }
+.sim3d__error p { margin: 0; color: var(--ink-2); max-width: 44ch; }
+.spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--line-2); border-top-color: var(--ember);
+  animation: spin .9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------------ panel */
+
+.sim3d__panel {
+  border-left: 1px solid var(--line);
+  background: var(--bg-1);
+  overflow-y: auto;
+  padding: 1.3rem 1.2rem 3rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+}
+.panel__h1 { margin: 0; font-size: 1.45rem; letter-spacing: -.02em; }
+.panel__lede { margin: -.9rem 0 0; color: var(--ink-2); font-size: .92rem; }
+
+.ctl { display: flex; flex-direction: column; gap: .7rem; }
+.ctl__h {
+  margin: 0; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-3); padding-bottom: .45rem; border-bottom: 1px solid var(--line);
+}
+.ctl__row { display: grid; grid-template-columns: 8rem 1fr; align-items: center; gap: .7rem; font-size: .88rem; }
+.ctl__hint { margin: 0; font-size: .78rem; color: var(--ink-3); line-height: 1.5; }
+
+.ctl__slider { display: grid; grid-template-columns: 1fr auto; gap: .3rem .6rem; font-size: .88rem; }
+.ctl__slider input[type="range"] { grid-column: 1 / -1; }
+.ctl__slider output {
+  font-family: var(--font-mono); font-size: .8rem; color: var(--ember-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ctl__check { display: flex; align-items: center; gap: .55rem; font-size: .88rem; cursor: pointer; }
+.ctl__check input { width: 1rem; height: 1rem; accent-color: var(--ember); }
+
+.ctl__btns { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .2rem; }
+
+.input {
+  font: inherit; font-size: .88rem; width: 100%;
+  background: var(--bg-3); color: var(--ink);
+  border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  padding: .42rem .55rem;
+  color-scheme: dark;
+}
+
+/* receptors */
+.receptors { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.receptor {
+  display: grid; grid-template-columns: 9px 1fr auto; align-items: center;
+  gap: .55rem; font-size: .85rem;
+}
+.receptor__dot { width: 9px; height: 9px; border-radius: 50%; }
+.receptor__name { color: var(--ink-2); }
+.receptor__v { font-variant-numeric: tabular-nums; color: var(--ink); }
+.receptor__cat { grid-column: 2 / -1; font-size: .74rem; color: var(--ink-4); }
+
+/* validation + caveats */
+.validation__row { margin: 0 0 .45rem; font-size: .85rem; color: var(--ink-2); }
+.validation__row b { color: var(--ink); font-weight: 600; }
+.muted { color: var(--ink-3); font-size: .8rem; line-height: 1.55; }
+
+.caveats { margin: 0; padding-left: 1.1rem; display: grid; gap: .6rem; }
+.caveats li { font-size: .8rem; color: var(--ink-2); line-height: 1.55; }
+
+/* ------------------------------------------------------------- responsive */
+
+@media (max-width: 1080px) {
+  .sim3d { grid-template-columns: minmax(0, 1fr) 22rem; }
+}
+
+@media (max-width: 860px) {
+  .sim3d-body { overflow: auto; }
+  .sim3d { grid-template-columns: 1fr; height: auto; }
+  .sim3d__stage { height: 62dvh; min-height: 26rem; }
+  .sim3d__panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .sim3d__overlay--tr { display: none; }   /* legend moves nowhere useful here */
+  /* On a short stage the full readout card covered the map it was annotating.
+     Collapse it to one compact strip: clock, layer depth, peak. */
+  .sim3d__overlay--tl {
+    top: .6rem; left: .6rem; right: .6rem;
+    max-width: none; padding: .45rem .65rem;
+    display: flex; align-items: baseline; gap: .9rem; flex-wrap: wrap;
+  }
+  .sim3d__overlay--tl .fr__clock { margin: 0; }
+  .sim3d__overlay--tl .fr__clock b { font-size: 1.1rem; }
+  .sim3d__overlay--tl .fr__clock span { display: none; }
+  .fr__grid { display: flex; gap: .9rem; }
+  .fr__grid > div { flex-direction: row; align-items: baseline; gap: .35rem; }
+  .fr__grid dt { font-size: .62rem; }
+  .fr__grid dd { font-size: .82rem; }
+  .fr__grid > div:nth-child(3) { display: none; }   /* wind is in the panel */
+  .fr__note { display: none; }
+  .sim3d__overlay--b { width: calc(100% - 1.2rem); bottom: .6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2.4s !important; }
+}
+
+/* arrivals */
+.arrivals { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.arrival {
+  display: grid; grid-template-columns: 1fr auto; gap: .1rem .6rem;
+  font-size: .85rem; align-items: baseline;
+}
+.arrival__name { color: var(--ink); }
+.arrival__t {
+  font-family: var(--font-mono); font-size: .8rem; color: var(--ember-2);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.arrival__peak { grid-column: 1 / -1; font-size: .74rem; }
+.arrival--beyond { opacity: .5; }
+.arrival--beyond .arrival__t { color: var(--ink-4); }

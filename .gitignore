@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+build/
+dist/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Cloudflare / Node
+node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*
+worker/python_modules/
+worker/.venv-workers/
+
+# Scratch
+*.log
+.claude/
