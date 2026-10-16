@@ -114,7 +114,10 @@ async function apiInner(path, { method = 'GET', body = null, timeout = 30000 } =
       const j = await res.json();
       detail = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
     } catch (_) { /* body was not JSON */ }
-    throw new ApiError(`HTTP ${res.status}`, { status: res.status, path, detail });
+    // Production re-labels the app's 503s (see app/main.py); treat them as the
+    // 503 they are, so every 'unavailable' branch keeps working.
+    const status = Number(res.headers.get('X-Original-Status')) || res.status;
+    throw new ApiError(`HTTP ${status}`, { status, path, detail });
   }
   return res.json();
 }

@@ -102,7 +102,10 @@ export function readingAt(place, ms) {
 
 async function getJson(url, signal) {
   const res = await fetch(url, { signal });
-  if (!res.ok) throw Object.assign(new Error(`${url} returned ${res.status}`), { status: res.status });
+  if (!res.ok) {
+    const status = Number(res.headers.get('X-Original-Status')) || res.status;  // see app/main.py
+    throw Object.assign(new Error(`${url} returned ${status}`), { status });
+  }
   return res.json();
 }
 

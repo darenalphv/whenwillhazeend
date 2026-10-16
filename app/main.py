@@ -92,6 +92,26 @@ app = FastAPI(
 
 app.include_router(api_router)
 
+# DigitalOcean App Platform's edge replaces any 503 from the app with its own
+# HTML error page (status 504), discarding the JSON that names which component
+# failed and why. In production, re-label the app's own 503s on /api/* with a
+# status the platform passes through -- 424 Failed Dependency: the request failed
+# because something it depends on did -- and keep the original in
+# X-Original-Status, which the frontend reads. Off unless the env var is set,
+# so local runs and tests keep plain 503 semantics.
+_UNAVAILABLE_STATUS = os.environ.get("WWHE_UNAVAILABLE_STATUS", "").strip()
+if _UNAVAILABLE_STATUS.isdigit():
+    _remap_to = int(_UNAVAILABLE_STATUS)
+
+    @app.middleware("http")
+    async def _relabel_unavailable(request: Request, call_next):
+        response = await call_next(request)
+        if response.status_code == 503 and request.url.path.startswith("/api/"):
+            response.status_code = _remap_to
+            response.headers["X-Original-Status"] = "503"
+        return response
+
+
 # Live "this week" data (NEA, FIRMS, CAMS). Wired here so it switches on as
 # soon as the router exists; a broken router is logged, never silently hidden.
 try:
