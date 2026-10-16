@@ -4,6 +4,8 @@
  * ./__mocks__/fixtures.js instead of the network. Extra knobs:
  *   ?mock=1&mockfail=history,dispersion   -> those endpoints throw a 503
  *   ?mock=1&mockdelay=1200                -> artificial latency, to see skeletons
+ *   ?mock=1&mockcams=1                    -> KL/Selangor get modelled CAMS values
+ *                                            (default mock = launch config: none)
  *   ?mock=1&mockv1=1                      -> strip every optional CONTRACT_V2 field
  *                                            (ranges, iod driver, odds) to check
  *                                            the page still renders without them
@@ -15,6 +17,7 @@ export const MOCK = QS.get('mock') === '1';
 const MOCK_FAIL = (QS.get('mockfail') || '').split(',').map(s => s.trim()).filter(Boolean);
 const MOCK_DELAY = Number(QS.get('mockdelay') || 0);
 const MOCK_V1 = QS.get('mockv1') === '1';
+const MOCK_CAMS = QS.get('mockcams') === '1';   // bring back modelled KL values
 
 /* In-flight requests, so the status chip can pulse only while one is real. */
 let inflight = 0;
@@ -84,7 +87,7 @@ async function apiInner(path, { method = 'GET', body = null, timeout = 30000 } =
       });
     }
     const mod = await fixtures();
-    return mod.mockResponse(path, method, body, { v1: MOCK_V1 });
+    return mod.mockResponse(path, method, body, { v1: MOCK_V1, cams: MOCK_CAMS });
   }
 
   const ctrl = new AbortController();

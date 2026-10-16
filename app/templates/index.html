@@ -103,6 +103,7 @@
             <div><dt>Median end date</dt><dd id="hero-enddate">—</dd></div>
             <div><dt>Confidence</dt><dd id="hero-confidence">—</dd></div>
             <div><dt>Modelled on</dt><dd id="hero-asof">—</dd></div>
+            <div hidden><dt>Typical error</dt><dd id="hero-error-days">—</dd></div>
           </dl>
           <p class="answer__reason" id="hero-reason"></p>
         </div>
@@ -127,6 +128,7 @@
             <div class="countdown__cell"><b data-unit="seconds">—</b><span>sec</span></div>
           </div>
           <p class="readout__flags" id="hero-flags"></p>
+          <p class="readout__wx" id="hero-wx" hidden></p>
         </div>
         <figure class="survival">
           <figcaption class="readout__h">Chance the season is <em>still</em> burning</figcaption>
@@ -144,8 +146,8 @@
         <h2 id="now-h" class="section__title">This week, where you live</h2>
         <p class="section__lede">
           The last seven days of air in Singapore and the Klang Valley, and the fires behind it.
-          Each chart uses one index only: Singapore’s PSI, Malaysia’s API (IPU), or a modelled
-          US AQI. They are different scales, so they never share an axis.
+          Each chart uses one index only. Singapore’s PSI and Malaysia’s API (IPU) are different
+          scales, so they never share an axis.
         </p>
       </header>
 
@@ -191,12 +193,14 @@
           <li><b>Malaysia API (IPU)</b>: Department of Environment Malaysia. Where this page has no
             official DOE reading it says so; the official figures are on
             <a href="https://eqms.doe.gov.my/APIMS/main" rel="noopener noreferrer" target="_blank">APIMS</a>.</li>
-          <li><b>Modelled US AQI and PM2.5</b>: Copernicus Atmosphere Monitoring Service (CAMS), via
+          <li id="src-cams" hidden><b>Modelled US AQI and PM2.5</b>: Copernicus Atmosphere Monitoring Service (CAMS), via
             <a href="https://open-meteo.com/en/docs/air-quality-api" rel="noopener noreferrer" target="_blank">Open-Meteo</a>,
             CC BY 4.0. A forecast model on a grid of about 40 km, not a measurement.</li>
           <li><b>Fire detections</b>: NASA FIRMS, VIIRS near-real-time (LANCE NRT).
             <a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener noreferrer" target="_blank">firms.modaps.eosdis.nasa.gov</a></li>
         </ul>
+        <h3 class="now-sources__h">Licence notices</h3>
+        <ul class="now-sources__list now-sources__list--notices" id="now-attrib" hidden></ul>
       </div>
     </div>
   </section>

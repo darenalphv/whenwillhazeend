@@ -408,6 +408,19 @@ a:hover { text-decoration-color: currentColor; }
 .now-card__band { font-weight: 600; }
 .now-card__band--high { color: var(--bad); }
 .now-card__note { margin: .5rem 0 0; font-size: var(--fs-small); color: var(--ink-3); }
+.now-card--none { border-color: var(--ink); }
+.now-card__none { margin: .8rem 0 1rem; font-size: 1rem; line-height: 1.5; color: var(--ink); }
+.now-card__none b { font-weight: 600; }
+.now-card__portal { width: 100%; justify-content: space-between; text-align: left; }
+.now-card__context { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+.now-card__context-h { margin: 0 0 .35rem; font-size: var(--fs-small); font-weight: 600; color: var(--ink-2); }
+.now-card__context ul { margin: 0; padding-left: 1.1rem; font-size: .9375rem; color: var(--ink-2); }
+.now-card__context li + li { margin-top: .4rem; }
+.now-card__context b { color: var(--ink); font-weight: 600; }
+.tag--none { border-color: var(--ink); color: var(--ink); background: var(--paper-2); }
+.readout__wx { margin: .6rem 0 0; font-size: var(--fs-small); color: var(--ink-3); max-width: 34rem; }
+.now-sources__list--notices { font-size: var(--fs-small); color: var(--ink-3); overflow-wrap: anywhere; }
+.now-sources__list + .now-sources__h { margin-top: 1rem; }
 .chart-holder--now { height: 230px; margin-top: .6rem; }
 .now-card .legend { margin: .6rem 0 0; }
 
@@ -472,6 +485,7 @@ a:hover { text-decoration-color: currentColor; }
 .ending__note { max-width: 44rem; color: var(--ink-2); }
 .ending__second { margin: .9rem 0 0; font-size: 1rem; color: var(--ink-2); }
 .ending__second b { font-family: var(--font-mono); font-weight: 500; color: var(--ink); }
+.ending__second + .ending__note { margin-top: .9rem; }
 
 /* ------------------------------------------------------------ the toll */
 

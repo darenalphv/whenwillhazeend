@@ -419,6 +419,10 @@ function seasonSim(body) {
     region: b.region || 'kalimantan',
     oni,                 // the live route echoes the resolved ONI
     drought_readiness: 0.83,   // CONTRACT M4 (MOCK value)
+    model_error_days: 12.3,
+    weather_through: addDays(asOf, -6),
+    fallback_reason: 'MOCK REASON: live forecasts are switched off in this configuration.',
+    state_source: 'MOCK: recorded weather to six days ago, then climatology.',
     active: true,
     days_remaining: { p10, p50, p90, mean },
     end_date: { p10: addDays(asOf, p10), p50: addDays(asOf, p50), p90: addDays(asOf, p90) },
@@ -837,7 +841,7 @@ function weekSeries(endIso, peakIso, peak, base, rng, stepH = 1) {
 }
 const maxPt = (series) => series.reduce((b, p) => (p.v > b.v ? p : b), series[0]);
 
-function observedMock() {
+function observedMock(opts = {}) {
   const end = new Date();
   end.setUTCMinutes(0, 0, 0);
   const endIso = end.toISOString();
@@ -858,13 +862,17 @@ function observedMock() {
   });
   const cell = weekSeries(endIso, day(3, 6), 272, 110, mulberry32(9));
   const klang = weekSeries(endIso, day(3, 9), 248, 105, mulberry32(10));
+  // Launch configuration (default): no Open-Meteo, so KL/Selangor have no reading
+  // at all. ?mockcams=1 brings back the modelled CAMS card.
+  const portal = { name: 'MOCK APIMS (DOE Malaysia)', url: 'https://eqms.doe.gov.my/APIMS/main', index: 'API',
+    note: 'MOCK NOTE: official Malaysian API (IPU) readings are published on this portal; this site does not copy them.' };
   for (const [id, name, series] of [['my-kuala-lumpur', 'MOCK Kuala Lumpur', cell], ['my-shah-alam', 'MOCK Shah Alam', cell],
     ['my-petaling-jaya', 'MOCK Petaling Jaya', cell], ['my-klang', 'MOCK Klang', klang]]) {
     places.push({
       id, name, country: 'MY', lat: 3.1, lon: 101.6,
-      official: null, pm25: null,
-      modelled: { index: 'US AQI (modelled, CAMS)', series, pm25_series: [], max: maxPt(series), band: 'Very Unhealthy',
-        source: 'MOCK — stands in for CAMS via Open-Meteo', grid_km: 40 },
+      official: null, pm25: null, official_portal: portal,
+      modelled: opts.cams ? { index: 'US AQI (modelled, CAMS)', series, pm25_series: [], max: maxPt(series), band: 'Very Unhealthy',
+        source: 'MOCK — stands in for CAMS via Open-Meteo', grid_km: 40 } : null,
     });
   }
   const w = places[0].official.max;
@@ -876,6 +884,10 @@ function observedMock() {
       text: `MOCK: Singapore’s West region reached a 24-hour PSI of ${w.v}, “Very Unhealthy”, on ${new Date(w.t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Singapore' })}. Measured by NEA.`,
       place_id: 'sg-west', index: 'PSI', measured: true, value: w.v, t: w.t, band: 'Very Unhealthy',
     },
+    official_portals: { MY: portal },
+    attribution: [
+      'MOCK NOTICE: Contains information from the MOCK PSI readings of a pretend agency accessed on 2001-01-01 from data.gov.sg, made available under the terms of the Singapore Open Data Licence version 1.0 https://data.gov.sg/open-data-licence',
+    ].concat(opts.cams ? ['MOCK NOTICE: Contains modified Copernicus Atmosphere Monitoring Service information (illustrative).'] : []),
     caveats: ['MOCK RESPONSE: invented readings for layout only. Not NEA, DOE or CAMS data.'],
   };
 }
@@ -890,7 +902,9 @@ function hotspotsMock() {
   return {
     as_of: new Date().toISOString(),
     source: 'MOCK — stands in for NASA FIRMS VIIRS NRT',
-    attribution: 'MOCK attribution: NASA FIRMS (LANCE NRT).',
+    attribution: 'MOCK NOTICE: stands in for the NASA FIRMS acknowledgement (LANCE NRT).',
+    regions: { kalimantan: 'Kalimantan (MOCK)', sumatra: 'Sumatra (MOCK)', peninsular_malaysia: 'Peninsular Malaysia' },
+    coverage: by_day.map((d, i) => ({ date: d.date, night_pass: i !== 3, day_pass: i !== 3 })),
     count_by_region: { kalimantan: 12345, sumatra: 6789, peninsular_malaysia: 42 },
     frp_gw_by_region: { kalimantan: 98.7, sumatra: 54.3, peninsular_malaysia: 0.1 },
     by_day,
@@ -931,7 +945,7 @@ export function mockResponse(path, method = 'GET', body = null, opts = {}) {
 function route(path, method = 'GET', body = null, opts = {}) {
   const [clean, query] = path.split('?');
   const params = new URLSearchParams(query || '');
-  if (clean === '/api/now/observed') { if (opts.v1) throw notFound(clean); return observedMock(); }
+  if (clean === '/api/now/observed') { if (opts.v1) throw notFound(clean); return observedMock({ cams: opts.cams }); }
   if (clean === '/api/now/hotspots') { if (opts.v1) throw notFound(clean); return hotspotsMock(); }
   if (clean === '/api/forecast/odds') { if (opts.v1) throw notFound(clean); return oddsMock(); }
   if (clean === '/api/forecast/history') { if (opts.v1) throw notFound(clean); return oddsHistoryMock(); }

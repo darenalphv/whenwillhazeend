@@ -101,6 +101,12 @@ function renderHero(season) {
   $('#hero-asof').textContent = fmtDate(season.as_of || TODAY);
 
   renderFlags(season);
+  renderWeatherNote(season);
+  const err = $('#hero-error-days');
+  if (err) {
+    err.parentElement.hidden = season.model_error_days == null;
+    if (season.model_error_days != null) err.textContent = `± ${fmtNum(season.model_error_days, 0)} days`;
+  }
   renderVeilCaption(veil ? veil.setReading(season) : hazeReading(season), season);
   renderSurvival(season);
   startCountdown(season.active === false ? null : ends.p50);
@@ -156,12 +162,42 @@ function renderFlags(season) {
   box.textContent = '';
   const flags = [];
   if (MOCK) flags.push(['tag--warn', 'mock fixture data']);
-  flags.push(season.live_weather
-    ? ['tag--ok', 'live weather feed']
-    : ['tag--warn', 'no live weather: climatology fallback']);
+  flags.push(weatherFlag(season));
   if (season.scenario) flags.push(['', `scenario: ${titleCase(season.scenario)}`]);
   if (season.region) flags.push(['', `region: ${titleCase(season.region)}`]);
   for (const [cls, text] of flags) box.append(el('span', { class: `tag ${cls}`.trim(), text }));
+}
+
+/** What weather the run used, said plainly. No live feed is a setting, not a fault. */
+function weatherThrough(season) {
+  const w = season.weather && typeof season.weather === 'object' ? season.weather : {};
+  const direct = season.weather_through || season.observed_weather_through || w.observed_through || w.through;
+  if (direct) return direct;
+  // "simulated: the 6 days before the forecast date have no observed weather"
+  const m = String(season.state_source || '').match(/the (\d+) days? before the forecast date have no observed weather/i);
+  if (m && season.as_of) return isoAdd(String(season.as_of).slice(0, 10), -Number(m[1]));
+  return null;
+}
+function weatherFlag(season) {
+  if (season.live_weather) return ['tag--ok', 'live weather feed'];
+  const through = weatherThrough(season);
+  return ['', through
+    ? `running on recorded weather to ${fmtDate(through, { withYear: false })}, plus climatology`
+    : 'running on recorded weather plus climatology'];
+}
+function renderWeatherNote(season) {
+  const box = $('#hero-wx');
+  if (!box) return;
+  const bits = [];
+  if (!season.live_weather) {
+    const through = weatherThrough(season);
+    bits.push(through
+      ? `This run has no live forecast: it uses recorded weather up to ${fmtDate(through, { withYear: false })} and the long-term climate after that.`
+      : 'This run has no live forecast: it uses recorded weather and the long-term climate.');
+    if (season.fallback_reason) bits.push(`${String(season.fallback_reason).replace(/\.$/, '')}.`);
+  }
+  box.textContent = bits.join(' ');
+  box.hidden = !bits.length;
 }
 
 /* Survival curve: drawn at its real pixel width so the labels stay 12px. */
@@ -187,7 +223,12 @@ function drawSurvival() {
   const holder = $('#survival-spark');
   const season = survivalSeason;
   if (!holder || !season) return;
-  const daily = season.daily_end_probability || [];
+  const full = season.daily_end_probability || [];
+  // stop drawing once almost every run has ended; months of flat zero squash the story
+  let cut = full.length;
+  const lastLive = full.map((d) => Number(d.p_still_burning) >= 0.005).lastIndexOf(true);
+  if (lastLive >= 0) cut = Math.min(full.length, Math.max(lastLive + 10, 30));
+  const daily = full.slice(0, cut);
   holder.textContent = '';
   if (!daily.length) {
     holder.append(el('p', { class: 'control__sub', text: 'The model returned no daily curve for this run.' }));
@@ -671,6 +712,18 @@ function bandOf(kind, v) {
 const MY_NAMES = { 'my-kuala-lumpur': 'Kuala Lumpur', 'my-shah-alam': 'Shah Alam', 'my-klang': 'Klang', 'my-petaling-jaya': 'Petaling Jaya' };
 const placeShort = (p) => (p.country === 'SG' ? String(p.name || p.id).replace(/^Singapore\s*[-—–:]?\s*/i, '') || p.name : p.name || MY_NAMES[p.id] || p.id);
 
+function myPlaces(obs) { return ((obs && obs.places) || []).filter((p) => p && p.country === 'MY'); }
+function myHasNoReading(obs) {
+  const my = myPlaces(obs);
+  return my.length > 0 && my.every((p) => !(p.official && p.official.series && p.official.series.length)
+    && !(p.modelled && p.modelled.series && p.modelled.series.length));
+}
+function myPortal(obs) {
+  const fromPlace = myPlaces(obs).map((p) => p.official_portal).find((x) => x && x.url);
+  const fromTop = obs && obs.official_portals && obs.official_portals.MY;
+  return fromPlace || (fromTop && fromTop.url ? fromTop : null);
+}
+
 function renderHeadline(obs) {
   const p = panel('now-headline');
   const h = obs && obs.headline;
@@ -683,6 +736,13 @@ function renderHeadline(obs) {
     el('span', { text: h.index ? (INDEX_NAME[h.index] || h.index) : '' }),
     el('a', { class: 'local__more', href: '#now', text: 'See the week' }),
   );
+  const portal = myPortal(obs);
+  if (portal && myHasNoReading(obs)) {
+    meta.append(el('a', {
+      class: 'local__more', href: portal.url, rel: 'noopener noreferrer', target: '_blank',
+      text: 'KL & Selangor: official API on APIMS',
+    }));
+  }
   setPanelState(p, 'ok');
 }
 
@@ -788,11 +848,99 @@ function renderNow(obs) {
       ].filter(Boolean).join(' '),
     }));
   }
+  // Kuala Lumpur and Selangor with nothing to show: say so, send readers to the
+  // official source, and point at what is known nearby. Silence would read as clean air.
+  if (myHasNoReading(obs)) cards.unshift(noReadingCard(obs));
   if (!cards.length) throw new Error('the endpoint returned no readings for any place');
   for (const c of cards) box.append(c.card);
+  renderAttribution(obs);
   setPanelState(panel('now'), 'ok');
   for (const c of cards) c.draw();
   if (Array.isArray(obs.caveats) && obs.caveats.length) registerCaveats('This week’s readings — /api/now/observed', obs.caveats);
+}
+
+let lastObs = null;
+let lastHotspots = null;
+
+function noReadingCard(obs) {
+  const my = myPlaces(obs);
+  const portal = myPortal(obs) || { url: 'https://eqms.doe.gov.my/APIMS/main', name: 'APIMS (DOE Malaysia)' };
+  const names = my.map(placeShort);
+  const nameList = names.length > 1 ? `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}` : names[0];
+  const card = el('article', { class: 'now-card now-card--none' }, [
+    el('div', { class: 'now-card__head' }, [el('h3', { class: 'now-card__place', text: 'Kuala Lumpur and Selangor' })]),
+    el('p', { class: 'now-card__index' }, [el('span', { class: 'tag tag--none', text: 'no public reading here' })]),
+    el('p', { class: 'now-card__none' }, [
+      `This site has no public measured or modelled air-quality reading for ${nameList} this week. `,
+      el('b', { text: 'That is a gap in the data, not a sign the air is clean.' }),
+    ]),
+    el('a', { class: 'btn btn--primary now-card__portal', href: portal.url, rel: 'noopener noreferrer', target: '_blank' },
+      ['Check the official API (IPU) on APIMS', el('span', { 'aria-hidden': 'true', text: ' ↗' })]),
+    portal.note ? el('p', { class: 'now-card__note', text: portal.note }) : null,
+    el('div', { class: 'now-card__context', id: 'my-context' }),
+  ]);
+  return { card, draw: () => renderMyContext() };
+}
+
+/** What is known around KL this week: Singapore's measured peak, and the fires upwind. */
+function renderMyContext() {
+  const box = $('#my-context');
+  if (!box) return;
+  box.textContent = '';
+  const items = [];
+  const sg = ((lastObs && lastObs.places) || []).filter((p) => p.country === 'SG' && p.official && p.official.max);
+  if (sg.length) {
+    const top = sg.reduce((a, b) => (Number(b.official.max.v) > Number(a.official.max.v) ? b : a));
+    const o = top.official;
+    const idx = INDEX_NAME[o.index] || o.index;
+    items.push(el('li', {}, [
+      'Next door, Singapore’s ', el('b', { text: `${o.averaging ? `${o.averaging} ` : ''}${idx}` }),
+      ` peaked at `, el('b', { text: fmtInt(o.max.v) }),
+      ` (${bandOf('official', o.max.v) || o.band || ''}, ${placeShort(top)}, ${fmtLocalTime(o.max.t)}), measured by NEA. A PSI is not an API reading, but it is the same smoke.`,
+    ]));
+  }
+  const c = lastHotspots && lastHotspots.count_by_region;
+  if (c && (c.sumatra != null || c.kalimantan != null)) {
+    const parts = [];
+    if (c.sumatra != null) parts.push([fmtInt(c.sumatra), ' in Sumatra']);
+    if (c.kalimantan != null) parts.push([fmtInt(c.kalimantan), ' in Kalimantan']);
+    const li = el('li', {}, ['Upwind, satellites counted ']);
+    parts.forEach(([n, where], i) => {
+      if (i) li.append(' and ');
+      li.append(el('b', { text: n }), i === 0 ? ` fire detections${where}` : where);
+    });
+    li.append(' this week.');
+    items.push(li);
+  }
+  if (!items.length) return;
+  box.append(el('p', { class: 'now-card__context-h', text: 'What is known nearby this week' }), el('ul', {}, items));
+}
+
+/** The licence notices, exactly as the API words them. */
+function renderAttribution(obs) {
+  const box = $('#now-attrib');
+  if (!box) return;
+  box.textContent = '';
+  const lines = [].concat((obs && obs.attribution) || [], (lastHotspots && lastHotspots.attribution) || []).filter(Boolean);
+  for (const line of lines) box.append(el('li', {}, linkify(String(line))));
+  box.hidden = !lines.length;
+  // the CAMS line in the static list only when modelled values are actually on the page
+  const cams = $('#src-cams');
+  if (cams) cams.hidden = !((obs && obs.places) || []).some((p) => p.modelled && p.modelled.series && p.modelled.series.length);
+}
+
+/** Plain text with its URLs made into links; nothing else is interpreted. */
+function linkify(text) {
+  const out = [];
+  let last = 0;
+  for (const m of text.matchAll(/https?:\/\/[^\s)]+/g)) {
+    out.push(text.slice(last, m.index));
+    const url = m[0].replace(/[.,;]+$/, '');
+    out.push(el('a', { href: url, rel: 'noopener noreferrer', target: '_blank', text: url }));
+    last = m.index + url.length;
+  }
+  out.push(text.slice(last));
+  return out;
 }
 
 async function loadNow() {
@@ -801,6 +949,7 @@ async function loadNow() {
   try {
     if (await routeMissing('/api/now/observed')) throw notYet('/api/now/observed');
     const obs = await api('/api/now/observed?days=7');
+    lastObs = obs;
     renderHeadline(obs);
     renderNow(obs);
   } catch (e) {
@@ -810,6 +959,11 @@ async function loadNow() {
       : `${describeError(e, 'this week’s readings')} No claim is made about this week without them.`);
   }
 }
+
+const FIRE_COLORS = () => ({
+  kalimantan: COLOR.ember, sumatra: COLOR.amber, peninsular_malaysia: COLOR.cool,
+  sarawak_sabah_brunei: COLOR.haze, other: COLOR.ink4,
+});
 
 async function loadHotspots() {
   const p = panel('now-hotspots');
@@ -824,10 +978,12 @@ async function loadHotspots() {
     if (!ids.length) throw new Error('no regional counts returned');
     const dl = $('#fires-counts');
     dl.textContent = '';
-    const label = (k) => titleCase(k).replace('Peninsular Malaysia', 'Peninsular Malaysia');
+    lastHotspots = h;
+    const SHORT = { sarawak_sabah_brunei: 'Sarawak, Sabah, Brunei', peninsular_malaysia: 'Peninsular Malaysia', other: 'Elsewhere in view' };
+    const label = (k) => SHORT[k] || String((h.regions && h.regions[k]) || titleCase(k)).replace(/\s*\(.*\)\s*$/, '');
     for (const k of ids) {
       dl.append(el('div', {}, [
-        el('dt', {}, [el('i', { style: `background:${({ kalimantan: COLOR.ember, sumatra: COLOR.amber, peninsular_malaysia: COLOR.cool })[k] || COLOR.haze}`, 'aria-hidden': 'true' }), label(k)]),
+        el('dt', {}, [el('i', { style: `background:${FIRE_COLORS()[k] || COLOR.haze}`, 'aria-hidden': 'true' }), label(k)]),
         el('dd', {}, [fmtInt(counts[k]), el('small', { text: frp[k] != null ? `detections · ${fmtSig(frp[k], 2)} GW fire radiative power` : 'detections' })]),
       ]));
     }
@@ -835,10 +991,14 @@ async function loadHotspots() {
     if (Array.isArray(h.by_day) && h.by_day.length) {
       renderFiresByDay('#chart-fires', h.by_day, ids.map((id) => ({ id, label: label(id) })));
     }
+    const gaps = (h.coverage || []).filter((c) => c.night_pass === false && c.day_pass === false).map((c) => fmtDate(c.date, { withYear: false }));
     $('#fires-note').textContent = [
-      'Satellite hotspot detections, not individual fires: one burning peat dome can produce many.',
-      h.attribution || h.source || '',
+      'Satellite hotspot detections, not individual fires: one burning peat dome can produce many, and cloud or thick smoke hides others.',
+      gaps.length ? `No satellite pass was recorded on ${gaps.join(', ')}: that day is a gap in the data, not a day without fires.` : '',
+      h.source ? `Source: ${h.source}.` : '',
     ].filter(Boolean).join(' ');
+    renderMyContext();
+    if (lastObs) renderAttribution(lastObs);
     if (Array.isArray(h.caveats) && h.caveats.length) registerCaveats('Fire detections — /api/now/hotspots', h.caveats);
   } catch (e) {
     setPanelState(p, 'error', e && e.status === 404
@@ -986,9 +1146,12 @@ function marketCard(m, odds) {
   if (odds.resolution && (odds.resolution.definition || odds.resolution.source)) {
     if (odds.resolution.definition) res.append(el('p', { text: odds.resolution.definition }));
     res.append(el('p', {}, [
-      `Yes if that happens on or before ${fmtDate(m.threshold_date)}. `,
-      odds.resolution.source ? `Source: ${odds.resolution.source}.` : 'No resolution source was given.',
+      `Yes if that happens on or before ${fmtDate(m.threshold_date)}`,
+      m.confirmable_on ? `; it can be confirmed from ${fmtDate(m.confirmable_on)}. ` : '. ',
+      odds.resolution.source ? `Source: ${odds.resolution.source.replace(/\.$/, '')}.` : 'No resolution source was given.',
     ]));
+    const st = odds.resolution.status;
+    if (st && (st.state || st.note)) res.append(el('p', { text: `Status: ${st.state || ''}${st.note ? ` — ${st.note}` : ''}` }));
   } else {
     res.append(
       el('p', { text: `“Ends” here means the season model’s simulated burning episode ends on or before ${fmtDate(m.threshold_date)} — the burning, not the haze: the air can stay bad for days afterwards.` }),
@@ -1133,6 +1296,9 @@ async function loadOddsHistory(odds) {
     if (series.length < 2) throw new Error('fewer than two days of history so far');
     setPanelState(p, 'ok');
     renderOddsHistory('#chart-odds', '#odds-history-legend', h, odds.markets);
+    if (series.some((pt) => pt.kind === 'hindcast')) {
+      $('#odds-history-sub').textContent = 'Each line is one question. Earlier points are hindcasts: recomputed afterwards, each using only the weather known on its own day.';
+    }
     $('#odds-history-method').textContent = h.method
       ? `${h.method}${h.computed_at ? ` Computed ${fmtDate(String(h.computed_at).slice(0, 10))}.` : ''}`
       : '';
@@ -1404,7 +1570,7 @@ async function boot() {
   api('/api/health').then((h) => {
     store.health = h;
     if (!MOCK) {
-      setStatus('ok', `API ok${h.version ? ' · ' + h.version : ''}${h.live_weather_available ? ' · live weather' : ' · no live weather'}`);
+      setStatus('ok', `API ok${h.version ? ' · ' + h.version : ''}${h.live_weather_available ? ' · live weather' : ' · recorded weather'}`);
     }
   }).catch(() => {
     if (!MOCK) setStatus('error', 'API unreachable');

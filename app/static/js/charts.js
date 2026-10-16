@@ -372,6 +372,8 @@ const ODDS_COLORS = () => [COLOR.ink, COLOR.cool, COLOR.ember, COLOR.haze, COLOR
 /** Short label for a market, for the legend: "by 30 Nov". */
 function marketShort(m) {
   if (m && m.threshold_date) return `Ends by ${fmtDate(m.threshold_date, { withYear: false })}`;
+  const d = m && String(m.id || '').match(/(\d{4}-\d{2}-\d{2})/);
+  if (d) return `Ends by ${fmtDate(d[1], { withYear: false })}`;
   return m && m.question ? m.question : String(m && m.id);
 }
 
@@ -563,7 +565,7 @@ export function renderFiresByDay(canvasSel, byDay, regions) {
   const canvas = $(canvasSel);
   if (!canvas || !window.Chart) return;
   if (firesChart) firesChart.destroy();
-  const colors = { kalimantan: COLOR.ember, sumatra: COLOR.amber, peninsular_malaysia: COLOR.cool };
+  const colors = { kalimantan: COLOR.ember, sumatra: COLOR.amber, peninsular_malaysia: COLOR.cool, sarawak_sabah_brunei: COLOR.haze, other: COLOR.ink4 };
   const fallback = [COLOR.haze, COLOR.ink3, COLOR.ink];
   const opts = baseOptions();
   opts.scales = {
