@@ -279,3 +279,87 @@ Frontends must handle these as **optional** — render whichever is present.
 | MODEL-SEASON | `app/model/{burn,calibrate,kbdi,meteo,history}.py`, new `app/model/{drought_code,forecast}.py`, `app/model/{hazard_fit,calibration_weather}.json`, `app/data/{seasons,enso,climatology}.json`, new `app/data/iod.json`, new `app/data/loader_season.py`, `scripts/model/season/**`, new tests `tests/test_season_v2.py`, `tests/test_forecast.py`; may **add** the `/api/forecast/*` routes and their schemas |
 | MODEL-EARTH | `app/model/{stock,dispersion,haze3d}.py`, new `app/model/{emissions,transport,health}.py`, `app/data/{fuel_stock,receptors,regions}.json`, `app/data/fires/**`, `app/data/loader.py`, new data files it creates under `app/data/`, `scripts/model/earth/**`, new tests `tests/test_{emissions,stock_v2,transport,health}.py` |
 | Lead | existing `tests/*.py`, `app/data/{provenance.json,README.md}` (reconciled from both reports), `app/model/__init__.py` |
+
+---
+
+## AMENDMENTS — M5: the audience is Peninsular Malaysia and Singapore (2026-10-16)
+
+The owner's audience is **Kuala Lumpur, Selangor (Semenanjung Malaysia) and
+Singapore**. The site must show the haze reaching *them*, and in particular
+the past week, when air quality there passed the 200 mark. The lead checked
+the data before writing this:
+
+- **Singapore, official (NEA via data.gov.sg):** 14 Oct 2026, West region
+  **24-h PSI 205** ("Very Unhealthy"); 1-h PM2.5 up to 288 µg/m³.
+- **KL / Selangor, modelled (CAMS via Open-Meteo):** US AQI above 200 on most
+  days 9–16 Oct, max 272 on 13 Oct. CAMS's ~40 km grid cannot separate KL from
+  Shah Alam — they return identical values.
+- **Fires this week (NASA FIRMS VIIRS, open 7-day CSV, no key):** Kalimantan
+  ~20,500 hotspots / 124 GW FRP; Sumatra ~8,500 / 61 GW; Peninsula ~60.
+
+### Rules for showing "now" data — non-negotiable
+
+1. **Every reading is labelled with its index, averaging period, and whether it
+   is measured or modelled.** Malaysia's official index is the **API (IPU,
+   Indeks Pencemaran Udara)**; Singapore's is the **PSI**; CAMS output is a
+   **modelled US-AQI-equivalent**. Never call one by another's name, never
+   compare their numbers as if they were the same scale, never call a CAMS
+   value "API" or "PSI".
+2. **Official measurements lead; models fill gaps and say so.** The headline
+   prefers an official measured exceedance. A modelled value can appear, but
+   the word "modelled" sits next to the number, not in a footnote.
+3. **Nothing about this week is hardcoded.** Including the "it passed 200"
+   line: it is generated from the data, so if a reading is revised or the
+   window moves, the claim moves with it. No data → no claim.
+4. Attribution on the page for each source: NEA / data.gov.sg (Singapore Open
+   Data Licence v1.0), NASA FIRMS (LANCE NRT), CAMS / Copernicus via
+   Open-Meteo (CC BY 4.0), and DOE Malaysia if official API data is used.
+
+### New endpoints (LIVE-DATA agent; `app/live/**`, routes in `app/api/routes_live.py`)
+
+```
+GET /api/now/observed?days=7 -> {
+  "as_of", "window": {"start", "end"},
+  "places": [{
+    "id": "sg-west" | "sg-central" | ... | "my-kuala-lumpur" | "my-shah-alam" | "my-klang" | "my-petaling-jaya",
+    "name", "country": "SG" | "MY", "lat", "lon",
+    "official": null | {"index": "PSI" | "API", "averaging": "24h" | "1h",
+                        "series": [{"t", "v"}], "max": {"t", "v"},
+                        "band": "<official band name>", "source", "licence", "url"},
+    "pm25": null | {"averaging": "1h", "series": [...], "max": {...}, "source"},
+    "modelled": null | {"index": "US AQI (modelled, CAMS)", "series": [...],
+                        "pm25_series": [...], "max": {...}, "band", "source",
+                        "grid_km": 40}
+  }],
+  "headline": null | {"text", "place_id", "index", "measured": true|false, "value", "t", "band"},
+  "caveats": [...]
+}
+GET /api/now/hotspots?days=7 -> {
+  "as_of", "source", "attribution",
+  "count_by_region": {"kalimantan", "sumatra", "peninsular_malaysia", ...},
+  "frp_gw_by_region": {...},
+  "by_day": [{"date", "kalimantan", "sumatra", ...}],
+  "clusters": <GeoJSON FeatureCollection; aggregated bins, properties
+               {count, frp_mw, first_date, last_date, region}>,
+  "caveats": [...]
+}
+GET /api/now/field?days=7&step_hours=3 -> {
+  "grid": {lon_min, lon_max, lat_min, lat_max, nx, ny, dlon, dlat, order},
+  "frames": [{"t", "values": [int µg/m³ PM2.5, row-major S->N]}],
+  "units", "source", "attribution", "caveats"
+}
+```
+
+Band names per index (the UI shows the index's *own* band names):
+- **PSI (SG)** and **API (MY)**: 0–50 Good, 51–100 Moderate, 101–200
+  Unhealthy, 201–300 Very Unhealthy, >300 Hazardous.
+- **US AQI**: 0–50 Good, 51–100 Moderate, 101–150 Unhealthy for Sensitive
+  Groups, 151–200 Unhealthy, 201–300 Very Unhealthy, >300 Hazardous.
+
+### Framing
+
+The 3D hero and the simulator's default view frame **the Strait of Malacca
+with KL/Selangor and Singapore in the foreground**, Sumatra and Kalimantan
+fires both in view, smoke visibly crossing to the peninsula. A **"This week"**
+mode replays the real 7 days: FIRMS hotspots by day plus the CAMS PM2.5 field,
+with KL, Shah Alam, Klang, Petaling Jaya and Singapore's five regions pinned.
