@@ -3,7 +3,7 @@
 Python 3.14 (macOS, homebrew). Stack: **FastAPI + uvicorn + Jinja2 + numpy + httpx**.
 Frontend: **vanilla JS + Leaflet 1.9 + Chart.js 4** via CDN. No build step. No npm.
 
-Repo root: `/Users/daren/code/whenwillhazeend`
+Repo root: the root of this repository
 
 ## Golden rules
 1. **Do not create or edit files outside the paths you own.** Another agent owns them.

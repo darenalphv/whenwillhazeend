@@ -103,7 +103,7 @@ The native workflow (`./run.sh`, uvicorn on :8000, pytest) is unchanged.
 ```bash
 # 0. once: the account must be on Workers Paid (dashboard → Workers & Pages → Plans).
 #    `limits.cpu_ms` in wrangler.jsonc is rejected on the Free plan.
-cd /Users/daren/code/whenwillhazeend
+cd whenwillhazeend   # the repository root
 npm install
 npx wrangler login                      # owner, interactive
 npx wrangler whoami                     # confirm the right account
