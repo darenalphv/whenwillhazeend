@@ -246,9 +246,17 @@ def test_no_fire_means_fire_never_exhausts_the_stock(client: TestClient) -> None
     )
     assert body["exhaustion_year"]["p50"] is None
 
-    # And the stock must not fall: trajectories are flat or rising (restoration).
-    p50 = body["trajectories"]["p50"]
-    assert p50[-1] >= p50[0] - 1e-6
+    # With no fire and no conversion the forest must not fall. Peat still does:
+    # drained peat oxidises and subsides whether or not it burns (Hooijer 2012;
+    # Evans 2019), so the combined stock is no longer flat -- that is physics,
+    # not fire. What must hold is that fire itself removes nothing.
+    forest = body["trajectories"]["forest_p50"]
+    assert forest[-1] >= forest[0] - 1e-6, "forest fell with fire and conversion off"
+    carbon = body["headlines"]["peat"]["carbon_lost_mt_c"]
+    assert carbon["fire_by_horizon"] == pytest.approx(0.0, abs=1e-6), (
+        "fire removed peat with burn_reduction_pct=100"
+    )
+    assert carbon["drainage_by_horizon"] > 0, "drainage subsidence is not wired"
 
 
 def test_burn_reduction_monotonically_delays_exhaustion(client: TestClient) -> None:

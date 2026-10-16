@@ -1,0 +1,709 @@
+{
+ "generated_by": "scripts/model/earth/build_burned_area.py",
+ "source": "GFED4.1s gridded burned area and dry matter (van der Werf et al. 2017, ESSD 9:697), clipped to geoBoundaries province polygons; level moved to MCD64A1 / GFED5 with Chen et al. 2023 Equatorial-Asia ratios.",
+ "licence": "GFED: no licence stated on the download pages (recorded per MODEL_SPEC B2). geoBoundaries: CC BY 4.0.",
+ "ratios": {
+  "central_gfed5_over_gfed4s": 1.927,
+  "low_mcd64_over_gfed4s": 0.698,
+  "high_gfed5_over_mcd64": 2.594,
+  "source": "Chen et al. 2023, ESSD 15:5227 [V]; ratios [D]"
+ },
+ "dm_regression_2017_2023": {
+  "kalimantan": {
+   "mha_per_tg_peat_dm": 0.00134,
+   "mha_per_tg_nonpeat_dm": 0.01002,
+   "r2_2001_2016": 0.98
+  },
+  "sumatra": {
+   "mha_per_tg_peat_dm": 0.0,
+   "mha_per_tg_nonpeat_dm": 0.01289,
+   "r2_2001_2016": 0.642
+  }
+ },
+ "units": "Mha",
+ "series": {
+  "kalimantan": {
+   "1997": {
+    "gfed4s_mha": 4.6957,
+    "low": 3.2755,
+    "central": 9.0478,
+    "high": 12.1825,
+    "peat_cell_mha_gfed4s": 1.8014,
+    "peat_share": 0.384,
+    "dm_tg": 1089.09,
+    "pm25_tg": 16.481,
+    "basis": "gfed4s_burned_area"
+   },
+   "1998": {
+    "gfed4s_mha": 0.8489,
+    "low": 0.5921,
+    "central": 1.6357,
+    "high": 2.2023,
+    "peat_cell_mha_gfed4s": 0.0227,
+    "peat_share": 0.027,
+    "dm_tg": 85.27,
+    "pm25_tg": 0.798,
+    "basis": "gfed4s_burned_area"
+   },
+   "1999": {
+    "gfed4s_mha": 0.5826,
+    "low": 0.4064,
+    "central": 1.1226,
+    "high": 1.5116,
+    "peat_cell_mha_gfed4s": 0.047,
+    "peat_share": 0.081,
+    "dm_tg": 68.37,
+    "pm25_tg": 0.742,
+    "basis": "gfed4s_burned_area"
+   },
+   "2000": {
+    "gfed4s_mha": 0.0829,
+    "low": 0.0578,
+    "central": 0.1598,
+    "high": 0.2151,
+    "peat_cell_mha_gfed4s": 0.0059,
+    "peat_share": 0.072,
+    "dm_tg": 8.01,
+    "pm25_tg": 0.079,
+    "basis": "gfed4s_burned_area"
+   },
+   "2001": {
+    "gfed4s_mha": 0.2581,
+    "low": 0.1801,
+    "central": 0.4974,
+    "high": 0.6697,
+    "peat_cell_mha_gfed4s": 0.0822,
+    "peat_share": 0.318,
+    "dm_tg": 41.75,
+    "pm25_tg": 0.633,
+    "basis": "gfed4s_burned_area"
+   },
+   "2002": {
+    "gfed4s_mha": 1.6745,
+    "low": 1.1681,
+    "central": 3.2265,
+    "high": 4.3444,
+    "peat_cell_mha_gfed4s": 0.5257,
+    "peat_share": 0.314,
+    "dm_tg": 281.59,
+    "pm25_tg": 4.0,
+    "basis": "gfed4s_burned_area"
+   },
+   "2003": {
+    "gfed4s_mha": 0.384,
+    "low": 0.2678,
+    "central": 0.7398,
+    "high": 0.9962,
+    "peat_cell_mha_gfed4s": 0.1135,
+    "peat_share": 0.296,
+    "dm_tg": 49.76,
+    "pm25_tg": 0.721,
+    "basis": "gfed4s_burned_area"
+   },
+   "2004": {
+    "gfed4s_mha": 1.1695,
+    "low": 0.8158,
+    "central": 2.2534,
+    "high": 3.0341,
+    "peat_cell_mha_gfed4s": 0.2637,
+    "peat_share": 0.225,
+    "dm_tg": 162.01,
+    "pm25_tg": 2.185,
+    "basis": "gfed4s_burned_area"
+   },
+   "2005": {
+    "gfed4s_mha": 0.3028,
+    "low": 0.2112,
+    "central": 0.5835,
+    "high": 0.7856,
+    "peat_cell_mha_gfed4s": 0.1114,
+    "peat_share": 0.368,
+    "dm_tg": 42.7,
+    "pm25_tg": 0.629,
+    "basis": "gfed4s_burned_area"
+   },
+   "2006": {
+    "gfed4s_mha": 1.8357,
+    "low": 1.2805,
+    "central": 3.537,
+    "high": 4.7625,
+    "peat_cell_mha_gfed4s": 0.7339,
+    "peat_share": 0.4,
+    "dm_tg": 343.18,
+    "pm25_tg": 5.209,
+    "basis": "gfed4s_burned_area"
+   },
+   "2007": {
+    "gfed4s_mha": 0.2325,
+    "low": 0.1622,
+    "central": 0.448,
+    "high": 0.6033,
+    "peat_cell_mha_gfed4s": 0.0045,
+    "peat_share": 0.019,
+    "dm_tg": 14.0,
+    "pm25_tg": 0.125,
+    "basis": "gfed4s_burned_area"
+   },
+   "2008": {
+    "gfed4s_mha": 0.1196,
+    "low": 0.0834,
+    "central": 0.2304,
+    "high": 0.3103,
+    "peat_cell_mha_gfed4s": 0.0032,
+    "peat_share": 0.026,
+    "dm_tg": 5.9,
+    "pm25_tg": 0.054,
+    "basis": "gfed4s_burned_area"
+   },
+   "2009": {
+    "gfed4s_mha": 1.1982,
+    "low": 0.8358,
+    "central": 2.3088,
+    "high": 3.1087,
+    "peat_cell_mha_gfed4s": 0.5732,
+    "peat_share": 0.478,
+    "dm_tg": 240.69,
+    "pm25_tg": 3.914,
+    "basis": "gfed4s_burned_area"
+   },
+   "2010": {
+    "gfed4s_mha": 0.068,
+    "low": 0.0474,
+    "central": 0.1309,
+    "high": 0.1763,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 3.09,
+    "pm25_tg": 0.025,
+    "basis": "gfed4s_burned_area"
+   },
+   "2011": {
+    "gfed4s_mha": 0.3902,
+    "low": 0.2722,
+    "central": 0.7519,
+    "high": 1.0124,
+    "peat_cell_mha_gfed4s": 0.1651,
+    "peat_share": 0.423,
+    "dm_tg": 52.12,
+    "pm25_tg": 0.819,
+    "basis": "gfed4s_burned_area"
+   },
+   "2012": {
+    "gfed4s_mha": 0.3826,
+    "low": 0.2669,
+    "central": 0.7372,
+    "high": 0.9926,
+    "peat_cell_mha_gfed4s": 0.1657,
+    "peat_share": 0.433,
+    "dm_tg": 52.53,
+    "pm25_tg": 0.854,
+    "basis": "gfed4s_burned_area"
+   },
+   "2013": {
+    "gfed4s_mha": 0.1946,
+    "low": 0.1358,
+    "central": 0.375,
+    "high": 0.5049,
+    "peat_cell_mha_gfed4s": 0.0218,
+    "peat_share": 0.112,
+    "dm_tg": 11.17,
+    "pm25_tg": 0.129,
+    "basis": "gfed4s_burned_area"
+   },
+   "2014": {
+    "gfed4s_mha": 0.981,
+    "low": 0.6843,
+    "central": 1.8902,
+    "high": 2.5451,
+    "peat_cell_mha_gfed4s": 0.3996,
+    "peat_share": 0.407,
+    "dm_tg": 152.48,
+    "pm25_tg": 2.337,
+    "basis": "gfed4s_burned_area"
+   },
+   "2015": {
+    "gfed4s_mha": 1.5765,
+    "low": 1.0997,
+    "central": 3.0376,
+    "high": 4.09,
+    "peat_cell_mha_gfed4s": 0.7233,
+    "peat_share": 0.459,
+    "dm_tg": 320.15,
+    "pm25_tg": 5.301,
+    "basis": "gfed4s_burned_area"
+   },
+   "2016": {
+    "gfed4s_mha": 0.1198,
+    "low": 0.0836,
+    "central": 0.2308,
+    "high": 0.3108,
+    "peat_cell_mha_gfed4s": 0.0014,
+    "peat_share": 0.012,
+    "dm_tg": 7.31,
+    "pm25_tg": 0.068,
+    "basis": "gfed4s_burned_area"
+   },
+   "2017": {
+    "gfed4s_mha": 0.0322,
+    "low": 0.0224,
+    "central": 0.062,
+    "high": 0.0835,
+    "peat_cell_mha_gfed4s": 0.0021,
+    "peat_share": 0.065,
+    "dm_tg": 4.56,
+    "pm25_tg": 0.058,
+    "basis": "dm_regression"
+   },
+   "2018": {
+    "gfed4s_mha": 0.2317,
+    "low": 0.1616,
+    "central": 0.4465,
+    "high": 0.6012,
+    "peat_cell_mha_gfed4s": 0.0295,
+    "peat_share": 0.127,
+    "dm_tg": 42.19,
+    "pm25_tg": 0.652,
+    "basis": "dm_regression"
+   },
+   "2019": {
+    "gfed4s_mha": 0.8713,
+    "low": 0.6078,
+    "central": 1.6789,
+    "high": 2.2606,
+    "peat_cell_mha_gfed4s": 0.114,
+    "peat_share": 0.131,
+    "dm_tg": 160.64,
+    "pm25_tg": 2.504,
+    "basis": "dm_regression"
+   },
+   "2020": {
+    "gfed4s_mha": 0.0213,
+    "low": 0.0148,
+    "central": 0.041,
+    "high": 0.0552,
+    "peat_cell_mha_gfed4s": 0.0005,
+    "peat_share": 0.024,
+    "dm_tg": 2.45,
+    "pm25_tg": 0.024,
+    "basis": "dm_regression"
+   },
+   "2021": {
+    "gfed4s_mha": 0.0276,
+    "low": 0.0193,
+    "central": 0.0532,
+    "high": 0.0717,
+    "peat_cell_mha_gfed4s": 0.0017,
+    "peat_share": 0.061,
+    "dm_tg": 3.85,
+    "pm25_tg": 0.048,
+    "basis": "dm_regression"
+   },
+   "2022": {
+    "gfed4s_mha": 0.0166,
+    "low": 0.0116,
+    "central": 0.0319,
+    "high": 0.043,
+    "peat_cell_mha_gfed4s": 0.0007,
+    "peat_share": 0.04,
+    "dm_tg": 2.08,
+    "pm25_tg": 0.023,
+    "basis": "dm_regression"
+   },
+   "2023": {
+    "gfed4s_mha": 0.3166,
+    "low": 0.2208,
+    "central": 0.6099,
+    "high": 0.8213,
+    "peat_cell_mha_gfed4s": 0.0391,
+    "peat_share": 0.123,
+    "dm_tg": 56.86,
+    "pm25_tg": 0.872,
+    "basis": "dm_regression"
+   }
+  },
+  "sumatra": {
+   "1997": {
+    "gfed4s_mha": 3.0438,
+    "low": 2.1232,
+    "central": 5.8648,
+    "high": 7.8968,
+    "peat_cell_mha_gfed4s": 1.0213,
+    "peat_share": 0.336,
+    "dm_tg": 771.14,
+    "pm25_tg": 11.74,
+    "basis": "gfed4s_burned_area"
+   },
+   "1998": {
+    "gfed4s_mha": 0.7978,
+    "low": 0.5565,
+    "central": 1.5372,
+    "high": 2.0698,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 70.72,
+    "pm25_tg": 0.563,
+    "basis": "gfed4s_burned_area"
+   },
+   "1999": {
+    "gfed4s_mha": 0.5163,
+    "low": 0.3601,
+    "central": 0.9948,
+    "high": 1.3394,
+    "peat_cell_mha_gfed4s": 0.0634,
+    "peat_share": 0.123,
+    "dm_tg": 68.07,
+    "pm25_tg": 0.777,
+    "basis": "gfed4s_burned_area"
+   },
+   "2000": {
+    "gfed4s_mha": 0.3235,
+    "low": 0.2256,
+    "central": 0.6233,
+    "high": 0.8392,
+    "peat_cell_mha_gfed4s": 0.0052,
+    "peat_share": 0.016,
+    "dm_tg": 35.74,
+    "pm25_tg": 0.335,
+    "basis": "gfed4s_burned_area"
+   },
+   "2001": {
+    "gfed4s_mha": 0.1276,
+    "low": 0.089,
+    "central": 0.2459,
+    "high": 0.3311,
+    "peat_cell_mha_gfed4s": 0.018,
+    "peat_share": 0.141,
+    "dm_tg": 10.13,
+    "pm25_tg": 0.133,
+    "basis": "gfed4s_burned_area"
+   },
+   "2002": {
+    "gfed4s_mha": 0.7571,
+    "low": 0.5281,
+    "central": 1.4588,
+    "high": 1.9643,
+    "peat_cell_mha_gfed4s": 0.1909,
+    "peat_share": 0.252,
+    "dm_tg": 111.86,
+    "pm25_tg": 1.568,
+    "basis": "gfed4s_burned_area"
+   },
+   "2003": {
+    "gfed4s_mha": 0.3596,
+    "low": 0.2508,
+    "central": 0.6928,
+    "high": 0.9329,
+    "peat_cell_mha_gfed4s": 0.0564,
+    "peat_share": 0.157,
+    "dm_tg": 42.09,
+    "pm25_tg": 0.559,
+    "basis": "gfed4s_burned_area"
+   },
+   "2004": {
+    "gfed4s_mha": 0.7053,
+    "low": 0.492,
+    "central": 1.3589,
+    "high": 1.8297,
+    "peat_cell_mha_gfed4s": 0.1013,
+    "peat_share": 0.144,
+    "dm_tg": 90.26,
+    "pm25_tg": 1.166,
+    "basis": "gfed4s_burned_area"
+   },
+   "2005": {
+    "gfed4s_mha": 0.4681,
+    "low": 0.3266,
+    "central": 0.902,
+    "high": 1.2146,
+    "peat_cell_mha_gfed4s": 0.1537,
+    "peat_share": 0.328,
+    "dm_tg": 87.14,
+    "pm25_tg": 1.348,
+    "basis": "gfed4s_burned_area"
+   },
+   "2006": {
+    "gfed4s_mha": 1.3434,
+    "low": 0.9371,
+    "central": 2.5885,
+    "high": 3.4854,
+    "peat_cell_mha_gfed4s": 0.4523,
+    "peat_share": 0.337,
+    "dm_tg": 286.64,
+    "pm25_tg": 4.348,
+    "basis": "gfed4s_burned_area"
+   },
+   "2007": {
+    "gfed4s_mha": 0.3419,
+    "low": 0.2385,
+    "central": 0.6588,
+    "high": 0.8871,
+    "peat_cell_mha_gfed4s": 0.009,
+    "peat_share": 0.026,
+    "dm_tg": 25.09,
+    "pm25_tg": 0.246,
+    "basis": "gfed4s_burned_area"
+   },
+   "2008": {
+    "gfed4s_mha": 0.3449,
+    "low": 0.2406,
+    "central": 0.6646,
+    "high": 0.8949,
+    "peat_cell_mha_gfed4s": 0.0179,
+    "peat_share": 0.052,
+    "dm_tg": 21.56,
+    "pm25_tg": 0.222,
+    "basis": "gfed4s_burned_area"
+   },
+   "2009": {
+    "gfed4s_mha": 0.5974,
+    "low": 0.4167,
+    "central": 1.151,
+    "high": 1.5498,
+    "peat_cell_mha_gfed4s": 0.112,
+    "peat_share": 0.188,
+    "dm_tg": 93.49,
+    "pm25_tg": 1.29,
+    "basis": "gfed4s_burned_area"
+   },
+   "2010": {
+    "gfed4s_mha": 0.1842,
+    "low": 0.1285,
+    "central": 0.3549,
+    "high": 0.4778,
+    "peat_cell_mha_gfed4s": 0.0036,
+    "peat_share": 0.02,
+    "dm_tg": 6.8,
+    "pm25_tg": 0.062,
+    "basis": "gfed4s_burned_area"
+   },
+   "2011": {
+    "gfed4s_mha": 0.5501,
+    "low": 0.3837,
+    "central": 1.06,
+    "high": 1.4272,
+    "peat_cell_mha_gfed4s": 0.1252,
+    "peat_share": 0.228,
+    "dm_tg": 81.81,
+    "pm25_tg": 1.151,
+    "basis": "gfed4s_burned_area"
+   },
+   "2012": {
+    "gfed4s_mha": 0.4992,
+    "low": 0.3483,
+    "central": 0.962,
+    "high": 1.2953,
+    "peat_cell_mha_gfed4s": 0.1117,
+    "peat_share": 0.224,
+    "dm_tg": 79.09,
+    "pm25_tg": 1.088,
+    "basis": "gfed4s_burned_area"
+   },
+   "2013": {
+    "gfed4s_mha": 0.3823,
+    "low": 0.2667,
+    "central": 0.7366,
+    "high": 0.9918,
+    "peat_cell_mha_gfed4s": 0.0945,
+    "peat_share": 0.247,
+    "dm_tg": 82.67,
+    "pm25_tg": 1.213,
+    "basis": "gfed4s_burned_area"
+   },
+   "2014": {
+    "gfed4s_mha": 0.8508,
+    "low": 0.5935,
+    "central": 1.6394,
+    "high": 2.2074,
+    "peat_cell_mha_gfed4s": 0.2962,
+    "peat_share": 0.348,
+    "dm_tg": 195.98,
+    "pm25_tg": 3.007,
+    "basis": "gfed4s_burned_area"
+   },
+   "2015": {
+    "gfed4s_mha": 1.1607,
+    "low": 0.8097,
+    "central": 2.2365,
+    "high": 3.0114,
+    "peat_cell_mha_gfed4s": 0.405,
+    "peat_share": 0.349,
+    "dm_tg": 278.2,
+    "pm25_tg": 4.557,
+    "basis": "gfed4s_burned_area"
+   },
+   "2016": {
+    "gfed4s_mha": 0.1769,
+    "low": 0.1234,
+    "central": 0.3408,
+    "high": 0.4589,
+    "peat_cell_mha_gfed4s": 0.0233,
+    "peat_share": 0.132,
+    "dm_tg": 20.4,
+    "pm25_tg": 0.253,
+    "basis": "gfed4s_burned_area"
+   },
+   "2017": {
+    "gfed4s_mha": 0.0532,
+    "low": 0.0371,
+    "central": 0.1026,
+    "high": 0.1381,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 5.5,
+    "pm25_tg": 0.063,
+    "basis": "dm_regression"
+   },
+   "2018": {
+    "gfed4s_mha": 0.1575,
+    "low": 0.1098,
+    "central": 0.3034,
+    "high": 0.4085,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 20.32,
+    "pm25_tg": 0.279,
+    "basis": "dm_regression"
+   },
+   "2019": {
+    "gfed4s_mha": 1.0462,
+    "low": 0.7298,
+    "central": 2.0158,
+    "high": 2.7142,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 155.91,
+    "pm25_tg": 2.32,
+    "basis": "dm_regression"
+   },
+   "2020": {
+    "gfed4s_mha": 0.0564,
+    "low": 0.0394,
+    "central": 0.1088,
+    "high": 0.1464,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 6.96,
+    "pm25_tg": 0.092,
+    "basis": "dm_regression"
+   },
+   "2021": {
+    "gfed4s_mha": 0.0445,
+    "low": 0.031,
+    "central": 0.0857,
+    "high": 0.1154,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 4.98,
+    "pm25_tg": 0.062,
+    "basis": "dm_regression"
+   },
+   "2022": {
+    "gfed4s_mha": 0.0291,
+    "low": 0.0203,
+    "central": 0.056,
+    "high": 0.0754,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 2.81,
+    "pm25_tg": 0.03,
+    "basis": "dm_regression"
+   },
+   "2023": {
+    "gfed4s_mha": 0.2551,
+    "low": 0.1779,
+    "central": 0.4914,
+    "high": 0.6617,
+    "peat_cell_mha_gfed4s": 0.0,
+    "peat_share": 0.0,
+    "dm_tg": 39.18,
+    "pm25_tg": 0.592,
+    "basis": "dm_regression"
+   }
+  }
+ },
+ "kalimantan_share_of_kal_plus_sumatra": {
+  "1997": 0.607,
+  "1998": 0.516,
+  "1999": 0.53,
+  "2000": 0.204,
+  "2001": 0.669,
+  "2002": 0.689,
+  "2003": 0.516,
+  "2004": 0.624,
+  "2005": 0.393,
+  "2006": 0.577,
+  "2007": 0.405,
+  "2008": 0.257,
+  "2009": 0.667,
+  "2010": 0.27,
+  "2011": 0.415,
+  "2012": 0.434,
+  "2013": 0.337,
+  "2014": 0.536,
+  "2015": 0.576,
+  "2016": 0.404,
+  "2017": 0.377,
+  "2018": 0.595,
+  "2019": 0.454,
+  "2020": 0.274,
+  "2021": 0.383,
+  "2022": 0.363,
+  "2023": 0.554
+ },
+ "base_rates": {
+  "nonpeat_mha_per_yr": {
+   "low": 0.3052,
+   "central": 0.8429,
+   "high": 1.135,
+   "gfed4s": 0.4375,
+   "period": "2001-2016",
+   "definition": "Kalimantan burned area outside peat-dominated cells",
+   "status": "derived"
+  },
+  "peat_burned_fraction_per_yr": {
+   "low": 0.036,
+   "high": 0.0647,
+   "gfed4s_peat_cells": 0.0508,
+   "low_source": "Vetrita & Cochrane 2020, MODIS C6 2001-2018 (a lower bound: MODIS misses small and smouldering fires)",
+   "high_source": "GFED5 Equatorial Asia peat burned area 0.56 Mha/yr (Chen et al. 2023) x Kalimantan share of GFED4.1s peat dry matter 2001-2016 (0.55) / MoA 2011 peat area 4.78 Mha [D]",
+   "status": "derived"
+  },
+  "official_floor_klhk_mha_per_yr": {
+   "value": 0.198,
+   "note": "The v1 A_base: KLHK national x 0.29 in ENSO-neutral years. Kept only as the official floor for comparison."
+  }
+ },
+ "indonesia_validation": {
+  "2015": {
+   "official": 2.61,
+   "satellite": [
+    4.6
+   ]
+  },
+  "2019": {
+   "official": 1.65,
+   "satellite": [
+    2.03,
+    2.04,
+    2.09,
+    2.2,
+    2.64,
+    3.11,
+    3.8
+   ]
+  },
+  "2023": {
+   "official": 1.16,
+   "satellite": [
+    1.11,
+    1.7
+   ]
+  },
+  "source": "MODEL_SPEC 3.4 B4 (KLHK SiPongi; Lohberger 2018; Gaveau 2021, 2026; Chen 2023)"
+ },
+ "caveats": [
+  "GFED4.1s is built on MODIS burned area, which misses much of the small and smouldering burning on Indonesian peat; the GFED5 rescaling corrects the level for the region as a whole, not year by year.",
+  "Peat share is a cell-level proxy (0.25 deg cells where peat is at least half of the dry matter burned), not an intersection with a peat map; published peat shares for 2019 run from 16% to 40% depending on the map and product.",
+  "2017-2023 burned area is estimated from GFED4.1s active-fire-based dry matter, not mapped."
+ ]
+}

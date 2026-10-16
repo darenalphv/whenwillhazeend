@@ -5,92 +5,183 @@
   {
    "id": "peat_intact",
    "label": "Intact peatland",
-   "area_mha": 1.8,
-   "fuel_load_t_ha": 330,
-   "pm25_ef_g_kg": 17.3,
+   "area_mha": 1.912,
+   "fuel_load_t_ha": 286,
+   "pm25_ef_g_kg": 22.3,
    "burn_susceptibility": 0.35,
-   "area_source": "KLHK 2025 (Kalimantan peat 4.5 Mha) minus the 2.7 Mha reported as drained; the residual split is arithmetic, the totals are published.",
-   "fuel_load_source": "Ballhorn et al. 2009 PNAS: mean peat burn depth 0.33 m over Central Kalimantan (2006), x bulk density ~0.1 g/cm3 = ~330 t/ha consumed per fire.",
-   "ef_source": "Stockwell et al. 2016/2018 ACP, field PM2.5 EF for Central Kalimantan peat: 17.3 +/- 6.0 g/kg (range 6.0-29.6).",
+   "area_source": "MoA/BBSDLP 2011 Kalimantan peat 4.78 Mha (Ritung et al., via Warren et al. 2017, CBM 12:12) x 40% drained/intact. The 60% drained fraction is the v1 2.7/4.5 Mha ratio and is UNVERIFIED (no single source).",
+   "fuel_load_source": "E1 (MODEL_SPEC 1.4): first-fire consumption 0.26 m (Huijnen et al. 2016; range 0.17-0.37) x bulk density 0.11 g/cm3 (Kiely et al. 2019; Warren et al. 2012) = 286 t DM/ha (187-470). Repeat fires take 0.56/0.33/0.11 of that (Konecny et al. 2016).",
+   "ef_source": "Kiely et al. 2019 (ACP 19:11105) mean of three Kalimantan field values: 22.3 g/kg (low 17.3 Jayarathne et al. 2018 ACP 18:2585; high 28 Wooster et al. 2018). The v1 attribution of 17.3 to Stockwell 2016 was wrong: that is Jayarathne 2018; Stockwell 2016 gives a preliminary 21.5.",
    "susceptibility_source": "MODEL PARAMETER, not a measurement. Relative annual burn probability in a drought year, normalised so drained peat = 1.0. Intact peat has a high water table and burns far less readily.",
-   "estimated": true
+   "estimated": true,
+   "ef_range_g_kg": [
+    17.3,
+    28.0
+   ],
+   "fuel_load_range_t_ha": [
+    187,
+    470
+   ]
   },
   {
    "id": "peat_drained",
    "label": "Drained / degraded peatland",
-   "area_mha": 2.7,
-   "fuel_load_t_ha": 330,
-   "pm25_ef_g_kg": 17.3,
+   "area_mha": 2.868,
+   "fuel_load_t_ha": 286,
+   "pm25_ef_g_kg": 22.3,
    "burn_susceptibility": 1.0,
-   "area_source": "Reported drained peatland extent in Kalimantan, ~2.7 Mha (peatland degradation literature; includes the ex-Mega Rice Project canal network in Kalimantan Tengah).",
-   "fuel_load_source": "Ballhorn et al. 2009 PNAS (0.33 m mean burn depth, ~0.1 g/cm3 bulk density).",
-   "ef_source": "Stockwell et al. 2016/2018 ACP: 17.3 g/kg PM2.5.",
+   "area_source": "MoA/BBSDLP 2011 Kalimantan peat 4.78 Mha (Ritung et al., via Warren et al. 2017, CBM 12:12) x 60% drained/intact. The 60% drained fraction is the v1 2.7/4.5 Mha ratio and is UNVERIFIED (no single source).",
+   "fuel_load_source": "E1 (MODEL_SPEC 1.4): first-fire consumption 0.26 m (Huijnen et al. 2016; range 0.17-0.37) x bulk density 0.11 g/cm3 (Kiely et al. 2019; Warren et al. 2012) = 286 t DM/ha (187-470). Repeat fires take 0.56/0.33/0.11 of that (Konecny et al. 2016).",
+   "ef_source": "Kiely et al. 2019 (ACP 19:11105) mean of three Kalimantan field values: 22.3 g/kg (low 17.3 Jayarathne et al. 2018 ACP 18:2585; high 28 Wooster et al. 2018). The v1 attribution of 17.3 to Stockwell 2016 was wrong: that is Jayarathne 2018; Stockwell 2016 gives a preliminary 21.5.",
    "susceptibility_source": "MODEL PARAMETER (reference pool = 1.0). Drained peat is the highest-risk class; drainage canals raise local fire risk by a reported factor of ~4.5.",
-   "estimated": true
+   "estimated": true,
+   "ef_range_g_kg": [
+    17.3,
+    28.0
+   ],
+   "fuel_load_range_t_ha": [
+    187,
+    470
+   ]
   },
   {
    "id": "primary_forest",
    "label": "Primary forest (non-peat)",
    "area_mha": 12.76,
    "fuel_load_t_ha": 55,
-   "pm25_ef_g_kg": 9.1,
+   "pm25_ef_g_kg": 8.3,
    "burn_susceptibility": 0.1,
    "area_source": "ESTIMATED. KLHK 2022 puts Kalimantan forest cover at 27.4 Mha (measured). Peat-swamp forest (~2.6 Mha, ASSUMED) is removed to avoid double-counting the peat pools, and the remainder is split primary:secondary using the national KLHK 2022 ratio 46.4:43.8. The split is an assumption, not a Kalimantan measurement.",
-   "fuel_load_source": "Fuel consumption for tropical forest fire, van der Werf et al. 2017 GFED4s (order 40-70 t/ha); mid-range value used.",
-   "ef_source": "Akagi et al. 2011 ACP, tropical forest PM2.5 EF 9.1 g/kg.",
+   "fuel_load_source": "Fuel consumption for tropical forest fire, van der Werf et al. 2017 GFED4s (order 40-70 t/ha); mid-range value used. UNVERIFIED: not traced to a specific table (MODEL_SPEC 1.4).",
+   "ef_source": "Andreae 2019 (ACP 19:8523) Table 1, tropical forest 8.3 +/- 3.3 g/kg.",
    "susceptibility_source": "MODEL PARAMETER. Closed-canopy primary forest holds humidity and rarely carries fire except at drought-year edges.",
-   "estimated": true
+   "estimated": true,
+   "ef_range_g_kg": [
+    5.0,
+    11.6
+   ],
+   "fuel_load_verified": false
   },
   {
    "id": "secondary_forest",
    "label": "Secondary / logged-over forest",
    "area_mha": 12.04,
    "fuel_load_t_ha": 75,
-   "pm25_ef_g_kg": 9.1,
+   "pm25_ef_g_kg": 8.3,
    "burn_susceptibility": 0.45,
    "area_source": "ESTIMATED - same derivation as primary_forest.",
-   "fuel_load_source": "Higher than primary forest because logging leaves slash and opens the canopy; GFED4s tropical-forest fuel-consumption range, upper-mid value.",
-   "ef_source": "Akagi et al. 2011 ACP, 9.1 g/kg.",
+   "fuel_load_source": "Higher than primary forest because logging leaves slash and opens the canopy; GFED4s tropical-forest fuel-consumption range, upper-mid value. UNVERIFIED: not traced to a specific table (MODEL_SPEC 1.4).",
+   "ef_source": "Andreae 2019 (ACP 19:8523) Table 1, tropical forest 8.3 +/- 3.3 g/kg.",
    "susceptibility_source": "MODEL PARAMETER. Logged-over forest dries out and is the dominant deforestation-fire class in Kalimantan.",
-   "estimated": true
+   "estimated": true,
+   "ef_range_g_kg": [
+    5.0,
+    11.6
+   ],
+   "fuel_load_verified": false
   },
   {
    "id": "scrub_grass",
    "label": "Scrub, grass & abandoned land",
    "area_mha": 12.11,
    "fuel_load_t_ha": 12,
-   "pm25_ef_g_kg": 7.2,
+   "pm25_ef_g_kg": 6.7,
    "burn_susceptibility": 0.7,
    "area_source": "ESTIMATED as a residual: total Kalimantan land 54.4 Mha minus peat (4.5) minus non-peat forest (24.8) minus an ASSUMED 13.0 Mha of plantation, cropland, settlement and water. The residual is a balancing figure, not a mapped class.",
-   "fuel_load_source": "Grass/shrub fuel consumption, GFED4s savanna-and-grassland class.",
-   "ef_source": "Akagi et al. 2011 ACP, savanna/grassland PM2.5 EF 7.17 g/kg.",
+   "fuel_load_source": "Grass/shrub fuel consumption, GFED4s savanna-and-grassland class. UNVERIFIED: not traced to a specific table (MODEL_SPEC 1.4).",
+   "ef_source": "Andreae 2019 (ACP 19:8523) Table 1, savanna/grassland 6.7 +/- 3.3 g/kg.",
    "susceptibility_source": "MODEL PARAMETER. Burns readily and often, but carries little fuel and regrows within a season - it is not a stock that can be exhausted.",
-   "estimated": true
+   "estimated": true,
+   "ef_range_g_kg": [
+    3.4,
+    10.0
+   ],
+   "fuel_load_verified": false
   }
  ],
- "deforestation_mha_per_yr": 0.1,
+ "deforestation_mha_per_yr": 0.21,
  "restoration_mha_per_yr": 0.05,
  "total_land_mha": 54.41,
- "peat_total_mha": 4.5,
+ "peat_total_mha": 4.78,
  "forest_cover_mha": 27.4,
- "deforestation_source": "ESTIMATED. Global Forest Watch / WRI: Indonesia primary-forest loss was ~290,000 ha in 2023 and ~260,000 ha in 2024. Kalimantan's share is taken as ~40%, giving ~0.10 Mha/yr. The share is an assumption.",
+ "deforestation_source": "Gaveau et al. 2022 (PLoS ONE 17:e0266178): Kalimantan forest loss 4.02 Mha over 2001-2019 = 0.21 Mha/yr [D]. 0.10 Mha/yr is the low end ('recent years'), UNVERIFIED until a primary 2020s Kalimantan source is confirmed.",
  "restoration_source": "ESTIMATED. BRGM restored ~1.6 Mha of peatland Indonesia-wide over 2016-2024 (~0.18 Mha/yr) against a 2 Mha 2016-2020 target. Three of BRGM's seven priority provinces are in Kalimantan; ~0.05 Mha/yr is apportioned here. The apportionment is an assumption, and 'restored' means rewetting/revegetation works completed, not peat regrown.",
  "sources": [
   "KLHK / Kementerian Kehutanan, SiPongi: https://sipongi.gakkum.kehutanan.go.id/indikasi-luas-kebakaran",
   "Kalimantan peatland extent 4.5 Mha (Indonesia 13.43 Mha) - KLHK, reported via Mongabay Indonesia, Apr 2025",
   "Ballhorn, Siegert, Mason & Limin 2009, PNAS 106:21213 - peat burn depth, Central Kalimantan",
-  "Stockwell et al. 2016 ACP 16:11711 and 2018 ACP 18:2585 - Kalimantan peat-fire PM2.5 emission factors",
   "Akagi et al. 2011, ACP 11:4039 - emission factors for open burning",
   "van der Werf et al. 2017, ESSD 9:697 (GFED4s) - fuel consumption and fire-type partitioning",
   "Global Forest Watch / WRI annual tree-cover-loss releases, 2023 and 2024",
-  "BRGM (Badan Restorasi Gambut dan Mangrove) restoration totals, 2016-2024"
+  "BRGM (Badan Restorasi Gambut dan Mangrove) restoration totals, 2016-2024",
+  "Kiely et al. 2019, ACP 19:11105 - peat PM2.5 EF 22.3 g/kg (mean of Jayarathne 2018, Stockwell 2016, Wooster 2018)",
+  "Jayarathne et al. 2018, ACP 18:2585 - Kalimantan peat PM2.5 EF 17.3 +/- 6.0 g/kg",
+  "Andreae 2019, ACP 19:8523 - tropical forest and savanna PM2.5 EFs",
+  "Huijnen et al. 2016, Sci. Rep. 6:26886; Konecny et al. 2016, GCB 22:1469 - peat burn depth and repeat-fire consumption",
+  "Warren et al. 2017, CBM 12:12 - MoA 2011 Kalimantan peat extent and depth classes",
+  "Hooijer et al. 2012, BG 9:1053; Evans et al. 2019, Geoderma 338:410 - drained-peat subsidence",
+  "Gaveau et al. 2022, PLoS ONE 17:e0266178 - Kalimantan forest loss 2001-2019"
  ],
  "caveats": [
   "Every burn_susceptibility value is a model parameter, not a measurement.",
   "Pools are treated as mutually exclusive. Peat swamp forest is counted in the peat pools only.",
   "The pools do not tile Kalimantan: ~13 Mha of plantation, cropland, settlement and water is excluded.",
-  "Peat fuel load is the depth consumed by a single fire, not the total peat carbon column. A peat dome can burn repeatedly over decades until it is gone.",
-  "Burnt peat does not grow back on a human timescale - tropical peat accumulates at roughly 1 mm/yr."
+  "Burnt peat does not grow back on a human timescale - tropical peat accumulates at roughly 1 mm/yr.",
+  "Peat fuel load is the first-fire consumption; repeat fires on the same hectare consume 56/33/11% of it (Konecny et al. 2016).",
+  "Drained peat also loses ~4.3 cm/yr to subsidence with no fire at all (Evans et al. 2019); the exhaustion model carries it."
  ],
- "burnable_stock_mha": 29.3
+ "burnable_stock_mha": 29.58,
+ "deforestation_range_mha_per_yr": [
+  0.1,
+  0.21
+ ],
+ "peat_column": {
+  "area_mha": 4.78,
+  "area_source": "MoA/BBSDLP 2011 (Ritung et al.) via Warren et al. 2017, CBM 12:12: 4,778,005 ha. Alternatives: Wetlands International 5.77 Mha; Anda et al. 2021 ~4.5 Mha (UNVERIFIED).",
+  "drained_fraction": 0.6,
+  "drained_fraction_verified": false,
+  "depth_classes": [
+   {
+    "label": "0.5-1 m",
+    "share": 0.22,
+    "z_min": 0.5,
+    "z_max": 1.0
+   },
+   {
+    "label": "1-2 m",
+    "share": 0.29,
+    "z_min": 1.0,
+    "z_max": 2.0
+   },
+   {
+    "label": "2-3 m",
+    "share": 0.22,
+    "z_min": 2.0,
+    "z_max": 3.0
+   },
+   {
+    "label": ">3 m",
+    "share": 0.27,
+    "z_min": 3.0,
+    "z_max": 7.0,
+    "note": "3-7 m, mean 5.0 m: [J] UNVERIFIED, informed by Hooijer & Vernimmen 2013 (5.4 m Kalimantan mean, grey literature)"
+   }
+  ],
+  "depth_class_source": "MoA 2011 Kalimantan depth classes 22/29/22/27% via Warren et al. 2017 [V]",
+  "fire_history": {
+   "affected_fraction_of_peat": 0.286,
+   "once": 0.135,
+   "twice": 0.128,
+   "more": 0.36,
+   "source": "Vetrita & Cochrane 2020 (Remote Sens. 12:5), MODIS C6 2001-2018; assigned to drained peat and normalised [J]"
+  },
+  "subsidence_m_per_yr": {
+   "value": 0.043,
+   "low": 0.034,
+   "high": 0.05,
+   "source": "Evans et al. 2019 (Geoderma 338:410); Hooijer et al. 2012 (BG 9:1053)"
+  },
+  "bulk_density_g_cm3": 0.11,
+  "estimated": true
+ }
 }

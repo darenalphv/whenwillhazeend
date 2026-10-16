@@ -1,0 +1,66 @@
+{
+ "lambda0_per_s": 7.427846856689239e-06,
+ "lifetime_days": 4.486248699932406,
+ "target_days": 4.5,
+ "target_range_days": [
+  3,
+  6
+ ],
+ "years": [
+  2015
+ ],
+ "iterations": [
+  {
+   "lambda0_per_s": 1.732050807568877e-05,
+   "lifetime_days": 2.9444852334564313,
+   "per_year": [
+    2.9444852334564313
+   ]
+  },
+  {
+   "lambda0_per_s": 4.1617914502878165e-06,
+   "lifetime_days": 6.060010253771899,
+   "per_year": [
+    6.060010253771899
+   ]
+  },
+  {
+   "lambda0_per_s": 8.490249844618391e-06,
+   "lifetime_days": 4.183738393058343,
+   "per_year": [
+    4.183738393058343
+   ]
+  },
+  {
+   "lambda0_per_s": 5.944295518742341e-06,
+   "lifetime_days": 5.042361359452802,
+   "per_year": [
+    5.042361359452802
+   ]
+  },
+  {
+   "lambda0_per_s": 7.104122331742884e-06,
+   "lifetime_days": 4.592295976599732,
+   "per_year": [
+    4.592295976599732
+   ]
+  },
+  {
+   "lambda0_per_s": 7.766323037527481e-06,
+   "lifetime_days": 4.38280803946225,
+   "per_year": [
+    4.38280803946225
+   ]
+  },
+  {
+   "lambda0_per_s": 7.427846856689239e-06,
+   "lifetime_days": 4.486248699932406,
+   "per_year": [
+    4.486248699932406
+   ]
+  }
+ ],
+ "method": "Bisection on Lambda0 so the Jul-Oct mass-weighted e-folding lifetime (mean burden / mean removal rate, export excluded) is 4.5 d, the centre of 3-6 d (Lee et al. 2017 <3 d wet / >5 d dry; AeroCom POM 6 d). Lambda0 is calibrated, not a literature value (Wang et al. 2010: 1-2 orders of magnitude uncertainty).",
+ "v_d_m_s": 0.0015,
+ "k_h_m2_s": 10000.0
+}

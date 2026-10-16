@@ -1,0 +1,348 @@
+{
+ "2015": {
+  "year": 2015,
+  "singapore": {
+   "jul_oct_mean_fire_pm25_primary": 25.0,
+   "jul_oct_mean_fire_pm25_with_soa": 34.5,
+   "sep_nov_mean_fire_pm25_primary": 26.2
+  },
+  "singapore_nea_regions_mean": {
+   "jul_oct_mean_fire_pm25_primary": 26.5,
+   "jul_oct_mean_fire_pm25_with_soa": 36.5,
+   "sep_nov_mean_fire_pm25_primary": 28.1
+  },
+  "kuala_lumpur": {
+   "jul_oct_mean_fire_pm25_primary": 39.1,
+   "jul_oct_mean_fire_pm25_with_soa": 55.0,
+   "sep_nov_mean_fire_pm25_primary": 33.2
+  },
+  "kuching": {
+   "jul_oct_mean_fire_pm25_primary": 55.2,
+   "jul_oct_mean_fire_pm25_with_soa": 77.8,
+   "sep_nov_mean_fire_pm25_primary": 54.1
+  },
+  "pekanbaru": {
+   "jul_oct_mean_fire_pm25_primary": 121.0,
+   "jul_oct_mean_fire_pm25_with_soa": 164.5,
+   "sep_nov_mean_fire_pm25_primary": 114.5
+  },
+  "palangkaraya": {
+   "jul_oct_mean_fire_pm25_primary": 604.8,
+   "jul_oct_mean_fire_pm25_with_soa": 664.3,
+   "sep_nov_mean_fire_pm25_primary": 683.1
+  },
+  "pontianak": {
+   "jul_oct_mean_fire_pm25_primary": 172.9,
+   "jul_oct_mean_fire_pm25_with_soa": 222.6,
+   "sep_nov_mean_fire_pm25_primary": 206.0
+  },
+  "jambi": {
+   "jul_oct_mean_fire_pm25_primary": 345.3,
+   "jul_oct_mean_fire_pm25_with_soa": 402.1,
+   "sep_nov_mean_fire_pm25_primary": 275.4
+  },
+  "target_singapore_jul_oct": {
+   "target_ugm3": [
+    27,
+    30
+   ],
+   "pass_band_ugm3": [
+    13.5,
+    60
+   ],
+   "modelled_primary": 25.0,
+   "modelled_with_soa": 34.5,
+   "pass": true,
+   "source": "Koplitz et al. 2016 (ERL 11:094023): Jul-Oct 2015 smoke 27 modelled / 30 observed"
+  },
+  "target_kuching_borneo_share": {
+   "modelled": 0.988,
+   "target": "> 0.70",
+   "reference": 0.846,
+   "pass": true,
+   "by_island": {
+    "kalimantan": 0.978,
+    "malaysian_borneo": 0.01,
+    "other": 0.0,
+    "peninsular_malaysia": 0.0,
+    "sumatra": 0.011
+   },
+   "source": "Lee et al. 2017 (ACP 17:965): 84.6% annual 2003-2014"
+  },
+  "singapore_aug_oct_source_split": {
+   "by_island": {
+    "kalimantan": 0.356,
+    "malaysian_borneo": 0.0,
+    "other": 0.0,
+    "peninsular_malaysia": 0.0,
+    "sumatra": 0.644
+   },
+   "by_region": {
+    "babel": 0.031,
+    "jambi": 0.089,
+    "java": 0.0,
+    "kalbar": 0.091,
+    "kalsel": 0.011,
+    "kalteng": 0.254,
+    "kaltim": 0.001,
+    "kepri": 0.002,
+    "lampung": 0.0,
+    "other": 0.0,
+    "pen_my": 0.0,
+    "riau": 0.006,
+    "sabah": 0.0,
+    "sarawak": 0.0,
+    "sum_n": 0.0,
+    "sumsel": 0.516
+   },
+   "hansen_2019_west_east": {
+    "sumsel": [
+     0.382,
+     0.218
+    ],
+    "kalteng": [
+     0.312,
+     0.415
+    ],
+    "babel": [
+     0.113,
+     0.136
+    ],
+    "kalbar": [
+     0.066,
+     0.094
+    ],
+    "jambi": [
+     0.065,
+     0.06
+    ]
+   },
+   "source": "Hansen et al. 2019 (ACP 19:5363), NAME III with 2015 winds"
+  },
+  "kuala_lumpur_aug_oct_source_split": {
+   "by_island": {
+    "kalimantan": 0.229,
+    "malaysian_borneo": 0.0,
+    "other": 0.0,
+    "peninsular_malaysia": 0.002,
+    "sumatra": 0.769
+   },
+   "by_region": {
+    "babel": 0.014,
+    "jambi": 0.188,
+    "java": 0.0,
+    "kalbar": 0.031,
+    "kalsel": 0.007,
+    "kalteng": 0.191,
+    "kaltim": 0.0,
+    "kepri": 0.0,
+    "lampung": 0.003,
+    "other": 0.0,
+    "pen_my": 0.002,
+    "riau": 0.018,
+    "sabah": 0.0,
+    "sarawak": 0.0,
+    "sum_n": 0.0,
+    "sumsel": 0.545
+   }
+  },
+  "lifetime_days": 4.46,
+  "mass_budget_kt": {
+   "released_kt": 9813.7,
+   "removed_dry_kt": 2744.2,
+   "removed_wet_kt": 5486.2,
+   "exported_kt": 1583.0
+  },
+  "emissions_sep_oct_tg": {
+   "total_tg": 7.95,
+   "peat_tg": 6.49,
+   "kalimantan_tg": 4.31,
+   "sumatra_tg": 3.6,
+   "peninsular_malaysia_tg": 0.0,
+   "malaysian_borneo_tg": 0.0,
+   "other_tg": 0.03
+  },
+  "target_sep_oct_primary_tg": {
+   "modelled": 7.95,
+   "target": [
+    4,
+    11
+   ],
+   "pass": true,
+   "source": "Wooster 2018 9.1 Tg; Kiely 2019 7.33 Tg; GFED4s 4.2; GFAS 3.99"
+  }
+ },
+ "2019": {
+  "year": 2019,
+  "singapore": {
+   "jul_oct_mean_fire_pm25_primary": 6.4,
+   "jul_oct_mean_fire_pm25_with_soa": 9.0,
+   "sep_nov_mean_fire_pm25_primary": 12.3
+  },
+  "singapore_nea_regions_mean": {
+   "jul_oct_mean_fire_pm25_primary": 6.6,
+   "jul_oct_mean_fire_pm25_with_soa": 9.3,
+   "sep_nov_mean_fire_pm25_primary": 12.3
+  },
+  "kuala_lumpur": {
+   "jul_oct_mean_fire_pm25_primary": 23.1,
+   "jul_oct_mean_fire_pm25_with_soa": 32.1,
+   "sep_nov_mean_fire_pm25_primary": 23.9
+  },
+  "kuching": {
+   "jul_oct_mean_fire_pm25_primary": 32.4,
+   "jul_oct_mean_fire_pm25_with_soa": 45.3,
+   "sep_nov_mean_fire_pm25_primary": 41.4
+  },
+  "pekanbaru": {
+   "jul_oct_mean_fire_pm25_primary": 67.4,
+   "jul_oct_mean_fire_pm25_with_soa": 89.8,
+   "sep_nov_mean_fire_pm25_primary": 78.5
+  },
+  "palangkaraya": {
+   "jul_oct_mean_fire_pm25_primary": 219.5,
+   "jul_oct_mean_fire_pm25_with_soa": 240.4,
+   "sep_nov_mean_fire_pm25_primary": 290.7
+  },
+  "pontianak": {
+   "jul_oct_mean_fire_pm25_primary": 104.9,
+   "jul_oct_mean_fire_pm25_with_soa": 129.4,
+   "sep_nov_mean_fire_pm25_primary": 125.2
+  },
+  "jambi": {
+   "jul_oct_mean_fire_pm25_primary": 463.9,
+   "jul_oct_mean_fire_pm25_with_soa": 494.3,
+   "sep_nov_mean_fire_pm25_primary": 542.3
+  },
+  "target_singapore_jul_oct": {
+   "target_ugm3": [
+    27,
+    30
+   ],
+   "pass_band_ugm3": [
+    13.5,
+    60
+   ],
+   "modelled_primary": 6.4,
+   "modelled_with_soa": 9.0,
+   "pass": null,
+   "source": "Koplitz et al. 2016 (ERL 11:094023): Jul-Oct 2015 smoke 27 modelled / 30 observed"
+  },
+  "target_kuching_borneo_share": {
+   "modelled": 0.999,
+   "target": "> 0.70",
+   "reference": 0.846,
+   "pass": true,
+   "by_island": {
+    "kalimantan": 0.987,
+    "malaysian_borneo": 0.012,
+    "other": 0.001,
+    "peninsular_malaysia": 0.0,
+    "sumatra": 0.0
+   },
+   "source": "Lee et al. 2017 (ACP 17:965): 84.6% annual 2003-2014"
+  },
+  "singapore_aug_oct_source_split": {
+   "by_island": {
+    "kalimantan": 0.809,
+    "malaysian_borneo": 0.0,
+    "other": 0.001,
+    "peninsular_malaysia": 0.007,
+    "sumatra": 0.183
+   },
+   "by_region": {
+    "babel": 0.01,
+    "jambi": 0.136,
+    "java": 0.001,
+    "kalbar": 0.406,
+    "kalsel": 0.009,
+    "kalteng": 0.394,
+    "kaltim": 0.0,
+    "kepri": 0.012,
+    "lampung": 0.0,
+    "other": 0.0,
+    "pen_my": 0.007,
+    "riau": 0.007,
+    "sabah": 0.0,
+    "sarawak": 0.0,
+    "sum_n": 0.0,
+    "sumsel": 0.016
+   },
+   "hansen_2019_west_east": {
+    "sumsel": [
+     0.382,
+     0.218
+    ],
+    "kalteng": [
+     0.312,
+     0.415
+    ],
+    "babel": [
+     0.113,
+     0.136
+    ],
+    "kalbar": [
+     0.066,
+     0.094
+    ],
+    "jambi": [
+     0.065,
+     0.06
+    ]
+   },
+   "source": "Hansen et al. 2019 (ACP 19:5363), NAME III with 2015 winds"
+  },
+  "kuala_lumpur_aug_oct_source_split": {
+   "by_island": {
+    "kalimantan": 0.081,
+    "malaysian_borneo": 0.0,
+    "other": 0.001,
+    "peninsular_malaysia": 0.004,
+    "sumatra": 0.914
+   },
+   "by_region": {
+    "babel": 0.003,
+    "jambi": 0.641,
+    "java": 0.001,
+    "kalbar": 0.035,
+    "kalsel": 0.001,
+    "kalteng": 0.044,
+    "kaltim": 0.0,
+    "kepri": 0.002,
+    "lampung": 0.005,
+    "other": 0.0,
+    "pen_my": 0.004,
+    "riau": 0.219,
+    "sabah": 0.0,
+    "sarawak": 0.0,
+    "sum_n": 0.001,
+    "sumsel": 0.044
+   }
+  },
+  "lifetime_days": 5.02,
+  "mass_budget_kt": {
+   "released_kt": 4706.1,
+   "removed_dry_kt": 1457.8,
+   "removed_wet_kt": 2010.6,
+   "exported_kt": 1224.7
+  },
+  "emissions_sep_oct_tg": {
+   "total_tg": 3.63,
+   "peat_tg": 2.67,
+   "kalimantan_tg": 1.9,
+   "sumatra_tg": 1.71,
+   "peninsular_malaysia_tg": 0.0,
+   "malaysian_borneo_tg": 0.0,
+   "other_tg": 0.02
+  },
+  "target_sep_oct_primary_tg": {
+   "modelled": 3.63,
+   "target": [
+    4,
+    11
+   ],
+   "pass": null,
+   "source": "Wooster 2018 9.1 Tg; Kiely 2019 7.33 Tg; GFED4s 4.2; GFAS 3.99"
+  }
+ }
+}

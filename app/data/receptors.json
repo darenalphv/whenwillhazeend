@@ -10,7 +10,8 @@
   "elevation_m": 17,
   "on_kalimantan": true,
   "source": "BPS Kota Palangka Raya, 2023 city population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
   "id": "pontianak",
@@ -23,7 +24,8 @@
   "elevation_m": 3,
   "on_kalimantan": true,
   "source": "BPS Kota Pontianak, 2023 city population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
   "id": "banjarmasin",
@@ -36,7 +38,8 @@
   "elevation_m": 2,
   "on_kalimantan": true,
   "source": "BPS Kota Banjarmasin, 2023 city population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
   "id": "samarinda",
@@ -49,7 +52,8 @@
   "elevation_m": 10,
   "on_kalimantan": true,
   "source": "BPS Kota Samarinda, 2023 city population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
   "id": "kuching",
@@ -62,7 +66,8 @@
   "elevation_m": 8,
   "on_kalimantan": false,
   "source": "DOSM Malaysia, Kuching district population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
   "id": "sibu",
@@ -75,7 +80,8 @@
   "elevation_m": 10,
   "on_kalimantan": false,
   "source": "DOSM Malaysia, Sibu district population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
   "id": "miri",
@@ -88,10 +94,11 @@
   "elevation_m": 7,
   "on_kalimantan": false,
   "source": "DOSM Malaysia, Miri district population",
-  "estimated": false
+  "estimated": false,
+  "group": "borneo"
  },
  {
-  "id": "kuala_lumpur",
+  "id": "my-kuala-lumpur",
   "name": "Kuala Lumpur",
   "name_local": "Kuala Lumpur",
   "country": "Malaysia",
@@ -101,7 +108,12 @@
   "elevation_m": 56,
   "on_kalimantan": false,
   "source": "DOSM Malaysia, Kuala Lumpur Federal Territory",
-  "estimated": false
+  "estimated": false,
+  "aliases": [
+   "kuala_lumpur"
+  ],
+  "note": "id follows CONTRACT_V2 M5 (shared with /api/now/observed); legacy id kept in aliases.",
+  "group": "peninsula_singapore"
  },
  {
   "id": "singapore",
@@ -114,7 +126,8 @@
   "elevation_m": 15,
   "on_kalimantan": false,
   "source": "Singapore Department of Statistics, total population 2024",
-  "estimated": false
+  "estimated": false,
+  "group": "peninsula_singapore"
  },
  {
   "id": "batam",
@@ -127,7 +140,8 @@
   "elevation_m": 10,
   "on_kalimantan": false,
   "source": "BPS Kota Batam, 2023 city population",
-  "estimated": false
+  "estimated": false,
+  "group": "sumatra_riau"
  },
  {
   "id": "jambi",
@@ -140,7 +154,8 @@
   "elevation_m": 15,
   "on_kalimantan": false,
   "source": "BPS Kota Jambi, 2023 city population",
-  "estimated": false
+  "estimated": false,
+  "group": "sumatra_riau"
  },
  {
   "id": "pekanbaru",
@@ -153,6 +168,124 @@
   "elevation_m": 12,
   "on_kalimantan": false,
   "source": "BPS Kota Pekanbaru, 2023 city population",
+  "estimated": false,
+  "group": "sumatra_riau"
+ },
+ {
+  "id": "my-shah-alam",
+  "name": "Shah Alam",
+  "name_local": "Shah Alam",
+  "country": "Malaysia",
+  "lat": 3.0733,
+  "lon": 101.5185,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "source": "City-centre coordinates (approximate, WGS84). Population not bundled: no source checked for this release.",
+  "estimated": true
+ },
+ {
+  "id": "my-klang",
+  "name": "Klang",
+  "name_local": "Klang",
+  "country": "Malaysia",
+  "lat": 3.0449,
+  "lon": 101.4456,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "source": "City-centre coordinates (approximate, WGS84). Population not bundled: no source checked for this release.",
+  "estimated": true
+ },
+ {
+  "id": "my-petaling-jaya",
+  "name": "Petaling Jaya",
+  "name_local": "Petaling Jaya",
+  "country": "Malaysia",
+  "lat": 3.1073,
+  "lon": 101.6067,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "source": "City-centre coordinates (approximate, WGS84). Population not bundled: no source checked for this release.",
+  "estimated": true
+ },
+ {
+  "id": "sg-central",
+  "name": "Singapore Central",
+  "name_local": "Singapore (central)",
+  "country": "Singapore",
+  "lat": 1.35735,
+  "lon": 103.82,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "nea_region": "central",
+  "source": "NEA PSI region reference point: data.gov.sg api.data.gov.sg/v1/environment/psi region_metadata.label_location (retrieved 2026-10-16)",
+  "estimated": false
+ },
+ {
+  "id": "sg-east",
+  "name": "Singapore East",
+  "name_local": "Singapore (east)",
+  "country": "Singapore",
+  "lat": 1.35735,
+  "lon": 103.94,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "nea_region": "east",
+  "source": "NEA PSI region reference point: data.gov.sg api.data.gov.sg/v1/environment/psi region_metadata.label_location (retrieved 2026-10-16)",
+  "estimated": false
+ },
+ {
+  "id": "sg-north",
+  "name": "Singapore North",
+  "name_local": "Singapore (north)",
+  "country": "Singapore",
+  "lat": 1.41803,
+  "lon": 103.82,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "nea_region": "north",
+  "source": "NEA PSI region reference point: data.gov.sg api.data.gov.sg/v1/environment/psi region_metadata.label_location (retrieved 2026-10-16)",
+  "estimated": false
+ },
+ {
+  "id": "sg-south",
+  "name": "Singapore South",
+  "name_local": "Singapore (south)",
+  "country": "Singapore",
+  "lat": 1.29587,
+  "lon": 103.82,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "nea_region": "south",
+  "source": "NEA PSI region reference point: data.gov.sg api.data.gov.sg/v1/environment/psi region_metadata.label_location (retrieved 2026-10-16)",
+  "estimated": false
+ },
+ {
+  "id": "sg-west",
+  "name": "Singapore West",
+  "name_local": "Singapore (west)",
+  "country": "Singapore",
+  "lat": 1.35735,
+  "lon": 103.7,
+  "population": null,
+  "elevation_m": null,
+  "on_kalimantan": false,
+  "group": "peninsula_singapore",
+  "nea_region": "west",
+  "source": "NEA PSI region reference point: data.gov.sg api.data.gov.sg/v1/environment/psi region_metadata.label_location (retrieved 2026-10-16)",
   "estimated": false
  }
 ]

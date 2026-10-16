@@ -41,3 +41,7 @@ worker/.venv-workers/
 public/
 worker/src/app/
 worker/src/build_info.py
+
+# Offline-pipeline raw downloads (multi-GB, regenerable)
+scripts/model/earth/_raw/
+scripts/model/**/_raw/

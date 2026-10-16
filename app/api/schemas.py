@@ -275,6 +275,19 @@ class HazeFieldRequest(_Strict):
     )
     rain_mm: float = Field(default=0.0, ge=0.0, le=1_000.0)
     diurnal: bool = Field(default=True)
+    wind_mode: Literal["auto", "observed", "climatology", "uniform"] = Field(
+        default="auto",
+        description=("auto: observed reanalysis winds where bundled, else the monthly "
+                     "climatology; uniform: the single wind vector given above."),
+    )
+    emissions_mode: Literal["auto", "observed", "sources"] = Field(
+        default="auto",
+        description=("auto/observed: observed daily emissions (Kalimantan, Sumatra, "
+                     "Malaysia) where bundled; sources: only the clusters supplied."),
+    )
+    soa: bool = Field(default=True, description="Include secondary organic aerosol growth.")
+    seed: int | None = Field(default=7, ge=0, le=2_147_483_647,
+                             description="Particle-model seed; fixed for reproducible runs.")
     release_from_start: bool = Field(
         default=False,
         description=("Start the plume from nothing at hour 0 and let the front "

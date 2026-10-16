@@ -25,6 +25,8 @@ from typing import Any
 
 DATA_DIR = pathlib.Path(__file__).parent
 FIRES_DIR = DATA_DIR / "fires"
+#: MODEL-EARTH data: emissions, meteorology, source-receptor matrix, parameters.
+EARTH_DIR = DATA_DIR / "earth"
 
 #: Years for which a ``fires/fires_{year}.json`` file is bundled.
 FIRE_YEARS: tuple[int, ...] = tuple(
@@ -104,8 +106,10 @@ def load_fire_clusters(year: int) -> dict:
 def load_receptors() -> list[dict]:
     """Downwind cities that receive Kalimantan/Sumatra haze.
 
-    Twelve cities with ``lat``, ``lon``, ``country``, ``population`` and an
-    ``on_kalimantan`` flag. No PM2.5 values -- concentrations are modelled by
+    Twenty receptors with ``id``, ``lat``, ``lon``, ``country``, ``population``
+    (null where no source was checked) and an ``on_kalimantan`` flag. Ids for
+    Kuala Lumpur/Selangor and Singapore's five NEA regions follow CONTRACT_V2 M5
+    (``my-kuala-lumpur``, ``sg-west``, ...), shared with ``/api/now/observed``. No PM2.5 values -- concentrations are modelled by
     ``app.model.dispersion``.
     """
     return _read("receptors.json")
@@ -147,8 +151,58 @@ def load_provenance() -> dict:
     return _read("provenance.json")
 
 
+# --------------------------------------------------------------------------- #
+# MODEL-EARTH data (app/data/earth/). Large binary files (.npz) are NOT loaded
+# here: callers open them lazily via earth_path() so nothing heavy is read at
+# import time, and cache one decoded copy per process.
+# --------------------------------------------------------------------------- #
+
+
+def earth_path(name: str) -> pathlib.Path:
+    """Absolute path of a file in ``app/data/earth/`` (may not exist)."""
+    return EARTH_DIR / name
+
+
+def earth_files(pattern: str) -> list[pathlib.Path]:
+    """Files in ``app/data/earth/`` matching a glob pattern, sorted."""
+    return sorted(EARTH_DIR.glob(pattern)) if EARTH_DIR.is_dir() else []
+
+
+@functools.lru_cache(maxsize=16)
+def load_earth_json(name: str) -> Any:
+    """A JSON file from ``app/data/earth/``; ``None`` if it is not bundled."""
+    path = EARTH_DIR / name
+    if not path.is_file():
+        return None
+    with path.open(encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+@functools.lru_cache(maxsize=1)
+def load_earth_parameters() -> dict:
+    """Parameters used by the emissions/stock/transport/health models.
+
+    A copy of the relevant rows of ``research/PARAMETERS.json`` (value, low, high,
+    source, doi, verified), keyed by parameter id. ``verified: false`` rows must not
+    be presented as settled.
+    """
+    return load_earth_json("parameters.json") or {"parameters": {}}
+
+
+@functools.lru_cache(maxsize=1)
+def load_burned_area() -> dict:
+    """B1-B3 satellite-consistent burned-area series for Kalimantan and Sumatra."""
+    return load_earth_json("burned_area.json") or {}
+
+
 __all__ = [
     "DATA_DIR",
+    "EARTH_DIR",
+    "earth_path",
+    "earth_files",
+    "load_earth_json",
+    "load_earth_parameters",
+    "load_burned_area",
     "FIRES_DIR",
     "FIRE_YEARS",
     "load_seasons",

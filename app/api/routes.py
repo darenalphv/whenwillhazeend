@@ -242,7 +242,16 @@ def simulate_haze3d(req: HazeFieldRequest) -> dict[str, Any]:
     """
     sources = req.sources_as_dicts()
     if sources is None:
-        fc = deps.call("app.data.loader", "load_fire_clusters", req.year)
+        # The model can run on its own bundled observed emissions (incl. this
+        # week's FIRMS-derived ones) for dates that have no synthesised season
+        # clusters, so a missing clusters file is not an error here.
+        from app.data import loader as _loader
+        try:
+            fc = _loader.load_fire_clusters(req.year)
+        except FileNotFoundError:
+            fc = None  # expected for years with no synthesised season (e.g. this year)
+        except Exception:  # noqa: BLE001 - anything else is a real failure: labelled 503
+            fc = deps.call("app.data.loader", "load_fire_clusters", req.year)
         sources = []
         for f in (fc or {}).get("features", []):
             geom = f.get("geometry") or {}
@@ -259,11 +268,7 @@ def simulate_haze3d(req: HazeFieldRequest) -> dict[str, Any]:
                 "date": props.get("date"),
                 "duration_days": props.get("duration_days"),
             })
-        if not sources:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"no fire clusters on record for {req.year}.",
-            )
+        sources = sources or None
 
     # The cell budget is enforced by HazeFieldRequest, so an over-budget request
     # is a 422 before it ever reaches the model.
@@ -282,6 +287,11 @@ def simulate_haze3d(req: HazeFieldRequest) -> dict[str, Any]:
             start_date=req.start_date.isoformat() if req.start_date else None,
             diurnal=req.diurnal,
             release_from_start=req.release_from_start,
+            year=req.year,
+            wind_mode=req.wind_mode,
+            emissions_mode=req.emissions_mode,
+            soa=req.soa,
+            seed=req.seed,
     )
 
 

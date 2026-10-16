@@ -8,9 +8,10 @@ standard fuel-based accounting,
     PM2.5_kg = area_ha * fuel_load_t_ha * EF_g_kg
 
 (the unit conversions ``t -> kg`` and ``g -> kg`` cancel exactly).  Pool fuel
-loads and emission factors come from ``load_fuel_stock()``; peat PM2.5 EF is
-17.3 +/- 6.0 g/kg measured in Central Kalimantan during the 2015 El Nino
-(Stockwell et al. 2016).  The mass is released at a constant rate over the cluster's smouldering
+loads and emission factors come from ``load_fuel_stock()`` (MODEL_SPEC E1): peat
+286 t DM/ha for a first fire x 22.3 g/kg PM2.5 (Kiely et al. 2019, the mean of the
+three Kalimantan field values 17.3 Jayarathne et al. 2018, 21.5 Stockwell et al. 2016
+and 28 Wooster et al. 2018), tropical forest 8.3 and scrub 6.7 g/kg (Andreae 2019).  The mass is released at a constant rate over the cluster's smouldering
 lifetime -- the ``duration_days`` carried on a fire-cluster feature, or
 ``DEFAULT_EPISODE_DAYS = 14`` when it is not given -- so the source strength is
 
@@ -95,8 +96,9 @@ Sources
 * Gifford, F.A. (1982). Horizontal diffusion in the atmosphere: a
   Lagrangian-dynamical theory. *Atmospheric Environment* 16(3), 505-512 --
   the mesoscale long-range growth term.
-* Stockwell, C.E. et al. (2016). *ACP* 16, 11711-11732 - peat PM2.5 EF.
-* Akagi, S.K. et al. (2011). *ACP* 11, 4039-4072 - biomass burning EFs.
+* Kiely, L. et al. (2019). *ACP* 19, 11105-11121 - peat PM2.5 EF 22.3 g/kg.
+* Jayarathne, T. et al. (2018). *ACP* 18, 2585-2600 - peat PM2.5 EF 17.3 g/kg.
+* Andreae, M.O. (2019). *ACP* 19, 8523-8546 - forest and savanna EFs.
 * Seinfeld, J.H. & Pandis, S.N. (2016). *Atmospheric Chemistry and Physics*,
   3rd ed., ch. 18 (dispersion) and ch. 20 (wet deposition).
 * Koplitz, S.N. et al. (2016). Public health impacts of the severe haze in
@@ -110,6 +112,7 @@ from __future__ import annotations
 import math
 
 __all__ = ["haze_dispersion", "pm25_to_aqi", "aqi_category", "CAVEATS",
+           "ARRIVAL_THRESHOLD_UGM3",
            "clean_sources", "localise_sources",
            "CONTOUR_BANDS", "BACKGROUND_PM25_UGM3", "DEFAULT_EPISODE_DAYS"]
 
@@ -118,6 +121,8 @@ RAIN_INTENSITY_MM_H = 5.0        # rate while it is actually raining
 BACKGROUND_PM25_UGM3 = 12.0      # regional non-fire background (estimated)
 CONTOUR_BANDS = (35.0, 55.0, 150.0, 250.0)
 MIN_WIND_MS = 0.6                # plume model breaks down in true calm
+#: Fire increment above background that counts as smoke having reached a city [J].
+ARRIVAL_THRESHOLD_UGM3 = 5.0
 MAX_RANGE_KM = 900.0
 CROSSWIND_PAD_KM = 250.0
 MAX_DOMAIN_EXPANSIONS = 3
@@ -458,9 +463,18 @@ def haze_dispersion(sources: list[dict], wind_speed_ms: float, wind_dir_deg: flo
         c = float(_concentration(np, np.array([xk]), np.array([yk]), clean, u,
                                  dir_to_rad, mixing_height_m, stability, lam)[0])
         pm = c + BACKGROUND_PM25_UGM3
-        ex = math.sin(dir_to_rad) * xk + math.cos(dir_to_rad) * yk
         dist_km = math.hypot(xk, yk)
-        arrival = (ex * 1000.0 / u / 3600.0) if ex > 0 else None
+        # Arrival only where the plume actually is: a downwind projection alone
+        # reported smoke "arriving" at cities far off the plume axis. Require the
+        # modelled fire increment to reach ARRIVAL_THRESHOLD_UGM3, then time it by
+        # the nearest source that is upwind of the receptor.
+        arrival = None
+        if c >= ARRIVAL_THRESHOLD_UGM3:
+            exs = [math.sin(dir_to_rad) * (xk - s_["xk"]) + math.cos(dir_to_rad) * (yk - s_["yk"])
+                   for s_ in clean]
+            pos = [e for e in exs if e > 0]
+            if pos:
+                arrival = min(pos) * 1000.0 / u / 3600.0
         out_rec.append({
             "name": r.get("name") or r.get("city") or "receptor",
             "lat": rlat, "lon": rlon,
@@ -604,6 +618,11 @@ def _empty_result(receptors, u, wind_dir_deg, mixing_height_m, rain_mm, stabilit
 
 
 CAVEATS = [
+    "This map snapshot uses a single wind and Kalimantan clusters only. Sumatra's "
+    "fires, which matter as much as Kalimantan's for Singapore and Peninsular "
+    "Malaysia (Hansen et al. 2019; Reddington et al. 2014), are in the 3D "
+    "simulator's particle model, not here. A low value at Singapore or Kuala Lumpur "
+    "on this map means 'not modelled here', not 'clean air'.",
     "A steady-state Gaussian plume is a short-range, flat-terrain, "
     "constant-wind model. Briggs' dispersion curves were fitted over 100 m to "
     "10 km. Carrying smoke 600 km to Singapore needs a mesoscale spreading term "
