@@ -1,254 +1,181 @@
 # whenwillhazeend
 
-A model of two questions about the Kalimantan haze, one urgent and one final:
+**[whenwillhazeend.com](https://whenwillhazeend.com)** — the Southeast Asian haze,
+for the people breathing it in Kuala Lumpur, Selangor and Singapore.
 
-1. **How many more days will the current fire season burn?**
-2. **How many years until there is no peat or forest left in Kalimantan to burn?**
+It answers three questions, and is careful about which answers are measured and
+which are modelled:
 
-Both answers are *modelled*, not observed. Every API response carries its own
-`caveats` array, and the web page is required to render them. Read
-["What this is not"](#what-this-is-not) before quoting any number from it.
+1. **What has the haze done to us this week?** Official Singapore readings (NEA
+   PSI and PM2.5) and NASA satellite fire detections across Sumatra and
+   Kalimantan — measured, live, attributed.
+2. **When does the Kalimantan fire season end?** A daily-hazard model trained on
+   fire end-dates observed by satellite, shown as a median, an interval and
+   prediction-market-style *model* odds. This is not the date the sky over KL or
+   Singapore clears: Sumatra burns too, and the wind decides.
+3. **When does Kalimantan run out of peat?** A stock-and-flow model in which
+   drained peat sinks by drainage as well as burning.
+
+Plus a 3D simulator of how the smoke travels to the peninsula.
+
+Built and run by [ALPHV Technologies](https://alphv.com/?utm_source=whenwillhazeend&utm_medium=referral&utm_campaign=haze2026&utm_content=readme).
+
+Read ["What this is not"](#what-this-is-not) before quoting any number from it.
 
 ---
 
-## Running it
-
-No API keys. No network required. No build step.
+## Running it locally
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements-dev.txt
 ./run.sh                      # http://127.0.0.1:8000
+.venv/bin/pytest              # never touches the network
 ```
 
-Tests:
+`requirements.txt` is the production runtime; `requirements-dev.txt` adds scipy
+(offline calibration only) and pytest. Interactive API docs are at `/api/docs`.
 
-```bash
-.venv/bin/pytest
-```
+With no configuration the app makes **no Open-Meteo calls** (see Licensing), so
+the season forecast runs on bundled ERA5 weather plus climatology and the
+modelled KL/Selangor readings are off. To use Open-Meteo's free tier for local,
+non-commercial development, set `WWHE_OPEN_METEO_ALLOW_FREE=1`.
 
-Interactive API docs at `/api/docs`. The whole app works offline; live weather
-is an optimisation, and when it is unavailable the response says
-`"live": false` and gives a `fallback_reason` rather than pretending.
+### Configuration (all optional)
 
-Environment variables (all optional):
-
-| Variable | Default | Effect |
-|---|---|---|
-| `WWHE_OFFLINE` | `false` | Skip the live-weather probe entirely. |
-| `WWHE_PROBE_LIVE_WEATHER` | `true` | Whether `/api/health` probes Open-Meteo. |
-| `WWHE_LIVE_PROBE_TTL_S` | `300` | How long a probe result is trusted. |
-| `PORT` | `8000` | Port for `run.sh`. |
-
----
-
-## What the model actually does
-
-### 1. The season-end model — a daily survival model
-
-The fire season is treated as an episode that terminates on some future day.
-For each day *d* after the forecast date, the termination hazard is a logistic
-function of four drivers:
-
-```
-h(d) = sigmoid( b0
-              + b1 * rain_7d(d)              # recent rain ends fires
-              + b2 * drought_factor(KBDI(d)) # dry peat prolongs them
-              + b3 * ONI                     # El Nino prolongs them
-              + b4 * monsoon_progress(d) )   # the NE monsoon ends them
-```
-
-`KBDI` is the Keetch–Byram Drought Index (Keetch & Byram 1968), on the standard
-0–800 imperial scale, driven by daily maximum temperature and rainfall.
-`monsoon_progress` is a 0–1 measure of how far the north-east monsoon rain onset
-has advanced at that location and date.
-
-The season-end date is then simulated by Monte Carlo: thousands of daily
-trajectories, each drawing weather from the Open-Meteo forecast where one exists
-and from bundled climatology beyond the forecast horizon. The reported answer is
-the distribution of termination days — a **P50 with an 80% interval**, never a
-single point estimate presented as certainty.
-
-The `b` coefficients are fitted against observed historical season durations;
-the fit and its RMSE on those durations are recorded in `app/model/calibrate.py`
-and in a comment on the coefficient constant in `app/model/burn.py`.
-
-### 2. The exhaustion model — stock and flow per fuel pool
-
-Kalimantan's burnable land is divided into pools (intact peat, drained peat,
-primary forest, secondary forest, scrub). Each pool's stock evolves annually:
-
-```
-S[p, t+1] = S[p, t] - burned[p, t] - converted[p, t] + restored[p, t]
-
-burned[p, t] = A_base
-             * enso_multiplier(state_t)
-             * susceptibility[p]
-             * (S[p, t] / S[p, 0]) ** theta
-```
-
-The last term is the important one: as a pool shrinks, the area that burns each
-year shrinks with it. Fire does not stop on a fixed date — it tails off as the
-fuel runs out. ENSO evolves as a three-state Markov chain (La Niña / neutral /
-El Niño) with transition probabilities fitted from the historical ONI record, so
-the model reproduces the clustering of catastrophic years rather than averaging
-them away.
-
-"Exhausted" is defined as burnable stock (peat plus forest pools) falling below
-**5% of its 2025 value**. That threshold is a modelling choice, not a physical
-constant. A meaningful share of trajectories never reach it — that fraction is
-reported as `never_pct`, and it is not rounded away.
-
-### 3. The dispersion model — Gaussian plume
-
-Emissions per burning cluster are `area_ha × fuel_load_t_ha × EF_g_kg`, using
-per-pool fuel loads and PM2.5 emission factors. The smoke is advected downwind
-and concentrations at receptor cities come from a Gaussian plume with
-Pasquill–Gifford stability class D/E σ<sub>y</sub>/σ<sub>z</sub> power laws, with
-wet deposition scaling on rainfall.
-
-This is a **screening model**. A Gaussian plume assumes flat terrain, steady
-uniform wind and no chemistry. Real regional haze transport over 500+ km needs a
-chemical transport model (GEOS-Chem, CAMx, WRF-Chem). The numbers here are the
-right order of magnitude and the wrong number of significant figures.
-
----
-
-## Where the numbers come from
-
-The full provenance table is served by `GET /api/provenance` (and documented in
-`app/data/README.md`), and is rendered in the "Methods & caveats" section of the
-site. Every row carries a `status` of `measured`, `estimated`, `synthesised` or
-`modelled`, one row per *number* rather than per file — so, for example, the
-Kalimantan burned-area figures are split into the years that were measured
-directly and the years apportioned from national totals. In summary:
-
-**Measured / published.** Historical burned area, hotspot counts, season start
-and end dates, ONI index values, peak PM2.5 readings at monitoring stations,
-province areas and populations, and the published excess-mortality and economic
-loss estimates for major fire years. Each carries a `source` string naming the
-publication.
-
-**Estimated, and flagged as such.** Every record and parameter that is not a
-direct measurement carries `"estimated": true`. This includes:
-
-- **`burn_susceptibility`** — the relative annual probability that a hectare of
-  a given pool burns in a drought year. This is a fitted model parameter, not an
-  observation.
-- **The fitted hazard coefficients `b0..b4`** and the exhaustion model's
-  `A_base` and `theta`.
-- **Fire-cluster geometries.** The per-year fire clusters drawn on the map are
-  **synthesised from published aggregate statistics** — provincial burned-area
-  totals, hotspot counts and peat-fraction shares — not per-fire satellite
-  records, unless a year's file states otherwise in `app/data/README.md`. They
-  reproduce the right totals and the right spatial distribution. **An individual
-  dot on the map is not a fire that was observed at that location.** Do not use
-  them for anything that requires real fire locations.
-- Any year where a published figure does not exist is `null`. It is never
-  back-filled with an interpolation dressed up as a measurement.
-
-### About the mortality and economic figures
-
-The site publishes excess-death and economic-loss figures. For the 2015 event,
-four peer-reviewed estimates of excess deaths across Indonesia, Malaysia and
-Singapore run from **~12,000 to ~100,000** (Crippa et al. 2016; Kiely et al. 2020;
-Koplitz et al. 2016), and the site shows that range with every study's DOI rather
-than a single figure. The World Bank put the season's losses at ~US$16bn.
-
-These are **epidemiological and economic model outputs, not body counts**. The
-mortality figure comes from exposure–response functions applied to modelled
-PM2.5 fields; it is a central estimate with a wide published uncertainty range,
-and other studies using different methods produce materially different numbers.
-The economic figure depends on which losses are counted. Both are reproduced
-here as published, with their sources, because they are the best available
-estimates of a real and severe harm — not because they are precise.
-
-The app does **not** produce its own mortality forecasts. It reports historical
-published estimates and models smoke concentrations. It does not convert its own
-modelled PM2.5 into a predicted death toll.
-
----
-
-## API
-
-| Route | Returns |
+| Variable | Effect |
 |---|---|
-| `GET /` | The single-page frontend. |
-| `GET /api/health` | `{status, version, live_weather_available}` |
-| `GET /api/history` | All historical seasons plus aggregate summary. |
-| `GET /api/history/{year}` | One season's record plus that year's fire clusters. |
-| `GET /api/history/compare?years=` | Side-by-side comparison of named years. |
-| `GET /api/provenance` | Per-number provenance table: source, coverage and `status`. |
-| `GET /api/regions` | Kalimantan provinces as GeoJSON. |
-| `GET /api/fuel` | Current burnable stock by fuel pool. |
-| `GET /api/receptors` | Downwind receptor cities. |
-| `POST /api/simulate/season` | Days until this season ends. |
-| `POST /api/simulate/exhaustion` | Years until nothing is left to burn. |
-| `POST /api/dispersion` | Modelled PM2.5 downwind of burning clusters. |
-| `GET /api/meteo?lat&lon&start&end` | Daily weather (live, or climatology). |
+| `OPEN_METEO_API_KEY` | Commercial Open-Meteo key. Enables live weather, CAMS readings for KL/Selangor and the 3D haze field. Sent in POST bodies, never URLs or logs. |
+| `WWHE_OPEN_METEO_ALLOW_FREE` | `1` = use Open-Meteo's free tier. Local development only; never in production. |
+| `DATA_GOV_SG_API_KEY` | Raises data.gov.sg's rate limit (6 → 30 calls per 10 s). |
+| `FIRMS_MAP_KEY` | NASA FIRMS key, read by the offline `scripts/model/season/fetch_firms_nrt.py` to resolve forecast odds automatically. |
+| `WWHE_LIVE_WARM` | `0` = don't prefetch the live feeds at startup. |
+| `WWHE_LIVE_CACHE_DIR` | Shared on-disk cache for the live feeds (default `$TMPDIR/whenwillhazeend-live`; empty disables). |
+| `SERVE_BUILT` | `1` = serve the content-hashed build in `public/` (set in the Dockerfile). |
+| `PORT`, `WEB_CONCURRENCY` | uvicorn port and worker count. |
 
-Request bounds are enforced, not clamped: `n_sims` ≤ 20000, `horizon_years` ≤
-300, `burn_reduction_pct` ∈ [0, 100]. An out-of-range request gets **422** with
-the offending field named.
+## Deployment
 
-**If a model or data layer fails, the endpoint returns 503** with a `detail`
-naming the component that failed. There is no fallback forecast and no
-last-known-good value. An outage is reported as an outage.
+One container (`Dockerfile`) on **DigitalOcean App Platform**, Singapore region,
+1 vCPU / 1 GiB. The image builds the static site with
+`scripts/build_static.py --check`, which content-hashes every asset URL —
+including ES-module imports — and fails the build on any unhashed reference, so
+returning visitors never run stale JavaScript. Hashed `/static` assets cache for a
+year; pages revalidate. `/healthz` is the no-I/O health check.
 
----
+Measured locally: ~170 MB across both workers after the heaviest 3D run; gzip
+takes the 3D payload from ~0.9–1.7 MB to a few hundred KB.
+
+## The models
+
+The scientific basis for every model is [`research/MODEL_SPEC.md`](research/MODEL_SPEC.md):
+eight components, each with the literature, the gap in the previous version and
+the specified change, every figure tagged by verification status, 114 references
+in `research/references.bib` and 201 parameters in `research/PARAMETERS.json`.
+
+**Season end** (`app/model/burn.py`, `drought_code.py`, `forecast.py`). Season
+dates for 2001–2025 come from NASA FIRMS fire counts, not a rainfall rule. The
+daily hazard uses the Drought Code (verified against cffdrs), 12-week and 10-day
+rainfall, ONI and DMI as *published on the forecast date*, and a fitted seasonal
+clock, with per-season frailty so the intervals are calibrated (p10–p90 covers
+84% of outcomes). No information after the forecast date is used. Forecast-mode
+error is about 14 days. Honest accounting: that is not a skill gain over a fairly
+refitted older model, and the Indian Ocean Dipole adds nothing measurable — the
+gain is honest targets and calibrated uncertainty.
+
+**Peat and forest** (`stock.py`). Peat is a thickness column that loses depth to
+drainage subsidence (Hooijer 2012; Evans 2019) as well as to fire; burned peat
+never returns. On current trends drained peat is half gone around the 2070s, and
+by 2050 drainage removes roughly four times as much peat carbon as fire. Peat and
+forest get separate answers.
+
+**Smoke transport** (`transport.py`, `haze3d.py`, `emissions.py`). LPM-3L, a
+reduced-form three-layer Lagrangian particle model on ERA5 winds, with Sumatra
+and Kalimantan both as sources and observed daily emissions where bundled. 2015
+validation meets all three spec targets (regional emissions, Singapore's season
+mean, Kuching's Borneo share). Its known misses are stated in its caveats.
+
+**This week** (`app/live/`). NEA PSI and PM2.5 by region, NASA FIRMS 7-day VIIRS
+detections and, with a commercial key, the CAMS PM2.5 field and winds. Every value
+carries its index (PSI, API/IPU, or modelled US AQI) and whether it is measured
+or modelled, and nothing about "this week" is hardcoded.
+
+Every API response carries a `caveats` array, and the site renders all of them.
+
+## Licensing
+
+- **Open-Meteo** (weather, CAMS): the free API is licensed for non-commercial use
+  only. This site promotes a company, so **by default it makes no Open-Meteo
+  calls**. Setting `OPEN_METEO_API_KEY` from a commercial plan turns them on.
+  ERA5 and CAMS data are CC BY 4.0.
+- **NEA / data.gov.sg**: Singapore Open Data Licence v1.0 — commercial use
+  allowed with a notice naming the dataset, access date and licence, which the
+  site shows. No endorsement by NEA is implied.
+- **NASA FIRMS**: released without restriction; acknowledgement given, LANCE
+  near-real-time disclaimer applies.
+- **Malaysia's API (IPU)**: DOE publishes it on APIMS but offers no documented
+  public feed or reuse licence, so this site does not copy it and links to
+  [APIMS](https://eqms.doe.gov.my/APIMS/main) instead.
+- **GFED4.1s**: its download pages state no licence; derived emissions ship
+  with attribution.
+
+Every dataset is listed with its status in `app/data/provenance.json` and
+described in `app/data/README.md`.
 
 ## What this is not
 
-- **This is not a forecast you should plan your health around.** For deciding
-  whether to go outside today, use measured air quality: BMKG, Indonesia's
-  ISPU stations, Singapore's NEA, Malaysia's APIMS, or a local PM2.5 monitor.
-  A measurement from an instrument beats a model output every time.
+- **Not a forecast to plan your health around.** For whether to go outside
+  today, use measured air quality: Singapore's NEA, Malaysia's APIMS, Indonesia's
+  ISPU stations, or a local PM2.5 monitor. An instrument beats a model.
 
-- **It is not a validated operational fire model.** The hazard coefficients are
-  fitted to a few dozen historical seasons. That is a very small sample for a
-  five-parameter model, the historical record is itself uncertain, and the
-  drivers are correlated with each other. The 80% interval reflects simulated
-  weather variability — it does **not** include parameter uncertainty, structural
-  uncertainty, or the possibility that the model is simply wrong about how fire
-  seasons end.
+- **Not a forecast of clear skies over KL or Singapore.** The countdown is the
+  Kalimantan fire season. Haze over the peninsula depends on Sumatra's fires and
+  on the wind, and can clear before that date or linger after it.
 
-- **The exhaustion year is an extrapolation, not a prediction.** Projecting two
-  or three centuries forward requires assuming that today's drivers keep
-  behaving like today's drivers. Policy changes, plantation economics, El Niño
-  frequency under a warming climate, the peatland restoration programme's actual
-  delivery rate, fire-free land clearing, and enforcement all move it by decades.
-  Read any exhaustion year as "on current trends, eventually", not as a date.
+- **Not a validated operational fire model.** The season model is fitted to
+  22 fire-labelled seasons — a small sample — with correlated drivers. Its
+  intervals are calibrated against those seasons, not against every way the model
+  could be structurally wrong.
 
-- **`never_pct` is horizon-relative.** "Never" in the exhaustion response means
-  "not before the end of the requested `horizon_years`", not "never". At the
-  default 200-year horizon the baseline run reports no median exhaustion year
-  at all; extend the horizon and one appears. Whether the headline reads as a
-  year or as "not this side of 2225" is a function of a knob, and the site
-  should not let that read as a physical finding.
+- **The exhaustion years are extrapolations.** They assume today's drainage,
+  burning and land-use trends continue. Restoration, rewetting, enforcement and
+  plantation economics can move them by decades. Several inputs (notably the
+  drained fraction of peat) are marked unverified. Read them as "on current
+  trends", not as dates.
 
-- **It does not model climate feedbacks.** Drier future dry seasons, or wetter
-  ones, are not in the ENSO chain. Nor is the carbon released feeding back into
-  the climate that dries the peat.
+- **`never_pct` is horizon-relative.** "Never" means "not before the end of the
+  requested horizon".
 
-- **The dispersion model is a screening tool**, not a regional air quality
-  forecast. See above.
+- **The transport model is a reduced-form model, not a regional air-quality
+  forecast.** It runs 2–5× high near burning peat, misses some days entirely,
+  and runs on a monthly wind composite for years without bundled reanalysis —
+  including this year. Its this-week runs are indicative only.
 
-- **The fire-cluster map is illustrative.** The geometries are synthesised from
-  aggregates. The totals are real; the individual dots are not.
+- **The season-replay map is illustrative.** Historical fire-cluster geometries
+  are synthesised from published aggregates: the totals are real, the individual
+  dots are not. This week's fires are real satellite detections.
 
-- **It is not a substitute for the people doing this work.** BMKG, KLHK, the
-  Peatland and Mangrove Restoration Agency (BRGM), Global Forest Watch, the
-  GFED and FIRMS teams, and the epidemiologists who did the mortality studies
-  produced everything this app is built on. This is a visualisation of their
-  work with a model on top.
+- **Mortality figures are model outputs, not body counts**, and the published
+  estimates disagree several-fold. The site shows the range.
 
-- **It is not neutral about the subject.** Peat that burns does not grow back on
-  a human timescale. The "permanent end of the haze" this model projects is not
-  good news; it is the date the fuel runs out. That is the joke, and it is not
-  a funny one.
+- **Not a substitute for the people doing this work.** NEA, DOE Malaysia, BMKG,
+  KLHK, BRGM, Global Forest Watch, the GFED and FIRMS teams, ECMWF/Copernicus and
+  the epidemiologists produced everything this is built on.
 
-## Licence and data
+- **Not neutral about the subject.** Peat that burns or drains does not come back
+  on a human timescale. The day the fuel runs out is not good news.
 
-Code in this repository is provided as-is. The underlying datasets belong to
-their publishers and are cited individually in `app/data/README.md`; check their
-terms before redistributing.
+## Repository layout
+
+```
+app/
+  api/        FastAPI routes and request schemas
+  model/      season, odds, peat/forest stock, emissions, transport, 3D field
+  live/       this-week feeds: NEA, FIRMS, CAMS (key-gated)
+  data/       bundled datasets, provenance.json
+  templates/  index.html, simulator.html
+  static/     CSS, JS (sim3d/ is the 3D engine), ALPHV brand assets
+research/     model specification, parameters, references
+scripts/      static build; offline model pipelines (scripts/model/)
+tests/        pytest suite (offline)
+```
