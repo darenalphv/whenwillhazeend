@@ -1,0 +1,1153 @@
+{
+ "season_year": 2026,
+ "series": [
+  {
+   "as_of": "2026-08-01",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1172,
+    "end-by-2026-10-15": 0.3822,
+    "end-by-2026-10-31": 0.812,
+    "end-by-2026-11-15": 0.9892,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-02",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1072,
+    "end-by-2026-10-15": 0.373,
+    "end-by-2026-10-31": 0.8115,
+    "end-by-2026-11-15": 0.989,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-03",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1145,
+    "end-by-2026-10-15": 0.371,
+    "end-by-2026-10-31": 0.8205,
+    "end-by-2026-11-15": 0.9925,
+    "end-by-2026-11-30": 1.0,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-04",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.0963,
+    "end-by-2026-10-15": 0.3752,
+    "end-by-2026-10-31": 0.8073,
+    "end-by-2026-11-15": 0.9918,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-05",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1017,
+    "end-by-2026-10-15": 0.366,
+    "end-by-2026-10-31": 0.8017,
+    "end-by-2026-11-15": 0.991,
+    "end-by-2026-11-30": 1.0,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-06",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1055,
+    "end-by-2026-10-15": 0.3728,
+    "end-by-2026-10-31": 0.8145,
+    "end-by-2026-11-15": 0.991,
+    "end-by-2026-11-30": 1.0,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-07",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.105,
+    "end-by-2026-10-15": 0.3713,
+    "end-by-2026-10-31": 0.8157,
+    "end-by-2026-11-15": 0.9895,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-08",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1005,
+    "end-by-2026-10-15": 0.3695,
+    "end-by-2026-10-31": 0.801,
+    "end-by-2026-11-15": 0.9888,
+    "end-by-2026-11-30": 0.9992,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-09",
+   "p50_end_date": "2026-10-20",
+   "markets": {
+    "end-by-2026-09-30": 0.1005,
+    "end-by-2026-10-15": 0.3765,
+    "end-by-2026-10-31": 0.8125,
+    "end-by-2026-11-15": 0.9895,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-10",
+   "p50_end_date": "2026-10-24",
+   "markets": {
+    "end-by-2026-09-30": 0.0683,
+    "end-by-2026-10-15": 0.2777,
+    "end-by-2026-10-31": 0.7087,
+    "end-by-2026-11-15": 0.978,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-11",
+   "p50_end_date": "2026-10-24",
+   "markets": {
+    "end-by-2026-09-30": 0.071,
+    "end-by-2026-10-15": 0.2675,
+    "end-by-2026-10-31": 0.6993,
+    "end-by-2026-11-15": 0.9812,
+    "end-by-2026-11-30": 0.999,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-12",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.071,
+    "end-by-2026-10-15": 0.263,
+    "end-by-2026-10-31": 0.6777,
+    "end-by-2026-11-15": 0.9745,
+    "end-by-2026-11-30": 0.9992,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-13",
+   "p50_end_date": "2026-10-24",
+   "markets": {
+    "end-by-2026-09-30": 0.0772,
+    "end-by-2026-10-15": 0.277,
+    "end-by-2026-10-31": 0.7013,
+    "end-by-2026-11-15": 0.9755,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-14",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.0635,
+    "end-by-2026-10-15": 0.256,
+    "end-by-2026-10-31": 0.682,
+    "end-by-2026-11-15": 0.9748,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-15",
+   "p50_end_date": "2026-10-24",
+   "markets": {
+    "end-by-2026-09-30": 0.058,
+    "end-by-2026-10-15": 0.2687,
+    "end-by-2026-10-31": 0.7188,
+    "end-by-2026-11-15": 0.978,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-16",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.068,
+    "end-by-2026-10-15": 0.2635,
+    "end-by-2026-10-31": 0.6927,
+    "end-by-2026-11-15": 0.9738,
+    "end-by-2026-11-30": 0.999,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-17",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.0635,
+    "end-by-2026-10-15": 0.2502,
+    "end-by-2026-10-31": 0.677,
+    "end-by-2026-11-15": 0.9762,
+    "end-by-2026-11-30": 0.9988,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-18",
+   "p50_end_date": "2026-10-24",
+   "markets": {
+    "end-by-2026-09-30": 0.065,
+    "end-by-2026-10-15": 0.2542,
+    "end-by-2026-10-31": 0.6887,
+    "end-by-2026-11-15": 0.9765,
+    "end-by-2026-11-30": 1.0,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-19",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.0583,
+    "end-by-2026-10-15": 0.2447,
+    "end-by-2026-10-31": 0.6735,
+    "end-by-2026-11-15": 0.9705,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-20",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.0575,
+    "end-by-2026-10-15": 0.2465,
+    "end-by-2026-10-31": 0.6857,
+    "end-by-2026-11-15": 0.9765,
+    "end-by-2026-11-30": 0.9992,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-21",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.05,
+    "end-by-2026-10-15": 0.242,
+    "end-by-2026-10-31": 0.6853,
+    "end-by-2026-11-15": 0.9738,
+    "end-by-2026-11-30": 0.999,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-22",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.054,
+    "end-by-2026-10-15": 0.2465,
+    "end-by-2026-10-31": 0.6673,
+    "end-by-2026-11-15": 0.9715,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-23",
+   "p50_end_date": "2026-10-25",
+   "markets": {
+    "end-by-2026-09-30": 0.0553,
+    "end-by-2026-10-15": 0.2372,
+    "end-by-2026-10-31": 0.667,
+    "end-by-2026-11-15": 0.9718,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-24",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.049,
+    "end-by-2026-10-15": 0.2265,
+    "end-by-2026-10-31": 0.667,
+    "end-by-2026-11-15": 0.9728,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-25",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.0465,
+    "end-by-2026-10-15": 0.2275,
+    "end-by-2026-10-31": 0.6703,
+    "end-by-2026-11-15": 0.9745,
+    "end-by-2026-11-30": 0.9992,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-26",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.0498,
+    "end-by-2026-10-15": 0.237,
+    "end-by-2026-10-31": 0.6528,
+    "end-by-2026-11-15": 0.9688,
+    "end-by-2026-11-30": 0.9992,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-27",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.0455,
+    "end-by-2026-10-15": 0.23,
+    "end-by-2026-10-31": 0.6593,
+    "end-by-2026-11-15": 0.9728,
+    "end-by-2026-11-30": 0.9992,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-28",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.0442,
+    "end-by-2026-10-15": 0.219,
+    "end-by-2026-10-31": 0.657,
+    "end-by-2026-11-15": 0.968,
+    "end-by-2026-11-30": 0.999,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-29",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.0432,
+    "end-by-2026-10-15": 0.2218,
+    "end-by-2026-10-31": 0.647,
+    "end-by-2026-11-15": 0.9667,
+    "end-by-2026-11-30": 0.999,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-30",
+   "p50_end_date": "2026-10-26",
+   "markets": {
+    "end-by-2026-09-30": 0.0437,
+    "end-by-2026-10-15": 0.2177,
+    "end-by-2026-10-31": 0.6422,
+    "end-by-2026-11-15": 0.9675,
+    "end-by-2026-11-30": 0.999,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-08-31",
+   "p50_end_date": "2026-10-27",
+   "markets": {
+    "end-by-2026-09-30": 0.0408,
+    "end-by-2026-10-15": 0.214,
+    "end-by-2026-10-31": 0.6318,
+    "end-by-2026-11-15": 0.9635,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-01",
+   "p50_end_date": "2026-10-27",
+   "markets": {
+    "end-by-2026-09-30": 0.0315,
+    "end-by-2026-10-15": 0.1935,
+    "end-by-2026-10-31": 0.6205,
+    "end-by-2026-11-15": 0.971,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-02",
+   "p50_end_date": "2026-10-28",
+   "markets": {
+    "end-by-2026-09-30": 0.0333,
+    "end-by-2026-10-15": 0.1975,
+    "end-by-2026-10-31": 0.608,
+    "end-by-2026-11-15": 0.9645,
+    "end-by-2026-11-30": 0.9988,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-03",
+   "p50_end_date": "2026-10-27",
+   "markets": {
+    "end-by-2026-09-30": 0.0318,
+    "end-by-2026-10-15": 0.2005,
+    "end-by-2026-10-31": 0.6225,
+    "end-by-2026-11-15": 0.9665,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-04",
+   "p50_end_date": "2026-10-28",
+   "markets": {
+    "end-by-2026-09-30": 0.0323,
+    "end-by-2026-10-15": 0.2003,
+    "end-by-2026-10-31": 0.6078,
+    "end-by-2026-11-15": 0.9643,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-05",
+   "p50_end_date": "2026-10-28",
+   "markets": {
+    "end-by-2026-09-30": 0.0285,
+    "end-by-2026-10-15": 0.1827,
+    "end-by-2026-10-31": 0.609,
+    "end-by-2026-11-15": 0.9627,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-06",
+   "p50_end_date": "2026-10-28",
+   "markets": {
+    "end-by-2026-09-30": 0.0295,
+    "end-by-2026-10-15": 0.191,
+    "end-by-2026-10-31": 0.5988,
+    "end-by-2026-11-15": 0.9645,
+    "end-by-2026-11-30": 0.9995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-07",
+   "p50_end_date": "2026-10-28",
+   "markets": {
+    "end-by-2026-09-30": 0.0295,
+    "end-by-2026-10-15": 0.184,
+    "end-by-2026-10-31": 0.6038,
+    "end-by-2026-11-15": 0.9613,
+    "end-by-2026-11-30": 0.9985,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-08",
+   "p50_end_date": "2026-10-27",
+   "markets": {
+    "end-by-2026-09-30": 0.0257,
+    "end-by-2026-10-15": 0.1888,
+    "end-by-2026-10-31": 0.623,
+    "end-by-2026-11-15": 0.964,
+    "end-by-2026-11-30": 0.9998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-09",
+   "p50_end_date": "2026-10-28",
+   "markets": {
+    "end-by-2026-09-30": 0.023,
+    "end-by-2026-10-15": 0.1725,
+    "end-by-2026-10-31": 0.5927,
+    "end-by-2026-11-15": 0.9663,
+    "end-by-2026-11-30": 0.9988,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-10",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0168,
+    "end-by-2026-10-15": 0.1175,
+    "end-by-2026-10-31": 0.4517,
+    "end-by-2026-11-15": 0.9095,
+    "end-by-2026-11-30": 0.9965,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-11",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.012,
+    "end-by-2026-10-15": 0.11,
+    "end-by-2026-10-31": 0.4675,
+    "end-by-2026-11-15": 0.9155,
+    "end-by-2026-11-30": 0.9972,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-12",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0145,
+    "end-by-2026-10-15": 0.1135,
+    "end-by-2026-10-31": 0.4625,
+    "end-by-2026-11-15": 0.9095,
+    "end-by-2026-11-30": 0.996,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-13",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.012,
+    "end-by-2026-10-15": 0.1155,
+    "end-by-2026-10-31": 0.4557,
+    "end-by-2026-11-15": 0.907,
+    "end-by-2026-11-30": 0.9962,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-14",
+   "p50_end_date": "2026-11-03",
+   "markets": {
+    "end-by-2026-09-30": 0.0127,
+    "end-by-2026-10-15": 0.103,
+    "end-by-2026-10-31": 0.4333,
+    "end-by-2026-11-15": 0.8975,
+    "end-by-2026-11-30": 0.995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-15",
+   "p50_end_date": "2026-11-03",
+   "markets": {
+    "end-by-2026-09-30": 0.0127,
+    "end-by-2026-10-15": 0.104,
+    "end-by-2026-10-31": 0.438,
+    "end-by-2026-11-15": 0.8972,
+    "end-by-2026-11-30": 0.9965,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-16",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0175,
+    "end-by-2026-10-15": 0.1092,
+    "end-by-2026-10-31": 0.452,
+    "end-by-2026-11-15": 0.9018,
+    "end-by-2026-11-30": 0.996,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-17",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0132,
+    "end-by-2026-10-15": 0.1155,
+    "end-by-2026-10-31": 0.4432,
+    "end-by-2026-11-15": 0.9055,
+    "end-by-2026-11-30": 0.9945,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-18",
+   "p50_end_date": "2026-11-03",
+   "markets": {
+    "end-by-2026-09-30": 0.0095,
+    "end-by-2026-10-15": 0.1057,
+    "end-by-2026-10-31": 0.422,
+    "end-by-2026-11-15": 0.8965,
+    "end-by-2026-11-30": 0.997,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-19",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0067,
+    "end-by-2026-10-15": 0.0927,
+    "end-by-2026-10-31": 0.436,
+    "end-by-2026-11-15": 0.9008,
+    "end-by-2026-11-30": 0.9968,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-20",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.0092,
+    "end-by-2026-10-15": 0.0855,
+    "end-by-2026-10-31": 0.399,
+    "end-by-2026-11-15": 0.888,
+    "end-by-2026-11-30": 0.9935,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-21",
+   "p50_end_date": "2026-11-03",
+   "markets": {
+    "end-by-2026-09-30": 0.0077,
+    "end-by-2026-10-15": 0.0887,
+    "end-by-2026-10-31": 0.4037,
+    "end-by-2026-11-15": 0.887,
+    "end-by-2026-11-30": 0.9938,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-22",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.004,
+    "end-by-2026-10-15": 0.0828,
+    "end-by-2026-10-31": 0.3927,
+    "end-by-2026-11-15": 0.8932,
+    "end-by-2026-11-30": 0.9952,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-23",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.0037,
+    "end-by-2026-10-15": 0.0775,
+    "end-by-2026-10-31": 0.3832,
+    "end-by-2026-11-15": 0.8722,
+    "end-by-2026-11-30": 0.9928,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-24",
+   "p50_end_date": "2026-11-03",
+   "markets": {
+    "end-by-2026-09-30": 0.006,
+    "end-by-2026-10-15": 0.099,
+    "end-by-2026-10-31": 0.4268,
+    "end-by-2026-11-15": 0.9035,
+    "end-by-2026-11-30": 0.9962,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-25",
+   "p50_end_date": "2026-11-03",
+   "markets": {
+    "end-by-2026-09-30": 0.0057,
+    "end-by-2026-10-15": 0.1,
+    "end-by-2026-10-31": 0.4385,
+    "end-by-2026-11-15": 0.8972,
+    "end-by-2026-11-30": 0.996,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-26",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.005,
+    "end-by-2026-10-15": 0.1042,
+    "end-by-2026-10-31": 0.4602,
+    "end-by-2026-11-15": 0.9032,
+    "end-by-2026-11-30": 0.996,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-27",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.004,
+    "end-by-2026-10-15": 0.1095,
+    "end-by-2026-10-31": 0.4607,
+    "end-by-2026-11-15": 0.9103,
+    "end-by-2026-11-30": 0.9965,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-28",
+   "p50_end_date": "2026-11-01",
+   "markets": {
+    "end-by-2026-09-30": 0.0037,
+    "end-by-2026-10-15": 0.1225,
+    "end-by-2026-10-31": 0.4768,
+    "end-by-2026-11-15": 0.9125,
+    "end-by-2026-11-30": 0.9965,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-29",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0025,
+    "end-by-2026-10-15": 0.1172,
+    "end-by-2026-10-31": 0.4585,
+    "end-by-2026-11-15": 0.8995,
+    "end-by-2026-11-30": 0.995,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-09-30",
+   "p50_end_date": "2026-10-31",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.1495,
+    "end-by-2026-10-31": 0.5078,
+    "end-by-2026-11-15": 0.9163,
+    "end-by-2026-11-30": 0.998,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-01",
+   "p50_end_date": "2026-11-01",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.1253,
+    "end-by-2026-10-31": 0.489,
+    "end-by-2026-11-15": 0.9177,
+    "end-by-2026-11-30": 0.996,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-02",
+   "p50_end_date": "2026-10-31",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.1258,
+    "end-by-2026-10-31": 0.5095,
+    "end-by-2026-11-15": 0.9175,
+    "end-by-2026-11-30": 0.9958,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-03",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0887,
+    "end-by-2026-10-31": 0.439,
+    "end-by-2026-11-15": 0.9055,
+    "end-by-2026-11-30": 0.9958,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-04",
+   "p50_end_date": "2026-11-02",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.095,
+    "end-by-2026-10-31": 0.4507,
+    "end-by-2026-11-15": 0.9,
+    "end-by-2026-11-30": 0.9952,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-05",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0715,
+    "end-by-2026-10-31": 0.3917,
+    "end-by-2026-11-15": 0.893,
+    "end-by-2026-11-30": 0.9942,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-06",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0568,
+    "end-by-2026-10-31": 0.3975,
+    "end-by-2026-11-15": 0.8778,
+    "end-by-2026-11-30": 0.994,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-07",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.051,
+    "end-by-2026-10-31": 0.373,
+    "end-by-2026-11-15": 0.8852,
+    "end-by-2026-11-30": 0.9945,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-08",
+   "p50_end_date": "2026-11-04",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0455,
+    "end-by-2026-10-31": 0.3728,
+    "end-by-2026-11-15": 0.8758,
+    "end-by-2026-11-30": 0.9938,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-09",
+   "p50_end_date": "2026-11-05",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0302,
+    "end-by-2026-10-31": 0.3292,
+    "end-by-2026-11-15": 0.874,
+    "end-by-2026-11-30": 0.9952,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-10",
+   "p50_end_date": "2026-11-06",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.031,
+    "end-by-2026-10-31": 0.3,
+    "end-by-2026-11-15": 0.8075,
+    "end-by-2026-11-30": 0.9828,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-11",
+   "p50_end_date": "2026-11-07",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0192,
+    "end-by-2026-10-31": 0.2622,
+    "end-by-2026-11-15": 0.8025,
+    "end-by-2026-11-30": 0.9808,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-12",
+   "p50_end_date": "2026-11-07",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0107,
+    "end-by-2026-10-31": 0.2575,
+    "end-by-2026-11-15": 0.795,
+    "end-by-2026-11-30": 0.9858,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-13",
+   "p50_end_date": "2026-11-08",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.009,
+    "end-by-2026-10-31": 0.2387,
+    "end-by-2026-11-15": 0.7782,
+    "end-by-2026-11-30": 0.981,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-14",
+   "p50_end_date": "2026-11-08",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0037,
+    "end-by-2026-10-31": 0.2218,
+    "end-by-2026-11-15": 0.7772,
+    "end-by-2026-11-30": 0.9805,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  },
+  {
+   "as_of": "2026-10-15",
+   "p50_end_date": "2026-11-07",
+   "markets": {
+    "end-by-2026-09-30": 0.0,
+    "end-by-2026-10-15": 0.0,
+    "end-by-2026-10-31": 0.2802,
+    "end-by-2026-11-15": 0.8037,
+    "end-by-2026-11-30": 0.9825,
+    "end-by-2026-12-31": 1.0
+   },
+   "season_active": true,
+   "n_sims": 4000,
+   "kind": "hindcast"
+  }
+ ],
+ "method": "Each point is what the model would have said on that date using only information available then: weather observed up to that date (ERA5 / Open-Meteo analysis, mean of five peat-belt points), the ONI and DMI values published by then, and simulated weather after it. Past weather forecasts are not archived, so unlike the live odds these points do not use the 14-day forecast. Points are deterministic (fixed seed per date) and can be recomputed identically later; the series up to the build date is precomputed at build time and later days are computed on demand (at most 3 per request) and memoised in memory.",
+ "computed_at": "2026-10-16T05:40:46+00:00",
+ "caveats": [
+  "Model odds. Not a market -- no money changes hands. Each percentage is the share of simulated seasons in which the event happened.",
+  "The odds come from one statistical model fitted to 22 past seasons. Its typical error is about two weeks; the percentages include weather uncertainty and an allowance, calibrated on past seasons, for everything the model does not see.",
+  "'Ended' follows the resolution definition exactly; it is about fires in the Kalimantan peat belt, not about air quality in any city."
+ ],
+ "build_cpu_seconds": 3.79
+}

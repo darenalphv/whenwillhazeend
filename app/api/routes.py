@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from app import __version__
 from app.api import deps
 from app.api.schemas import (
+    ForecastOddsQuery,
     HazeFieldRequest,
     MAX_YEAR,
     MIN_YEAR,
@@ -303,3 +304,43 @@ def meteo(
     return deps.call(
         "app.model.meteo", "fetch_weather", q.lat, q.lon, q.start, q.end
     )
+
+
+# --------------------------------------------------------------------------- #
+# Forecast odds (CONTRACT_V2 M2) -- added by MODEL-SEASON
+# --------------------------------------------------------------------------- #
+
+
+@router.get(
+    "/forecast/odds",
+    summary="Model odds that the fire season ends by given dates (not a market)",
+)
+def forecast_odds(
+    as_of: Annotated[
+        str | None,
+        Query(description="ISO date; default today (UTC). Past dates are leak-free hindcasts."),
+    ] = None,
+) -> dict[str, Any]:
+    """Share of simulated seasons in which the season ends by each date.
+
+    Every market resolves on one definition of "the season has ended"
+    (``resolution.definition``); each market also carries its own
+    ``resolves_by`` date. No money, no trading.
+    """
+    try:
+        q = ForecastOddsQuery(as_of=as_of)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.errors(include_url=False, include_context=False),
+        ) from None
+    return deps.call("app.model.forecast", "forecast_odds", q.as_of)
+
+
+@router.get(
+    "/forecast/history",
+    summary="How the model odds for this season have moved, day by day",
+)
+def forecast_history() -> dict[str, Any]:
+    """Leak-free: each point uses only weather observed up to its date."""
+    return deps.call("app.model.forecast", "forecast_history")

@@ -1,5 +1,10 @@
 """Keetch-Byram Drought Index (KBDI) and a fire-spread readiness mapping.
 
+**No longer used by the season model** (MODEL_SPEC S2): the hazard now uses
+the Canadian Drought Code (`app.model.drought_code`), the index BMKG and the
+published Indonesian haze thresholds use. KBDI stays computable for
+continuity and for anything that still reads it.
+
 Equations
 ---------
 The KBDI (Keetch & Byram 1968, USDA Forest Service Research Paper SE-38) models

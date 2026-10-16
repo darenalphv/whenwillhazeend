@@ -25,8 +25,16 @@ the monthly rainfall normal ``R_m`` and a mean wet-day intensity
 persistence.  The gamma shape of 0.8 reproduces the heavy right tail of
 tropical convective daily totals.
 
-**ENSO conditioning.**  Borneo dry-season rainfall responds near-exponentially
-to ONI, and the response is concentrated in JJASON:
+**Two generators live in the code.** `RainSampler` below is the v1 single-point
+generator, now used only for the offline fallback of ``fetch_weather`` (the
+``/api/meteo`` endpoint). Its constants MEAN_WET_DAY_MM, WET_PERSISTENCE and
+ENSO_RAIN_K have no traceable source (MODEL_SPEC Appendix A). The season model
+uses `app.model.burn.Generator`, fitted to ERA5 areal-mean rainfall with
+k_enso / k_iod estimated by OLS (``hazard_fit.json -> rain_generator``), and
+its weather comes from `fetch_areal_weather` (peat-belt areal mean).
+
+**ENSO conditioning (v1 fallback only).**  Borneo dry-season rainfall responds
+near-exponentially to ONI, and the response is concentrated in JJASON:
 
     R_m(oni) = R_m * exp(-k_enso * w_m * oni),  k_enso = 0.35, w_m = 1.0 in
     Jun-Nov, 0.4 in Dec-May
@@ -391,7 +399,11 @@ def _rh_from_t(tmin_c: float, tmax_c: float) -> float:
 
 def _get_json(url: str, params: dict, timeout: float | None = None) -> dict:
     import httpx  # imported lazily so the module imports without httpx present
-    with httpx.Client(timeout=timeout or REQUEST_TIMEOUT_S) as client:
+    # Accept-Encoding: identity -- inside a Cloudflare Python Worker the fetch
+    # bridge hands httpx a still-compressed body for the default encodings and
+    # r.json() raises (research/PLATFORM.md). Harmless under CPython.
+    with httpx.Client(timeout=timeout or REQUEST_TIMEOUT_S,
+                      headers={"Accept-Encoding": "identity"}) as client:
         r = client.get(url, params=params)
         r.raise_for_status()
         return r.json()
@@ -427,6 +439,134 @@ def _pull(url: str, lat: float, lon: float, s: date, e: date,
             "wind_dir_deg": float(g("wind_direction_10m_dominant") or 135.0),
         }
     return out
+
+
+#: Reference points for the season model's areal-mean weather. All lie inside
+#: the Field et al. (2016) south-central Kalimantan peat-belt box (4S-0,
+#: 110-117E) in which the fire-observed season labels are counted. Chosen [J]
+#: to spread across the main Central/South Kalimantan peat areas; one
+#: multi-location Open-Meteo request serves all five.
+PEAT_BELT_POINTS = (
+    ("Palangka Raya", -2.21, 113.92),
+    ("Kapuas (ex-Mega Rice Project)", -2.60, 114.50),
+    ("Sampit", -2.53, 112.95),
+    ("Pangkalan Bun", -2.68, 111.62),
+    ("Banjarmasin", -3.32, 114.59),
+)
+
+
+def pull_multi(url: str, points, s: date, e: date,
+               timeout: float | None = None) -> list[dict[str, dict]]:
+    """One Open-Meteo request for several points; one {date: row} dict per point."""
+    payload = _get_json(url, {
+        "latitude": ",".join(f"{p[1]:.3f}" for p in points),
+        "longitude": ",".join(f"{p[2]:.3f}" for p in points),
+        "start_date": _iso(s), "end_date": _iso(e),
+        "daily": "temperature_2m_max,precipitation_sum", "timezone": "UTC",
+    }, timeout=timeout)
+    items = payload if isinstance(payload, list) else [payload]
+    if len(items) != len(points):
+        raise ValueError("open-meteo returned a different number of locations")
+    out = []
+    for it in items:
+        daily = (it or {}).get("daily") or {}
+        times = daily.get("time") or []
+        tx = daily.get("temperature_2m_max") or []
+        pr = daily.get("precipitation_sum") or []
+        rows = {}
+        for i, t in enumerate(times):
+            if i < len(tx) and tx[i] is not None and i < len(pr) and pr[i] is not None:
+                rows[str(t)[:10]] = {"tmax_c": float(tx[i]), "rain_mm": float(pr[i])}
+        out.append(rows)
+    return out
+
+
+def _areal(rows_per_point) -> dict[str, dict]:
+    if not rows_per_point:
+        return {}
+    common = set.intersection(*(set(r) for r in rows_per_point))
+    n = len(rows_per_point)
+    return {k: {"tmax_c": sum(r[k]["tmax_c"] for r in rows_per_point) / n,
+                "rain_mm": sum(r[k]["rain_mm"] for r in rows_per_point) / n}
+            for k in common}
+
+
+def fetch_areal_weather(start: str, end: str, as_of: str,
+                        allow_forecast: bool = True) -> dict:
+    """Peat-belt areal-mean daily rain/tmax for [start, end].  Never raises.
+
+    * Days up to ``as_of`` are observed: the bundled ERA5 record
+      (`calibration_weather.json`), then the Open-Meteo archive, then the
+      forecast API's recent past (analysis) for the last few days.
+    * Days after ``as_of`` come from the Open-Meteo forecast **only** when
+      ``allow_forecast`` is true (the live model, as_of = today). A hindcast
+      sets it false, so nothing observed after ``as_of`` can leak in.
+    * Anything not obtainable is ``None``; the season model simulates those
+      days from its stochastic generator rather than inventing values here.
+    """
+    pts = PEAT_BELT_POINTS
+    s, e, cut = _d(start), _d(end), _d(as_of)
+    today = date.today()
+    obs_end = min(e, cut, today)
+    got: dict[str, dict] = {}
+    src: dict[str, str] = {}
+    reasons: list[str] = []
+    net_live = False
+
+    try:
+        from app.data.loader_season import calibration_weather_index
+        cw, idx = calibration_weather_index()
+        for d in _daterange(s, obs_end):
+            i = idx.get(_iso(d))
+            if i is not None:
+                got[_iso(d)] = {"tmax_c": cw["tmax_c"][i], "rain_mm": cw["rain_mm"][i]}
+                src[_iso(d)] = "bundled ERA5"
+    except Exception:
+        pass
+
+    missing = [d for d in _daterange(s, obs_end) if _iso(d) not in got]
+    archive_end = min(obs_end, today - timedelta(days=ARCHIVE_LAG_DAYS))
+    if missing and missing[0] <= archive_end:
+        try:
+            for k, v in _areal(pull_multi(ARCHIVE_URL, pts, missing[0], archive_end)).items():
+                if k not in got:
+                    got[k], src[k] = v, "ERA5 archive"
+            net_live = True
+        except Exception as exc:
+            reasons.append(f"archive API unavailable ({type(exc).__name__})")
+
+    fc_lo = max(s, today - timedelta(days=FORECAST_MAX_PAST_DAYS))
+    fc_hi = min(e, today + timedelta(days=FORECAST_MAX_LEAD_DAYS))
+    if not allow_forecast:
+        fc_hi = min(fc_hi, obs_end)
+    want = [d for d in _daterange(fc_lo, fc_hi) if _iso(d) not in got]
+    if want:
+        try:
+            rows = _areal(pull_multi(FORECAST_URL, pts, want[0], want[-1]))
+            for k, v in rows.items():
+                if k not in got and _d(k) >= want[0]:
+                    got[k] = v
+                    src[k] = "forecast" if _d(k) > cut else "forecast-API analysis"
+            net_live = True
+        except Exception as exc:
+            reasons.append(f"forecast API unavailable ({type(exc).__name__})")
+
+    dates = [_iso(d) for d in _daterange(s, e)]
+    obs_missing = sum(1 for k in dates if _d(k) <= obs_end and k not in got)
+    n_fc = sum(1 for k in dates if src.get(k) == "forecast")
+    return {
+        "dates": dates,
+        "rain_mm": [got[k]["rain_mm"] if k in got else None for k in dates],
+        "tmax_c": [got[k]["tmax_c"] if k in got else None for k in dates],
+        "live": bool(net_live and n_fc > 0),
+        "network": bool(net_live),
+        "n_observed_missing": obs_missing,
+        "n_forecast_days": n_fc,
+        "points": [{"name": n, "lat": la, "lon": lo} for n, la, lo in pts],
+        "source": f"Open-Meteo (ERA5 archive + ECMWF IFS forecast), mean of {len(pts)} "
+                  "peat-belt points",
+        "fallback_reason": "; ".join(reasons) if reasons else None,
+    }
 
 
 def fetch_weather(lat: float, lon: float, start: str, end: str) -> dict:
@@ -567,21 +707,24 @@ CAVEATS = [
     "on ENSO, not a forecast: it carries the right average and the right "
     "spread, but it cannot tell you that the rains will break on a particular "
     "week.",
-    "The monsoon onset is represented as a smooth logistic in the day of year. "
-    "Real onset is abrupt, spatially patchy, and varies by three to four weeks "
-    "between years; the Madden-Julian Oscillation can advance or delay the "
-    "effective break by a fortnight and is not represented at all.",
-    "One point stands in for the whole of Kalimantan. Rainfall on the day the "
-    "fires die can differ by an order of magnitude between Palangka Raya and "
-    "Pontianak, so a single-point forecast blurs a real spatial story.",
+    "The season model represents the monsoon twice: as BMKG's observed onset "
+    "test (three wet 10-day periods) and as a smooth climatological clock whose "
+    "timing is fitted to past fire-season ends. Real onset is abrupt, patchy and "
+    "varies by weeks between years; the Madden-Julian Oscillation can advance or "
+    "delay the effective break by a fortnight and is not represented.",
+    "Five points in the Central/South Kalimantan peat belt stand in for the "
+    "whole fire region. Rainfall on the day the fires die can differ by an order "
+    "of magnitude between neighbouring districts, so an areal mean blurs a real "
+    "spatial story.",
     "Open-Meteo's tropical precipitation comes from ERA5 and the ECMWF IFS. "
     "Reanalysis rainfall over Borneo has known wet biases over land and is "
     "poorly constrained by gauges; a wet bias in the input makes this model "
     "call the end of the season too early.",
-    "The Indian Ocean Dipole is a comparable driver of Indonesian drought to "
-    "ENSO (1997 and 2019 were both strong positive IOD years) and it is not an "
-    "input to this model. Its effect is partly and imperfectly absorbed into "
-    "the ONI coefficient.",
+    "The Indian Ocean Dipole (1997 and 2019 were both strong positive-IOD years) "
+    "enters the season model through its rainfall generator, fitted on ERA5: "
+    "each +1 C of DMI cuts Jun-Nov rainfall by about 19% (k_iod ~0.21 +/- 0.09). "
+    "Fitted on 22 seasons, it did not measurably improve the model's end-date "
+    "error over ENSO alone.",
     "Smoke feedback is ignored. Dense haze suppresses convection and rainfall, "
     "so a severe fire season partly sustains the dry conditions that keep it "
     "going. This model treats weather as exogenous.",

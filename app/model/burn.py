@@ -1,77 +1,46 @@
-"""Season-end model: when does the *current* Kalimantan burn episode stop?
+"""Season-end model v2: when does the current Kalimantan fire season stop?
 
-The question "how many more days of haze?" is a survival question, not a
-regression question, so the model is a **discrete-time survival (hazard)
-model**, Monte-Carlo'd forward day by day.
+Implements research/MODEL_SPEC.md section 2.4 (S1-S6). It is still a
+**discrete-time survival (hazard) model**, Monte-Carlo'd forward day by day,
+but every input changed from v1:
 
-Equations
----------
-For each day *d* after ``as_of``, the probability that the episode terminates
-on that day, given that it is still burning, is
+    h(d) = sigmoid( c0 + c1*wet10(d) + c2*n_wet(d)
+                    - c3*deficit(d) - c4*dc_term(d)
+                    - c5*ONI_3mo - c6*DMI_3mo  [+ scenario offset] )
 
-    h(d) = sigmoid( b0
-                  + b1 * rain_7d(d)                    [mm, trailing 7-day sum]
-                  + b2 * drought_factor(KBDI(d))       [0..1]
-                  + b3 * oni                           [degC, ONI]
-                  + b4 * monsoon_progress(d) )         [0..1]
+    deficit(d) = max(0, alpha - P84(d))       P84 = mean daily rain over the
+                                              previous 84 days, mm/d (S3);
+                                              alpha = 3.7 mm/d (Field et al. 2016)
+    dc_term(d) = max(0, DC(d) - 350) / 100    Drought Code (S2; Van Wagner 1987;
+                                              350 = BMKG "very dry")
+    wet10(d)   = 1 if the last 10 days had >= 50 mm (BMKG dasarian unit)
+    n_wet(d)   = consecutive trailing 10-day blocks with >= 50 mm, 0..3; three
+                 is the BMKG rainy-season onset criterion (Giarno et al. 2012)
+    ONI_3mo, DMI_3mo = the latest 3-month ONI / ~13-week DMI a forecaster could
+                 have read on the forecast date (publication-lagged) and held
+                 fixed over the simulation -- never a post-season value (S3).
 
-with b1, b4 >= 0 (rain and the monsoon end fires) and b2, b3 <= 0 (drought and
-El Nino prolong them).  The survival function is the usual discrete product
+Sign constraints c1..c6 >= 0. Coefficients, skill and the fitted rainfall
+generator live in ``app/model/hazard_fit.json``, written offline by
+``app/model/calibrate.py`` (scipy never runs on a request).
 
-    S(D) = prod_{d=1..D} (1 - h(d))
-    P(end on day D) = h(D) * S(D-1)
+**Target.** The hazard is fitted to *fire-observed* season ends (S1), see
+`app.model.forecast.SEASON_END_DEFINITION`. That is the site's own definition
+[J]; no published one exists.
 
-and the reported p10/p50/p90 are quantiles of the simulated termination day.
+**Weather.** Areal mean of five peat-belt points (`meteo.PEAT_BELT_POINTS`):
+observed up to the forecast date; the Open-Meteo forecast for up to 14 days
+after it (live runs only); then a Markov-gamma generator fitted to ERA5 and
+conditioned on ONI and DMI (S4):
 
-**Why the driver is rain_7d and not rain today.**  This is the crux of tropical
-peat fire.  A smouldering front sits 10-50 cm below the surface, is
-self-sustaining at very low oxygen supply, and is insulated from a shower by
-the overlying peat.  Rewetting a peat dome enough to quench it requires the
-water table to be raised, which takes sustained rain, not a storm.  With the
-fitted coefficients below, a single 5 mm shower moves the daily termination
-hazard by less than a percentage point, while seven consecutive days of >10 mm
-(rain_7d ~ 70-100 mm) raises it by well over an order of magnitude -- and
-simultaneously collapses KBDI, which removes the b2 term as well.  That
-asymmetry is the whole physical content of the model.
+    R_m(ONI, DMI) = R_m * exp(-k_enso,m * ONI - k_iod,m * DMI)
 
-**Weather forward-propagation.**  Days inside the 15-day Open-Meteo forecast horizon
-use the forecast, with a multiplicative log-normal perturbation whose spread
-grows with lead time (0 at day 1 to sigma=0.6 at day 15) to represent forecast
-error.  Beyond the horizon each simulation draws its own rainfall from the
-Markov-gamma sampler in `app.model.meteo`, conditioned on ONI, and carries its
-own KBDI trajectory.  So the ensemble spread is genuine weather uncertainty,
-not a variance parameter someone chose.
+**No hindsight.** For a forecast date in the past the model sees weather only
+up to that date and simulates everything after it; archived weather after the
+forecast date is never used as a "forecast".
 
-Scenarios
----------
-``baseline``            as observed / forecast.
-``no_enforcement``      burning continues to be used for land clearing and
-                        suppression is nominal: hazard log-odds shifted down
-                        (episodes run longer).
-``strict_moratorium``   canal blocking, enforced no-burn, active suppression:
-                        hazard log-odds shifted up.
-``monsoon_early`` /
-``monsoon_late``        monsoon onset moved 14 days earlier / later, which
-                        shifts both the b4 term and the rainfall climatology.
-The enforcement offsets are *policy assumptions*, not fitted quantities; they
-are marked as such in ``SCENARIOS``.
-
-Sources
--------
-* Keetch & Byram (1968) - drought index (see `app.model.kbdi`).
-* Field, R.D. et al. (2016). *PNAS* 113(33) 9204 - nonlinear ENSO-drought-fire
-  sensitivity in Indonesia; the dry-season rainfall threshold for severe fire.
-* Page, S.E. et al. (2002). The amount of carbon released from peat and forest
-  fires in Indonesia during 1997. *Nature* 420, 61-65 - peat smouldering depth
-  and persistence.
-* Turetsky, M.R. et al. (2015). Global vulnerability of peatlands to fire and
-  carbon loss. *Nature Geoscience* 8, 11-14 - why smouldering peat survives
-  rain that would end a flaming fire.
-* Wooster, M.J. et al. (2012). Field determination of biomass burning emission
-  ratios and factors via open-path FTIR spectroscopy ... Indonesian peatland
-  fires. *Atmos. Chem. Phys.* 11, 11700 - peat fire persistence and emissions.
-* Huijnen, V. et al. (2016). Fire carbon emissions over maritime southeast Asia
-  in 2015 largest since 1997. *Scientific Reports* 6, 26886.
+The v1 model (KBDI, 7-day rain, fixed-DOY monsoon logistic) is preserved for
+comparison in ``scripts/model/season/legacy_v1.py``.
 """
 
 from __future__ import annotations
@@ -79,64 +48,24 @@ from __future__ import annotations
 import math
 from datetime import date, timedelta
 
-from app.model import kbdi as kbdi_mod
+from app.model import drought_code as dc_mod
 from app.model import meteo as meteo_mod
 
-__all__ = ["simulate_season_end", "HAZARD_COEFFS", "SCENARIOS", "CAVEATS",
-           "hazard_logit", "region_centroid"]
+__all__ = ["simulate_season_end", "SCENARIOS", "CAVEATS", "hazard_logit",
+           "region_centroid", "observed_features", "run_hazard_simulation",
+           "prepare_state", "load_model", "KEYS", "ALPHA_P84", "DC_CRIT"]
 
-# ---------------------------------------------------------------------------
-# Fitted hazard coefficients.
-#
-# Fitted by `app.model.calibrate.fit_hazard_coefficients()` -- discrete-time
-# survival maximum likelihood over every historical season returned by
-# `app.data.loader.load_seasons()` that has both a start_date and an end_date,
-# with weather reconstructed from ENSO-conditioned climatology (see
-# calibrate.py), followed by a coarse grid refinement of b0 against observed
-# durations.  Sign bounds enforced: b1,b4 >= 0; b2,b3 <= 0.
-#
-# Fitted 2026-09-18 against 27 historical seasons (1997-2025, the two years
-# with no burn window excluded) using OBSERVED ERA5 daily weather at Palangka
-# Raya, 1996-2026, cached in app/model/calibration_weather.json.
-#
-#   RMSE  14.18 days  in-sample, perfect foresight (weather known)
-#   RMSE  17.97 days  leave-one-out
-#   RMSE  25.48 days  forecast mode (Monte-Carlo from day 1, no future weather)
-#   RMSE   8.19 days  on 1997 / 2015 / 2019, the three seasons whose dates come
-#                     from documented fire episodes rather than a rainfall rule
-#   RMSE  41.25 days  for a naive "always predict the mean duration" model
-#
-# CIRCULARITY WARNING. The start and end dates in app/data/seasons.json are
-# themselves derived from an ERA5 rainfall rule, not from observed fire dates,
-# so fitting a hazard with a rainfall term against them is partly self-
-# referential and the in-sample number flatters the model. Ablations
-# (app/model/hazard_fit.json): removing BOTH rainfall terms (b1 = b2 = 0) still
-# gives 24.55 days; removing the climate terms (b3 = b4 = 0) gives 18.34 days;
-# monsoon climatology alone gives 29.63 days. So roughly a third of the skill
-# survives with no rainfall information at all, and the honest headline error is
-# the 25 days of forecast mode, not the 14 of hindcast.
-HAZARD_COEFFS = {
-    "b0":  -3.60073,   # intercept: log-odds of ending on a dry, El-Nino-free day
-    "b1":   0.00843,   # per mm of trailing 7-day rain     (>= 0: rain ends fires)
-    "b2":  -5.54060,   # per unit drought factor 0..1      (<= 0: drought prolongs)
-    "b3":  -0.15913,   # per degC of ONI                   (<= 0: El Nino prolongs)
-    "b4":   5.98514,   # per unit monsoon progress 0..1    (>= 0: the rains end it)
-}
-HAZARD_FIT = {
-    "fitted": True,
-    "fitted_at": "2026-09-18",
-    "n_seasons": 27,
-    "rmse_days": 14.18,
-    "rmse_days_loo": 17.97,
-    "rmse_days_forecast": 25.48,
-    "rmse_days_anchor_seasons": 8.19,
-    "rmse_days_naive_mean": 41.25,
-    "weather_source": "open-meteo archive (ERA5) 1996-2026 at Palangka Raya",
-    "target_is_rainfall_derived": True,
-    "detail": "app/model/hazard_fit.json",
-}
+KEYS = ("c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7")
+ALPHA_P84 = 3.7           # mm/d, Field et al. 2016 Kalimantan haze threshold
+DC_CRIT = dc_mod.DC_CRIT  # 350, BMKG "very dry"
+WET10_MM = 50.0           # BMKG dasarian rain criterion (Giarno et al. 2012)
+P84_DAYS = 84
+SPINUP_DAYS = 240         # DC spin-up before the forecast date
+MAX_HORIZON_DAYS = 270
+MAX_PRE_DAYS = 300        # cap on unobserved days simulated before as_of
+DEFAULT_CENTROID = (-2.21, 113.92)
 
-#: Policy scenarios.  `logit_offset` is an *assumption*, not a fitted value.
+#: Policy scenarios. `logit_offset` is an *assumption*, not a fitted value.
 SCENARIOS = {
     "baseline":          {"logit_offset": 0.0,  "monsoon_shift_days": 0,   "rain_multiplier": 1.0,
                           "estimated": False,
@@ -155,18 +84,6 @@ SCENARIOS = {
                           "label": "Monsoon onset 14 days late"},
 }
 
-MAX_HORIZON_DAYS = 270
-DEFAULT_CENTROID = (-2.21, 113.92)   # Palangka Raya, Central Kalimantan
-KBDI_SPINUP_DAYS = 150
-#: Below this KBDI, or above this monsoon progress, there is no episode to end.
-#: 350 is not a guess: over the ERA5-driven KBDI record 1997-2025 it separates
-#: the 27 years that had a burn window from the two that did not (2010 peaked at
-#: KBDI 329, 2022 at 276; every season year exceeded 465) with no
-#: misclassifications. It is nevertheless a threshold fitted against exactly two
-#: negative examples, so do not read much into its precision.
-ACTIVE_KBDI_MIN = 350.0
-ACTIVE_MONSOON_MAX = 0.80
-
 
 def _d(s):
     return meteo_mod._d(s)
@@ -176,202 +93,341 @@ def _iso(d: date) -> str:
     return d.isoformat()
 
 
-def hazard_logit(coeffs, rain_7d, drought_f, oni, monsoon, offset=0.0):
-    """b0 + b1*rain7 + b2*df + b3*oni + b4*monsoon (+ scenario offset)."""
-    return (coeffs["b0"] + offset
-            + coeffs["b1"] * rain_7d
-            + coeffs["b2"] * drought_f
-            + coeffs["b3"] * oni
-            + coeffs["b4"] * monsoon)
+def load_model() -> dict:
+    """The fitted model: coefficients, rainfall generator, active rule, skill."""
+    from app.data.loader_season import load_hazard_fit
+    return load_hazard_fit()
+
+
+def hazard_logit(coeffs, wet10, n_wet, deficit, dc_term, oni, dmi, clock=0.0, offset=0.0):
+    return (coeffs["c0"] + offset + coeffs["c1"] * wet10 + coeffs["c2"] * n_wet
+            - coeffs["c3"] * deficit - coeffs["c4"] * dc_term
+            - coeffs["c5"] * oni - coeffs["c6"] * dmi + coeffs.get("c7", 0.0) * clock)
+
+
+def seasonal_clock(d: date, params: dict | None) -> float:
+    """Climatological monsoon progress 0..1 on calendar date ``d``.
+
+    Difference of two logistics on a year starting 15 Aug (the v1 form), but
+    with the onset day and width **fitted by maximum likelihood** to the
+    fire-observed season ends (calibrate.profile_seasonal) instead of v1's
+    hand-set DOY 305. It is the climatological expectation of the monsoon,
+    the part of the season's end that rainfall alone does not explain in
+    this data; the observed onset enters separately through n_wet.
+    """
+    if not params:
+        return 0.0
+    doy = d.timetuple().tm_yday
+    x = (doy - 227) % 365
+    x_on = (params["onset_doy"] - 227) % 365
+    x_off = (params.get("retreat_doy", 110) - 227) % 365
+    rise = 1.0 / (1.0 + math.exp(-(x - x_on) / params["width_days"]))
+    fall = 1.0 - 1.0 / (1.0 + math.exp(-(x - x_off) / params.get("retreat_width_days", 28.0)))
+    return min(max(rise * fall, 0.0), 1.0)
 
 
 def region_centroid(region: str = "kalimantan") -> tuple[float, float, str]:
-    """(lat, lon, resolved_name) for a region key or province name."""
-    key = (region or "kalimantan").strip().lower()
-    try:
-        from app.data.loader import load_regions
-        feats = (load_regions() or {}).get("features", [])
-        if key not in ("kalimantan", "all", ""):
-            for f in feats:
-                p = f.get("properties", {})
-                names = [str(p.get("name", "")), str(p.get("name_en", ""))]
-                if any(key in n.lower() or n.lower() in key for n in names if n):
-                    lat = p.get("capital_lat")
-                    lon = p.get("capital_lon")
-                    if lat is not None and lon is not None:
-                        return float(lat), float(lon), str(p.get("name") or region)
-        # Whole-island: use the reference station of the province holding the
-        # most peat (Kalimantan Tengah / Palangka Raya). A geometric centroid
-        # would fall between stations, where the bundled monthly normals and the
-        # ERA5 record the model is calibrated on disagree by ~900 mm a year --
-        # and a wet/dry bias in the reference climate translates directly into a
-        # biased end date.
-        best, best_peat = None, -1.0
-        for f in feats:
-            p = f.get("properties", {})
-            lat, lon = p.get("capital_lat"), p.get("capital_lon")
-            if lat is None or lon is None:
-                continue
-            peat = float(p.get("peat_mha") or 0.0)
-            if peat > best_peat:
-                best, best_peat = (float(lat), float(lon)), peat
-        if best is not None:
-            return best[0], best[1], "kalimantan"
-    except Exception:
-        pass
+    """v1 compatibility. The v2 model always uses the peat-belt areal mean;
+    a province name changes only the label."""
     return DEFAULT_CENTROID[0], DEFAULT_CENTROID[1], (region or "kalimantan")
 
 
-def _latest_oni(as_of: str) -> float:
-    try:
-        from app.data.loader import load_enso
-        rows = [r for r in (load_enso() or [])
-                if meteo_mod.oni_value(r) is not None]
-        rows.sort(key=lambda r: r.get("year", 0))
-        yr = _d(as_of).year
-        for r in reversed(rows):
-            if int(r.get("year", 0)) <= yr:
-                return float(meteo_mod.oni_value(r))
-        return float(meteo_mod.oni_value(rows[-1])) if rows else 0.0
-    except Exception:
-        return 0.0
+def feature_terms(dc: float, p84: float) -> tuple[float, float]:
+    return max(0.0, ALPHA_P84 - p84), max(0.0, dc - DC_CRIT) / 100.0
 
 
 # ---------------------------------------------------------------------------
-# vectorised KBDI + rainfall propagation
+# features on an observed series
 # ---------------------------------------------------------------------------
 
-def _kbdi_step_vec(np, q_prev, tmax_c, net_rain_mm, annual_rain_in):
-    q = np.clip(q_prev - 100.0 * (net_rain_mm / 25.4), 0.0, 800.0)
-    tf = np.clip(tmax_c * 9.0 / 5.0 + 32.0, -60.0, 160.0)
-    dq = ((800.0 - q) * (0.968 * np.exp(0.0486 * tf) - 8.30)
-          / (1.0 + 10.88 * math.exp(-0.0441 * annual_rain_in)) * 1e-3)
-    return np.clip(q + np.maximum(dq, 0.0), 0.0, 800.0)
+def observed_features(rain, tmax, dc0: float = dc_mod.DC_START) -> dict:
+    """DC, P84 and the BMKG onset features for a contiguous daily series.
 
+    Day i uses rain up to and including day i. Partial P84 windows at the very
+    start of a series are scaled to a daily mean.
+    """
+    n = len(rain)
+    csum = [0.0]
+    for r in rain:
+        csum.append(csum[-1] + float(r))
 
-def _net_rain_vec(np, rain, event_total):
-    """Vectorised Keetch-Byram net rainfall; mutates and returns event_total."""
-    wet = rain > 0.0
-    event_total = np.where(wet, event_total, 0.0)
-    deductible = np.maximum(0.0, kbdi_mod.RAIN_INTERCEPTION_MM
-                            - np.minimum(event_total, kbdi_mod.RAIN_INTERCEPTION_MM))
-    net = np.where(wet, np.maximum(0.0, rain - deductible), 0.0)
-    event_total = event_total + np.where(wet, rain, 0.0)
-    return net, event_total
+    def blk(a, b):
+        return csum[max(0, b)] - csum[max(0, a)]
 
-
-def _sample_rain_block(np, rng, months, p_wet_by_month, mean_by_month, wet_state):
-    """One day of Markov-gamma rain for all sims (months is a scalar month)."""
-    p = p_wet_by_month[months - 1]
-    p_trans = np.where(wet_state,
-                       p + meteo_mod.WET_PERSISTENCE * (1.0 - p),
-                       p * (1.0 - meteo_mod.WET_PERSISTENCE))
-    wet = rng.random(wet_state.shape) < np.clip(p_trans, 0.0, 1.0)
-    mu = mean_by_month[months - 1] / max(1e-6, p * 30.4)
-    draw = rng.gamma(meteo_mod.GAMMA_SHAPE, mu / meteo_mod.GAMMA_SHAPE, size=wet_state.shape)
-    return np.where(wet, draw, 0.0), wet
+    dc, p84, wet10, nwet = [], [], [], []
+    cur = float(dc0)
+    for i in range(n):
+        cur = dc_mod.dc_step(cur, float(tmax[i]), float(rain[i]))
+        dc.append(cur)
+        lo = max(0, i + 1 - P84_DAYS)
+        p84.append((csum[i + 1] - csum[lo]) / (i + 1 - lo))
+        a = blk(i - 9, i + 1) >= WET10_MM
+        b = blk(i - 19, i - 9) >= WET10_MM
+        c = blk(i - 29, i - 19) >= WET10_MM
+        wet10.append(1.0 if a else 0.0)
+        nwet.append(float(a) * (1.0 + float(b) * (1.0 + float(c))))
+    return {"dc": dc, "p84": p84, "wet10": wet10, "n_wet": nwet}
 
 
 # ---------------------------------------------------------------------------
-# core simulation (shared with calibrate.py)
+# stochastic weather generator (fitted by calibrate.fit_rain_generator)
 # ---------------------------------------------------------------------------
 
-def run_hazard_simulation(as_of: str, lat: float, lon: float, oni: float,
-                          coeffs: dict, n_sims: int = 5000,
+class Generator:
+    """Monthly two-state Markov chain + gamma excess amounts for areal-mean
+    rain, and a wet/dry-conditioned normal tmax, conditioned on ONI and DMI.
+
+    A wet day is >= ``wet_threshold_mm``; its rain is threshold + Gamma excess.
+    The ENSO/IOD factor f = exp(-k_enso*ONI - k_iod*DMI) multiplies the
+    monthly mean; a fitted share of log f goes to wet-day frequency and the
+    rest to intensity.
+    """
+
+    def __init__(self, gen: dict, oni: float, dmi: float, rain_multiplier: float = 1.0):
+        import numpy as np
+        m = gen["monthly"]
+        ke = np.array(gen["k_enso_by_month"], dtype=float)
+        ki = np.array(gen["k_iod_by_month"], dtype=float)
+        s = np.array(gen["freq_share_by_month"], dtype=float)
+        logf = -(ke * oni + ki * dmi) + math.log(max(rain_multiplier, 1e-6))
+        f_freq, f_int = np.exp(s * logf), np.exp((1.0 - s) * logf)
+        self.thr = float(gen["wet_threshold_mm"])
+        self.p01 = np.clip(np.array(m["p01"], float) * f_freq, 0.002, 0.98)
+        self.p11 = np.clip(np.array(m["p11"], float) * f_freq, 0.002, 0.98)
+        self.shape = np.array(m["gamma_shape"], float)
+        mean_wet = (self.thr + np.array(m["excess_mean_mm"], float)) * f_int
+        self.excess = np.maximum(mean_wet - self.thr, 0.1)
+        self.t_dry = np.array(m["tmax_dry_c"], float) + gen.get("tmax_oni_coeff", 0.0) * oni
+        self.t_wet = np.array(m["tmax_wet_c"], float) + gen.get("tmax_oni_coeff", 0.0) * oni
+        self.t_sd = np.array(m["tmax_sd_c"], float)
+
+    def climatological_mean_rain(self, month: int) -> float:
+        i = month - 1
+        p = self.p01[i] / max(1e-6, 1.0 - self.p11[i] + self.p01[i])
+        return float(p * (self.thr + self.excess[i]))
+
+    def step(self, np, rng, month: int, wet_prev):
+        i = month - 1
+        p = np.where(wet_prev, self.p11[i], self.p01[i])
+        wet = rng.random(wet_prev.shape) < p
+        k = self.shape[i]
+        amt = self.thr + rng.gamma(k, self.excess[i] / k, size=wet_prev.shape)
+        rain = np.where(wet, amt, 0.0)
+        tmax = np.where(wet, self.t_wet[i], self.t_dry[i]) + rng.normal(
+            0.0, self.t_sd[i], wet_prev.shape)
+        return rain, tmax, wet
+
+
+# ---------------------------------------------------------------------------
+# core Monte-Carlo (shared with calibrate.py and forecast.py)
+# ---------------------------------------------------------------------------
+
+def run_hazard_simulation(start: date, as_of: date, init: dict, coeffs: dict,
+                          gen: dict, oni: float, dmi: float, n_sims: int = 5000,
                           seed: int | None = None, horizon: int = MAX_HORIZON_DAYS,
-                          forecast: dict | None = None,
-                          kbdi_start: float | None = None,
-                          logit_offset: float = 0.0,
+                          forecast: dict | None = None, logit_offset: float = 0.0,
                           monsoon_shift_days: float = 0.0,
-                          rain_multiplier: float = 1.0):
-    """Monte-Carlo the daily-hazard survival model.
+                          rain_multiplier: float = 1.0, seasonal: dict | None = None,
+                          frailty_sd: float = 0.0):
+    """Monte-Carlo the hazard from the observed state at ``start``.
 
-    Returns ``(end_day_array, p_end_per_day, p_still_per_day)`` where
-    ``end_day`` is 1-based days after ``as_of`` (``horizon + 1`` = censored).
+    ``init`` = {"dc": float, "rain_hist": [up to 84 days of rain, oldest
+    first]}. Days ``start+1 .. as_of`` are simulated without hazard (days
+    before the forecast date with no observed weather); days ``as_of+1 ..
+    as_of+horizon`` carry the hazard. ``forecast`` maps ISO date ->
+    (rain_mm, tmax_c) and is used where present.
+
+    Returns ``(end_day, p_end, p_still)``; ``end_day`` is 1-based days after
+    ``as_of`` (``horizon + 1`` = still burning at the horizon).
     """
     import numpy as np
     rng = np.random.default_rng(seed)
-    start = _d(as_of)
-
-    sampler = meteo_mod.RainSampler(lat, lon, oni=oni, rng=rng,
-                                    rain_multiplier=rain_multiplier)
-    p_wet_by_month = np.array([sampler.p_wet(m) for m in range(1, 13)])
-    mean_by_month = np.array([sampler.month_rain_mm(m) for m in range(1, 13)])
-    tmax_by_month = np.array(sampler.clim["tmax_c"])
-    annual_rain_in = max(float(sum(sampler.clim["rain_mm"])) / 25.4, 1.0)
-
     n = int(max(1, n_sims))
-    q = np.full(n, float(kbdi_start if kbdi_start is not None else 400.0))
-    event_total = np.zeros(n)
-    wet_state = np.zeros(n, dtype=bool)
-    rain_hist = np.zeros((7, n))
-    if forecast and forecast.get("_rain_hist"):
-        hist = [float(v) for v in forecast["_rain_hist"][-7:]]
-        # align to the END of the buffer so the most recent day is row -1
-        for i, v in enumerate(hist):
-            rain_hist[7 - len(hist) + i, :] = v
+    G = Generator(gen, oni, dmi, rain_multiplier)
+    hist = [float(x) for x in init["rain_hist"]][-P84_DAYS:]
+    if len(hist) < P84_DAYS:      # only when spinning up without observations
+        hist = [G.climatological_mean_rain(start.month)] * (P84_DAYS - len(hist)) + hist
+    buf = np.tile(np.asarray(hist, dtype=float)[:, None], (1, n))   # ring, oldest at pos
+    pos = 0
+    s84 = buf.sum(axis=0)
+    s10a = buf[-10:].sum(axis=0)
+    s10b = buf[-20:-10].sum(axis=0)
+    s10c = buf[-30:-20].sum(axis=0)
+    dc = np.full(n, float(init["dc"]))
+    wet_prev = buf[-1] >= G.thr
+    fc = forecast or {}
+    c = coeffs
+    lin_const = c["c0"] + float(logit_offset) - c["c5"] * oni - c["c6"] * dmi
+    if frailty_sd > 0:
+        # per-season random log-odds offset ("frailty"): everything the model
+        # does not see -- ignitions, enforcement, local hydrology. Its size is
+        # set so hindcast p10-p90 intervals cover ~80% of outcomes.
+        lin_const = lin_const + rng.normal(0.0, float(frailty_sd), n)
+    shift = timedelta(days=int(round(monsoon_shift_days)))
+    c7 = float(c.get("c7", 0.0))
 
-    fc_dates = {}
-    if forecast:
-        for i, dt in enumerate(forecast.get("dates", [])):
-            fc_dates[dt] = (forecast["rain_mm"][i], forecast["tmax_c"][i])
-
+    pre = max(0, (as_of - start).days)
     ended = np.zeros(n, dtype=bool)
     end_day = np.full(n, horizon + 1, dtype=np.int32)
     p_end = np.zeros(horizon)
     p_still = np.zeros(horizon)
 
-    for k in range(1, horizon + 1):
+    for k in range(1, pre + horizon + 1):
         cur = start + timedelta(days=k)
         key = _iso(cur)
-        if key in fc_dates:
-            base_rain, base_tmax = fc_dates[key]
-            # forecast error grows with lead time
-            sig = min(0.6, 0.04 * k)
-            rain = np.asarray(base_rain, dtype=float) * rng.lognormal(-0.5 * sig * sig, sig, n)
-            # a dry forecast can still verify wet; allow occasional busts
-            bust = rng.random(n) < min(0.25, 0.015 * k)
-            extra, _ = _sample_rain_block(np, rng, cur.month, p_wet_by_month,
-                                          mean_by_month, np.zeros(n, dtype=bool))
-            rain = np.where(bust, np.maximum(rain, extra), rain)
-            tmax = float(base_tmax) + rng.normal(0.0, 0.5 + 0.05 * k, n)
-            wet_state = rain > 0.0
+        if key in fc:
+            base_rain, base_tmax = fc[key]
+            lead = max(1, (cur - as_of).days)
+            sig = min(0.6, 0.04 * lead)
+            rain = float(base_rain) * rng.lognormal(-0.5 * sig * sig, sig, n)
+            bust = rng.random(n) < min(0.25, 0.015 * lead)
+            extra, _, _ = G.step(np, rng, cur.month, np.zeros(n, dtype=bool))
+            rain = np.where(bust, np.maximum(rain, extra), rain) * rain_multiplier
+            tmax = float(base_tmax) + rng.normal(0.0, 0.5 + 0.05 * lead, n)
+            wet_prev = rain >= G.thr
         else:
-            rain, wet_state = _sample_rain_block(np, rng, cur.month, p_wet_by_month,
-                                                 mean_by_month, wet_state)
-            tmax = (tmax_by_month[cur.month - 1] + np.where(wet_state, -1.2, 1.4)
-                    + 0.35 * oni + rng.normal(0.0, 0.9, n))
+            rain, tmax, wet_prev = G.step(np, rng, (cur - shift).month, wet_prev)
 
-        net, event_total = _net_rain_vec(np, rain, event_total)
-        q = _kbdi_step_vec(np, q, tmax, net, annual_rain_in)
+        # rolling sums: P84 and the three trailing 10-day blocks
+        r10 = buf[(pos - 10) % P84_DAYS]
+        r20 = buf[(pos - 20) % P84_DAYS]
+        r30 = buf[(pos - 30) % P84_DAYS]
+        s84 += rain - buf[pos]
+        s10c += r20 - r30
+        s10b += r10 - r20
+        s10a += rain - r10
+        buf[pos] = rain
+        pos = (pos + 1) % P84_DAYS
+        dc = dc_mod.dc_step_vec(np, dc, tmax, rain)
+        if k <= pre:
+            continue
 
-        rain_hist = np.roll(rain_hist, -1, axis=0)
-        rain_hist[-1, :] = rain
-        rain7 = rain_hist.sum(axis=0)
-
-        df = _drought_factor_vec(np, q)
-        mp = meteo_mod.monsoon_progress_shifted(key, lat, lon, monsoon_shift_days)
-
-        z = (coeffs["b0"] + logit_offset + coeffs["b1"] * rain7
-             + coeffs["b2"] * df + coeffs["b3"] * oni + coeffs["b4"] * mp)
+        j = k - pre
+        a = s10a >= WET10_MM
+        nwet = a * (1.0 + (s10b >= WET10_MM) * (1.0 + (s10c >= WET10_MM)))
+        z = (lin_const + c7 * seasonal_clock(cur - shift, seasonal)
+             + c["c1"] * a + c["c2"] * nwet
+             - c["c3"] * np.maximum(0.0, ALPHA_P84 - s84 / P84_DAYS)
+             - c["c4"] * np.maximum(0.0, dc - DC_CRIT) / 100.0)
         h = 1.0 / (1.0 + np.exp(-np.clip(z, -40.0, 40.0)))
-
         fires = (~ended) & (rng.random(n) < h)
-        end_day = np.where(fires, k, end_day)
-        ended = ended | fires
-        p_end[k - 1] = float(fires.mean())
-        p_still[k - 1] = float((~ended).mean())
-
+        end_day[fires] = j
+        ended |= fires
+        p_end[j - 1] = fires.mean()
+        p_still[j - 1] = 1.0 - ended.mean()
     return end_day, p_end, p_still
 
 
-_DF_L0 = 1.0 / (1.0 + math.exp(kbdi_mod._DF_CENTRE / kbdi_mod._DF_SCALE))
-_DF_L800 = 1.0 / (1.0 + math.exp(-(800.0 - kbdi_mod._DF_CENTRE) / kbdi_mod._DF_SCALE))
+# ---------------------------------------------------------------------------
+# observed state at the forecast date
+# ---------------------------------------------------------------------------
+
+def indices_known_on(as_of: date, oni_override=None, dmi_override=None) -> dict:
+    """ONI / DMI a forecaster could have read on ``as_of`` (or overrides)."""
+    from app.data.loader_season import oni_known_on, dmi_known_on
+    oni_v, oni_lbl = oni_known_on(as_of)
+    dmi_v, dmi_wk = dmi_known_on(as_of)
+    return {
+        "oni": float(oni_override) if oni_override is not None else float(oni_v or 0.0),
+        "oni_season": "override" if oni_override is not None else oni_lbl,
+        "dmi": float(dmi_override) if dmi_override is not None else float(dmi_v or 0.0),
+        "dmi_through": "override" if dmi_override is not None else dmi_wk,
+    }
 
 
-def _drought_factor_vec(np, q):
-    raw = 1.0 / (1.0 + np.exp(-(q - kbdi_mod._DF_CENTRE) / kbdi_mod._DF_SCALE))
-    return np.clip((raw - _DF_L0) / (_DF_L800 - _DF_L0), 0.0, 1.0)
+_WX_CACHE: dict[tuple, tuple[float, dict]] = {}
+_WX_TTL_S = 1800.0
+
+
+def _weather_cached(start: str, end: str, as_of: str, allow_forecast: bool) -> dict:
+    """Areal weather, memoised for 30 min so repeated requests (other seeds,
+    scenarios, the odds endpoint) do not each wait on Open-Meteo."""
+    import time
+    key = (start, end, as_of, bool(allow_forecast), date.today().isoformat())
+    now = time.monotonic()
+    hit = _WX_CACHE.get(key)
+    if hit and now - hit[0] < _WX_TTL_S:
+        return hit[1]
+    wx = meteo_mod.fetch_areal_weather(start, end, as_of, allow_forecast=allow_forecast)
+    if wx.get("network") or not wx.get("fallback_reason"):
+        _WX_CACHE[key] = (now, wx)
+        while len(_WX_CACHE) > 32:
+            _WX_CACHE.pop(next(iter(_WX_CACHE)))
+    return wx
+
+
+def prepare_state(as_of: date, allow_forecast: bool, gen: dict | None = None) -> dict:
+    """Observed areal weather, features and the simulation start state."""
+    gen = gen or load_model()["rain_generator"]
+    start_req = as_of - timedelta(days=SPINUP_DAYS + P84_DAYS)
+    end_req = as_of + timedelta(days=meteo_mod.FORECAST_MAX_LEAD_DAYS if allow_forecast else 0)
+    wx = _weather_cached(_iso(start_req), _iso(end_req), _iso(as_of), allow_forecast)
+    dates = wx["dates"]
+    cut = dates.index(_iso(as_of))
+    rain_o, tmax_o = wx["rain_mm"][:cut + 1], wx["tmax_c"][:cut + 1]
+    obs = [i for i, r in enumerate(rain_o) if r is not None and tmax_o[i] is not None]
+    filled = 0
+    feats = None
+    if obs:
+        gm = gen["monthly"]
+        rain, tmax = [], []
+        for i in range(obs[0], obs[-1] + 1):
+            if rain_o[i] is None or tmax_o[i] is None:   # interior gap: monthly mean
+                m = _d(dates[i]).month - 1
+                p = gm["p01"][m] / max(1e-6, 1 - gm["p11"][m] + gm["p01"][m])
+                rain.append(p * (gen["wet_threshold_mm"] + gm["excess_mean_mm"][m]))
+                tmax.append(0.5 * (gm["tmax_dry_c"][m] + gm["tmax_wet_c"][m]))
+                filled += 1
+            else:
+                rain.append(float(rain_o[i]))
+                tmax.append(float(tmax_o[i]))
+        feats = observed_features(rain, tmax)
+        start = _d(dates[obs[-1]])
+        init = {"dc": feats["dc"][-1], "rain_hist": rain[-P84_DAYS:]}
+        obs_until = dates[obs[-1]]
+    else:
+        start = as_of - timedelta(days=SPINUP_DAYS)
+        init = {"dc": dc_mod.DC_START, "rain_hist": []}
+        obs_until = None
+    if (as_of - start).days > MAX_PRE_DAYS:
+        start = as_of - timedelta(days=MAX_PRE_DAYS)
+        init = {"dc": dc_mod.DC_START, "rain_hist": []}
+        feats = None
+    forecast = {dates[i]: (wx["rain_mm"][i], wx["tmax_c"][i])
+                for i in range(cut + 1, len(dates))
+                if wx["rain_mm"][i] is not None and wx["tmax_c"][i] is not None}
+    return {"wx": wx, "feats": feats, "start": start, "init": init,
+            "forecast": forecast, "obs_until": obs_until, "filled_days": filled,
+            "pre_days": max(0, (as_of - start).days)}
+
+
+def _ensemble_state(st: dict, gen: dict, oni_v: float, dmi_v: float, seed) -> tuple:
+    """Median DC / P84 / onset state at as_of when the last days are unobserved."""
+    import numpy as np
+    rng = np.random.default_rng(None if seed is None else seed + 1)
+    G = Generator(gen, oni_v, dmi_v)
+    n = 400
+    hist = list(st["init"]["rain_hist"])[-P84_DAYS:]
+    if len(hist) < P84_DAYS:
+        hist = [G.climatological_mean_rain(st["start"].month)] * (P84_DAYS - len(hist)) + hist
+    buf = np.tile(np.asarray(hist, float)[:, None], (1, n))
+    dc = np.full(n, float(st["init"]["dc"]))
+    wet = buf[-1] >= G.thr
+    for k in range(1, st["pre_days"] + 1):
+        cur = st["start"] + timedelta(days=k)
+        rain, tmax, wet = G.step(np, rng, cur.month, wet)
+        buf = np.vstack([buf[1:], rain[None, :]])
+        dc = dc_mod.dc_step_vec(np, dc, tmax, rain)
+    a = buf[-10:].sum(0) >= WET10_MM
+    b = buf[-20:-10].sum(0) >= WET10_MM
+    cc = buf[-30:-20].sum(0) >= WET10_MM
+    return (float(np.median(dc)), float(np.median(buf.mean(axis=0))),
+            float(np.median(a)), float(np.median(a * (1.0 + b * (1.0 + cc)))))
+
+
+def is_active(dc: float, n_wet: float, rule: dict) -> bool:
+    """Season-in-progress test, fitted by calibrate.fit_active_rule."""
+    return bool(dc >= rule["dc_min"] and n_wet < rule["n_wet_max"])
 
 
 # ---------------------------------------------------------------------------
@@ -380,59 +436,50 @@ def _drought_factor_vec(np, q):
 
 def simulate_season_end(as_of: str, region: str = "kalimantan",
                         oni: float | None = None, n_sims: int = 5000,
-                        seed: int | None = None, scenario: str = "baseline") -> dict:
-    """How many more days until the current Kalimantan burn episode ends.
+                        seed: int | None = None, scenario: str = "baseline",
+                        dmi: float | None = None, allow_forecast: bool | None = None,
+                        _keep_end_days: bool = False) -> dict:
+    """How many more days until the current Kalimantan fire season ends.
 
-    See the module docstring for the hazard equation and its provenance.
-    Deterministic for a given ``seed``.
+    ``allow_forecast`` defaults to True only when ``as_of`` is today or
+    yesterday (UTC); for any earlier date the run is a leak-free hindcast.
+    Deterministic for a given ``seed`` and weather input.
     """
     import numpy as np
 
+    model = load_model()
+    coeffs = model["coefficients"]
+    gen = model["rain_generator"]
     scen_key = scenario if scenario in SCENARIOS else "baseline"
     scen = SCENARIOS[scen_key]
     n_sims = int(max(1, min(int(n_sims), 50000)))
-    lat, lon, region_name = region_centroid(region)
     as_of_d = _d(as_of)
-    if oni is None:
-        oni = _latest_oni(as_of)
-    oni = float(oni)
+    if allow_forecast is None:
+        allow_forecast = as_of_d >= date.today() - timedelta(days=1)
+    idx = indices_known_on(as_of_d, oni, dmi)
+    oni_v, dmi_v = idx["oni"], idx["dmi"]
 
-    # --- observed / forecast weather -------------------------------------
-    wx = meteo_mod.fetch_weather(lat, lon,
-                                 _iso(as_of_d - timedelta(days=KBDI_SPINUP_DAYS)),
-                                 _iso(as_of_d + timedelta(days=meteo_mod.FORECAST_MAX_LEAD_DAYS)))
-    dates = wx["dates"]
-    try:
-        cut = dates.index(_iso(as_of_d))
-    except ValueError:
-        cut = max(0, len(dates) - 17)
-
-    annual_rain = meteo_mod.annual_rain_mm_for(lat, lon)
-    hist_dates = dates[:cut + 1]
-    hist_rain = [r * scen["rain_multiplier"] for r in wx["rain_mm"][:cut + 1]]
-    series = kbdi_mod.kbdi_series(hist_dates, wx["tmax_c"][:cut + 1], hist_rain,
-                                  annual_rain, kbdi_0=0.0)
-    kbdi_now = series[-1] if series else 400.0
-    rain7_now = float(sum(hist_rain[-7:]))
-    mp_now = meteo_mod.monsoon_progress_shifted(_iso(as_of_d), lat, lon,
-                                                scen["monsoon_shift_days"])
-    df_now = kbdi_mod.drought_factor(kbdi_now)
-
-    forecast = {
-        "dates": dates[cut + 1:],
-        "rain_mm": [r * scen["rain_multiplier"] for r in wx["rain_mm"][cut + 1:]],
-        "tmax_c": wx["tmax_c"][cut + 1:],
-        "_rain_hist": hist_rain[-7:],
-    }
-
-    active = bool(kbdi_now >= ACTIVE_KBDI_MIN and mp_now < ACTIVE_MONSOON_MAX)
-
+    st = prepare_state(as_of_d, allow_forecast, gen)
+    wx = st["wx"]
     end_day, p_end, p_still = run_hazard_simulation(
-        _iso(as_of_d), lat, lon, oni, HAZARD_COEFFS, n_sims=n_sims, seed=seed,
-        horizon=MAX_HORIZON_DAYS, forecast=forecast, kbdi_start=kbdi_now,
-        logit_offset=scen["logit_offset"],
+        st["start"], as_of_d, st["init"], coeffs, gen, oni_v, dmi_v,
+        n_sims=n_sims, seed=seed, horizon=MAX_HORIZON_DAYS,
+        forecast=st["forecast"], logit_offset=scen["logit_offset"],
         monsoon_shift_days=scen["monsoon_shift_days"],
-        rain_multiplier=scen["rain_multiplier"])
+        rain_multiplier=scen["rain_multiplier"], seasonal=model.get("seasonal"),
+        frailty_sd=float(model.get("frailty", {}).get("sd", 0.0)))
+
+    if st["feats"] is not None and st["pre_days"] == 0:
+        f = st["feats"]
+        dc_now, p84_now = f["dc"][-1], f["p84"][-1]
+        wet10_now, nwet_now = f["wet10"][-1], f["n_wet"][-1]
+        state_source = "observed"
+    else:
+        dc_now, p84_now, wet10_now, nwet_now = _ensemble_state(st, gen, oni_v, dmi_v, seed)
+        state_source = (f"simulated: the {st['pre_days']} days before the forecast date "
+                        "have no observed weather")
+    active = is_active(dc_now, nwet_now, model["active_rule"])
+    readiness = dc_mod.drought_readiness(dc_now)
 
     mean_is_trimmed = False
     if not active:
@@ -440,12 +487,8 @@ def simulate_season_end(as_of: str, region: str = "kalimantan",
         mean_days = 0.0
     else:
         q10, q50, q90 = (float(x) for x in np.percentile(end_day, [10, 50, 90]))
-        p10, p50, p90 = int(round(q10)), int(round(q50)), int(round(q90))
-        p10, p50, p90 = sorted((p10, p50, p90))          # guarantee ordering
+        p10, p50, p90 = sorted((int(round(q10)), int(round(q50)), int(round(q90))))
         mean_days = float(np.mean(np.minimum(end_day, MAX_HORIZON_DAYS + 1)))
-        # A long censored tail can drag the mean past p90. Report the mean of
-        # the central 80% in that case and say so, rather than publishing a
-        # summary whose own numbers are out of order.
         mean_is_trimmed = not (p10 <= mean_days <= p90)
         if mean_is_trimmed:
             central = end_day[(end_day >= p10) & (end_day <= p90)]
@@ -455,27 +498,40 @@ def simulate_season_end(as_of: str, region: str = "kalimantan",
     def _date_at(nd: int) -> str:
         return _iso(as_of_d + timedelta(days=int(nd)))
 
-    # --- driver attribution (share of |log-odds| excluding the intercept) --
+    deficit_now, dcterm_now = feature_terms(dc_now, p84_now)
+    clock_now = seasonal_clock(as_of_d - timedelta(days=int(scen["monsoon_shift_days"])),
+                               model.get("seasonal"))
+    c = coeffs
     terms = [
-        ("kbdi", "KBDI", kbdi_now, "index", HAZARD_COEFFS["b2"] * df_now,
-         "Peat is dry to roughly {:.1f} m depth; drought this deep keeps the "
-         "smouldering front alive.".format(0.1 + 0.9 * df_now)),
-        ("rain_7d", "7-day rainfall", rain7_now, "mm", HAZARD_COEFFS["b1"] * rain7_now,
-         "Rain over the last week. Peat needs sustained wetting, not a shower: "
-         "about 70 mm over seven days is what actually puts it out."),
-        ("oni", "ONI", oni, "degC", HAZARD_COEFFS["b3"] * oni,
-         "El Nino (positive ONI) suppresses Borneo dry-season rainfall and "
-         "pushes the monsoon break later."),
-        ("monsoon", "Monsoon progress", mp_now, "0-1", HAZARD_COEFFS["b4"] * mp_now,
-         "How far the wet monsoon has advanced over this location. The season "
-         "ends when this crosses about 0.5, not before."),
+        ("dc", "Drought Code", dc_now, "DC units", -c["c4"] * dcterm_now,
+         "Canadian Drought Code, the index Indonesia's met agency (BMKG) uses for "
+         "fire danger. Above 350 ('very dry') peat is dry deep enough for "
+         "smouldering to outlast showers; the model counts only the excess over 350."),
+        ("rain_12wk", "12-week rainfall", p84_now, "mm/day", -c["c3"] * deficit_now,
+         "Average daily rain over the last 84 days. Kalimantan fire and haze rise "
+         "steeply below about 3.7 mm a day (Field et al. 2016); above that this "
+         "term adds nothing."),
+        ("rain_10d", "Rainy-season onset", nwet_now, "wet 10-day periods (0-3)",
+         c["c1"] * wet10_now + c["c2"] * nwet_now,
+         "How many consecutive 10-day periods have had at least 50 mm of rain. "
+         "Three in a row is BMKG's definition of the start of the rainy season; "
+         "even one wet 10-day period often pauses the fires."),
+        ("monsoon", "Time of year", clock_now, "0-1", c.get("c7", 0.0) * clock_now,
+         "Where the calendar sits relative to the usual arrival of the monsoon "
+         "over the peat belt, fitted to past fire-season ends. It is what makes "
+         "an end in late October far likelier than one in August even in "
+         "identical weather."),
+        ("oni", "ONI (El Nino)", oni_v, "degC", -c["c5"] * oni_v,
+         "Latest published 3-month Oceanic Nino Index. El Nino (positive) dries "
+         "Borneo and lengthens the season."),
+        ("iod", "Indian Ocean Dipole", dmi_v, "degC", -c["c6"] * dmi_v,
+         "Dipole Mode Index averaged over the last ~13 weeks. A positive IOD dries "
+         "Indonesia independently of El Nino: 2019 burned under a neutral ENSO and "
+         "an extreme positive IOD."),
     ]
     total = sum(abs(t[4]) for t in terms) or 1.0
     drivers = [{
-        "id": did,
-        "name": nm,
-        "value": round(float(val), 3),
-        "unit": unit,
+        "id": did, "name": nm, "value": round(float(val), 3), "unit": unit,
         "contribution": round(abs(term) / total, 4),
         "direction": ("neutral" if abs(term) < 1e-9
                       else ("prolongs" if term < 0 else "shortens")),
@@ -489,95 +545,129 @@ def simulate_season_end(as_of: str, region: str = "kalimantan",
         confidence = "moderate"
     else:
         confidence = "low"
-    if not HAZARD_FIT.get("fitted"):
-        confidence = "low"
-    if mean_is_trimmed:
-        caveats_extra = ("More than 10% of simulations were still burning at the "
-                         f"{MAX_HORIZON_DAYS}-day horizon, so the reported mean is "
-                         "the mean of the central 80% of trajectories; the true "
-                         "mean is longer.")
-    else:
-        caveats_extra = None
 
-    horizon_days = min(MAX_HORIZON_DAYS, 180)
-    daily = [{
-        "date": _date_at(k + 1),
-        "p_end": round(float(p_end[k]), 6),
-        "p_still_burning": round(float(p_still[k]), 6),
-    } for k in range(horizon_days)]
+    daily = [{"date": _date_at(k + 1), "p_end": round(float(p_end[k]), 6),
+              "p_still_burning": round(float(p_still[k]), 6)}
+             for k in range(min(MAX_HORIZON_DAYS, 180))]
 
     caveats = list(CAVEATS)
-    if caveats_extra:
-        caveats.insert(0, caveats_extra)
-    if not wx["live"]:
-        caveats.insert(0, "No live weather was available for this run ("
-                       + str(wx.get("fallback_reason")) + "), so the forecast "
-                       "window is climatology rather than a real forecast. "
+    if mean_is_trimmed:
+        caveats.insert(0, "More than 10% of simulations were still burning at the "
+                       f"{MAX_HORIZON_DAYS}-day horizon, so the reported mean is the "
+                       "mean of the central 80% of trajectories; the true mean is longer.")
+    if not allow_forecast:
+        caveats.insert(0, "Hindcast: the model was given weather observed only up to "
+                       f"{_iso(as_of_d)} and simulated everything after it. It did not "
+                       "get the 14-day weather forecast the live site uses, because "
+                       "past forecasts are not archived.")
+    elif not wx["live"]:
+        caveats.insert(0, "No live weather forecast was available for this run ("
+                       + str(wx.get("fallback_reason") or "offline") + "), so every "
+                       "day after the forecast date is simulated from climatology. "
                        "Treat the interval as wider than shown.")
+    if st["pre_days"] > 0:
+        caveats.insert(0, f"Observed weather ends {st['obs_until'] or 'outside the window'}; "
+                       f"the {st['pre_days']} days up to the forecast date were simulated, "
+                       "so the current drought state is itself uncertain.")
     if not active:
-        caveats.insert(0, "No burn episode is detected as active at this date "
-                       "(KBDI {:.0f}, monsoon progress {:.2f}), so the countdown "
-                       "reads zero. This is a statement about drought and season, "
-                       "not a satellite observation of zero fires."
-                       .format(kbdi_now, mp_now))
+        caveats.insert(0, "No fire season is detected as active at this date (Drought "
+                       f"Code {dc_now:.0f}, {int(nwet_now)} consecutive wet 10-day "
+                       "periods), so the countdown reads zero. This is a statement "
+                       "about drought and rain, not a satellite count of zero fires.")
 
-    return {
+    skill = model.get("skill", {})
+    out = {
         "as_of": _iso(as_of_d),
-        "region": region_name,
-        "oni": round(float(oni), 3),
+        "region": region or "kalimantan",
+        "oni": round(float(oni_v), 3),
+        "dmi": round(float(dmi_v), 3),
+        "indices": {"oni": round(float(oni_v), 3), "oni_season": idx["oni_season"],
+                    "dmi_3mo": round(float(dmi_v), 3), "dmi_through_week": idx["dmi_through"]},
         "active": active,
-        "days_remaining": {"p10": p10, "p50": p50, "p90": p90,
-                           "mean": round(mean_days, 1)},
-        "end_date": {"p10": _date_at(p10), "p50": _date_at(p50),
-                     "p90": _date_at(p90)},
+        "days_remaining": {"p10": p10, "p50": p50, "p90": p90, "mean": round(mean_days, 1)},
+        "end_date": {"p10": _date_at(p10), "p50": _date_at(p50), "p90": _date_at(p90)},
         "daily_end_probability": daily,
         "drivers": drivers,
+        "drought_readiness": round(readiness, 3),
+        "drought_code": round(float(dc_now), 1),
         "confidence": confidence,
         "live_weather": bool(wx["live"]),
         "scenario": scen_key,
+        "model_version": 2,
+        "season_definition": model.get("season_definition"),
+        "model_error_days": skill.get("rmse_days_forecast"),
+        "state_source": state_source,
+        "monsoon_onset_climatology": _onset_climatology(model, as_of_d),
         "caveats": caveats,
     }
+    if _keep_end_days:
+        out["_end_days"] = end_day
+    return out
+
+
+def _onset_climatology(model: dict, as_of_d: date) -> dict | None:
+    """BMKG onset quartiles (ERA5 1981-2025) as dates in the forecast's year (S5)."""
+    mo = model.get("monsoon_onset") or {}
+    q = mo.get("quartiles_doy_all")
+    if not q:
+        return None
+    y = as_of_d.year
+
+    def _dt(doy):
+        return _iso(date(y, 1, 1) + timedelta(days=int(doy) - 1))
+    by = {ph: ([_dt(v) for v in qq] if qq else None)
+          for ph, qq in (mo.get("quartiles_doy_by_enso_phase") or {}).items()}
+    return {"p25": _dt(q[0]), "p50": _dt(q[1]), "p75": _dt(q[2]),
+            "by_enso_phase": by, "definition": mo.get("definition")}
 
 
 CAVEATS = [
-    "The historical season lengths this model is calibrated against are not "
-    "observations of fire. Published start and end dates for individual "
-    "Indonesian fire episodes barely exist, so the bundled dataset derives them "
-    "from a rainfall rule applied to ERA5 reanalysis. Because this model also "
-    "takes rainfall as an input, it is partly being fitted to its own input, "
-    "and its hindcast accuracy is flattered as a result. Stripping every "
-    "rainfall term out still leaves about a third of the skill, and the "
-    "forecast-mode error of roughly 25 days is the number to hold it to. Three "
-    "seasons - 1997, 2015 and 2019 - do have dates anchored in documented "
-    "episodes, and the model is within about eight days on those.",
-    "This predicts when the *burning episode* ends, not when the air is clean. "
-    "Coarse particulate and the smell linger for days after the last flame, and "
-    "re-ignition from a still-hot peat layer after a dry spell is common.",
-    "The model has no ignitions in it. Almost every Kalimantan fire is lit by "
-    "someone, for land clearing, and the end of a season is partly a decision "
-    "about when people stop lighting them. That human term is folded into the "
-    "fitted intercept and into the scenario offsets, which are assumptions "
-    "rather than measurements.",
-    "It is fitted to fewer than twenty observed seasons, several of which have "
-    "start and end dates that are themselves estimates from hotspot time series "
-    "rather than agreed observations. Any statement of precision finer than "
-    "about a week is spurious.",
-    "'The season' is treated as one island-wide episode with one end date. In "
-    "reality Central Kalimantan, West Kalimantan and the Mahakam delta can end "
-    "weeks apart, and a province-level query only shifts the location, not the "
-    "single-episode assumption.",
-    "The hazard function is a logistic in four drivers. It cannot represent the "
-    "threshold behaviour that peat scientists actually describe, where the "
-    "episode ends abruptly once the water table recovers past a critical depth. "
-    "The real distribution of end dates is probably more sharply peaked than "
-    "the simulated one.",
-    "Groundwater, canal density and drainage state -- the strongest predictors "
-    "of whether a given hectare of peat can burn at all -- are not inputs. Two "
-    "landscapes with identical weather and very different canal networks get "
-    "the same answer here.",
-    "Coefficients were fitted on weather reconstructed from ENSO-conditioned "
-    "climatology, not on the actual daily weather of each historical season, "
-    "because a consistent daily record for every year back to 1997 is not "
-    "bundled with this app. That makes the fit a relationship between season-"
-    "scale drought and season length, not a daily-scale causal estimate.",
+    "'The season has ended' is the site's own definition, made from satellite "
+    "fire counts: the first day after the seasonal peak from which the 7-day "
+    "count of NASA MODIS active-fire detections over the Central/South "
+    "Kalimantan peat belt stays below 10% of that season's maximum for 14 days. "
+    "No published definition exists. It is not the day the air is clean: smoke "
+    "and smell linger, and smouldering peat can flare again after a dry spell.",
+    "The model is fitted to the fire-count end dates of the 2001-2025 seasons. "
+    "Its honest error is the forecast-mode figure -- what it would have said on "
+    "the day each season began, without knowing the weather to come -- not the "
+    "smaller in-sample error.",
+    "Satellites miss fires under cloud and thick smoke, and MODIS fire counts "
+    "have drifted since about 2020 as both satellites' orbits decayed. A season "
+    "can look over in the fire counts a few days before it is, especially when "
+    "the rains arrive with heavy cloud.",
+    "There are no ignitions in the model. Almost every Kalimantan fire is lit by "
+    "someone, and the end of a season is partly a decision to stop lighting "
+    "them. The enforcement scenarios are assumptions, not measurements.",
+    "Weather beyond about two weeks is not forecastable. After the 14-day "
+    "forecast each simulated season draws its own rain from a generator fitted "
+    "to ERA5 and nudged by the latest El Nino (ONI) and Indian Ocean Dipole (DMI) "
+    "values, which are held fixed at today's. Both indices can move a lot within "
+    "a season; persisting them, the DMI especially, is a weak assumption.",
+    "The peat water table, which decides whether peat burns, is not measured "
+    "regionally. The Drought Code is a proxy for it, and canal density and "
+    "drainage -- why two landscapes in identical weather burn differently -- are "
+    "not inputs.",
+    "One season with one end date for the whole peat belt is a simplification: "
+    "West, Central and South Kalimantan can end weeks apart.",
 ]
+
+
+def __getattr__(name):
+    """v1 compatibility: ``HAZARD_COEFFS`` / ``HAZARD_FIT`` (imported by
+    ``app.model.__init__``) are read lazily from ``hazard_fit.json``."""
+    if name == "HAZARD_COEFFS":
+        return dict(load_model().get("coefficients", {}))
+    if name == "HAZARD_FIT":
+        m = load_model()
+        sk = m.get("skill", {})
+        return {"fitted": "coefficients" in m, "fitted_at": m.get("fitted_at"),
+                "n_seasons": sk.get("n_seasons"), "rmse_days": sk.get("rmse_days"),
+                "rmse_days_loo": sk.get("rmse_days_loo"),
+                "rmse_days_forecast": sk.get("rmse_days_forecast"),
+                "rmse_days_anchor_seasons": sk.get("anchor_rmse_days"),
+                "rmse_days_naive_mean": sk.get("naive_rmse_days_mean_predictor"),
+                "weather_source": m.get("weather_source"),
+                "target_is_rainfall_derived": m.get("target_is_rainfall_derived"),
+                "detail": "app/model/hazard_fit.json"}
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -1,5 +1,245 @@
 [
  {
+  "year": 1980,
+  "oni_seasons": {
+   "DJF": 0.62,
+   "JFM": 0.47,
+   "FMA": 0.35,
+   "MAM": 0.34,
+   "AMJ": 0.45,
+   "MJJ": 0.4,
+   "JJA": 0.18,
+   "JAS": -0.06,
+   "ASO": -0.17,
+   "SON": -0.07,
+   "OND": 0.08,
+   "NDJ": -0.05
+  },
+  "oni_burn_window": -0.02,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -0.06,
+  "oni_aso": -0.17,
+  "oni_son": -0.07,
+  "oni_ond": 0.08,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1981,
+  "oni_seasons": {
+   "DJF": -0.27,
+   "JFM": -0.42,
+   "FMA": -0.41,
+   "MAM": -0.27,
+   "AMJ": -0.28,
+   "MJJ": -0.27,
+   "JJA": -0.28,
+   "JAS": -0.23,
+   "ASO": -0.08,
+   "SON": -0.16,
+   "OND": -0.19,
+   "NDJ": -0.14
+  },
+  "oni_burn_window": -0.2,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -0.23,
+  "oni_aso": -0.08,
+  "oni_son": -0.16,
+  "oni_ond": -0.19,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1982,
+  "oni_seasons": {
+   "DJF": -0.05,
+   "JFM": 0.02,
+   "FMA": 0.07,
+   "MAM": 0.34,
+   "AMJ": 0.65,
+   "MJJ": 0.73,
+   "JJA": 0.78,
+   "JAS": 0.99,
+   "ASO": 1.45,
+   "SON": 1.82,
+   "OND": 2.03,
+   "NDJ": 2.12
+  },
+  "oni_burn_window": 1.07,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": 0.99,
+  "oni_aso": 1.45,
+  "oni_son": 1.82,
+  "oni_ond": 2.03,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1983,
+  "oni_seasons": {
+   "DJF": 2.14,
+   "JFM": 1.91,
+   "FMA": 1.52,
+   "MAM": 1.23,
+   "AMJ": 0.95,
+   "MJJ": 0.62,
+   "JJA": 0.25,
+   "JAS": -0.06,
+   "ASO": -0.43,
+   "SON": -0.76,
+   "OND": -0.96,
+   "NDJ": -0.89
+  },
+  "oni_burn_window": -0.08,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -0.06,
+  "oni_aso": -0.43,
+  "oni_son": -0.76,
+  "oni_ond": -0.96,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1984,
+  "oni_seasons": {
+   "DJF": -0.63,
+   "JFM": -0.51,
+   "FMA": -0.38,
+   "MAM": -0.47,
+   "AMJ": -0.55,
+   "MJJ": -0.52,
+   "JJA": -0.39,
+   "JAS": -0.22,
+   "ASO": -0.32,
+   "SON": -0.62,
+   "OND": -0.95,
+   "NDJ": -1.06
+  },
+  "oni_burn_window": -0.31,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -0.22,
+  "oni_aso": -0.32,
+  "oni_son": -0.62,
+  "oni_ond": -0.95,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1985,
+  "oni_seasons": {
+   "DJF": -1.01,
+   "JFM": -0.86,
+   "FMA": -0.85,
+   "MAM": -0.8,
+   "AMJ": -0.79,
+   "MJJ": -0.6,
+   "JJA": -0.44,
+   "JAS": -0.33,
+   "ASO": -0.31,
+   "SON": -0.3,
+   "OND": -0.28,
+   "NDJ": -0.36
+  },
+  "oni_burn_window": -0.36,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -0.33,
+  "oni_aso": -0.31,
+  "oni_son": -0.3,
+  "oni_ond": -0.28,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1986,
+  "oni_seasons": {
+   "DJF": -0.4,
+   "JFM": -0.38,
+   "FMA": -0.25,
+   "MAM": -0.17,
+   "AMJ": -0.09,
+   "MJJ": 0.02,
+   "JJA": 0.24,
+   "JAS": 0.46,
+   "ASO": 0.64,
+   "SON": 0.86,
+   "OND": 1.06,
+   "NDJ": 1.21
+  },
+  "oni_burn_window": 0.45,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": 0.46,
+  "oni_aso": 0.64,
+  "oni_son": 0.86,
+  "oni_ond": 1.06,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1987,
+  "oni_seasons": {
+   "DJF": 1.18,
+   "JFM": 1.13,
+   "FMA": 1.02,
+   "MAM": 0.94,
+   "AMJ": 0.95,
+   "MJJ": 1.11,
+   "JJA": 1.3,
+   "JAS": 1.46,
+   "ASO": 1.49,
+   "SON": 1.41,
+   "OND": 1.2,
+   "NDJ": 1.0
+  },
+  "oni_burn_window": 1.42,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": 1.46,
+  "oni_aso": 1.49,
+  "oni_son": 1.41,
+  "oni_ond": 1.2,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1988,
+  "oni_seasons": {
+   "DJF": 0.63,
+   "JFM": 0.37,
+   "FMA": -0.03,
+   "MAM": -0.45,
+   "AMJ": -0.99,
+   "MJJ": -1.3,
+   "JJA": -1.3,
+   "JAS": -1.14,
+   "ASO": -1.27,
+   "SON": -1.54,
+   "OND": -1.81,
+   "NDJ": -1.85
+  },
+  "oni_burn_window": -1.24,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -1.14,
+  "oni_aso": -1.27,
+  "oni_son": -1.54,
+  "oni_ond": -1.81,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
+  "year": 1989,
+  "oni_seasons": {
+   "DJF": -1.64,
+   "JFM": -1.38,
+   "FMA": -1.09,
+   "MAM": -0.85,
+   "AMJ": -0.61,
+   "MJJ": -0.4,
+   "JJA": -0.37,
+   "JAS": -0.36,
+   "ASO": -0.33,
+   "SON": -0.25,
+   "OND": -0.12,
+   "NDJ": -0.04
+  },
+  "oni_burn_window": -0.35,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)",
+  "oni_jas": -0.36,
+  "oni_aso": -0.33,
+  "oni_son": -0.25,
+  "oni_ond": -0.12,
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16"
+ },
+ {
   "year": 1990,
   "oni_jas": 0.32,
   "oni_aso": 0.31,
@@ -8,8 +248,24 @@
   "oni_peak_aug_nov": 0.32,
   "oni_annual_mean_aug_nov": 0.3,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.18,
+   "JFM": 0.19,
+   "FMA": 0.3,
+   "MAM": 0.27,
+   "AMJ": 0.25,
+   "MJJ": 0.25,
+   "JJA": 0.26,
+   "JAS": 0.32,
+   "ASO": 0.31,
+   "SON": 0.27,
+   "OND": 0.31,
+   "NDJ": 0.34
+  },
+  "oni_burn_window": 0.3,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1991,
@@ -20,8 +276,24 @@
   "oni_peak_aug_nov": 1.18,
   "oni_annual_mean_aug_nov": 0.85,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.35,
+   "JFM": 0.26,
+   "FMA": 0.23,
+   "MAM": 0.29,
+   "AMJ": 0.49,
+   "MJJ": 0.63,
+   "JJA": 0.77,
+   "JAS": 0.67,
+   "ASO": 0.72,
+   "SON": 0.83,
+   "OND": 1.18,
+   "NDJ": 1.43
+  },
+  "oni_burn_window": 0.72,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1992,
@@ -32,8 +304,24 @@
   "oni_peak_aug_nov": -0.24,
   "oni_annual_mean_aug_nov": -0.13,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 1.54,
+   "JFM": 1.5,
+   "FMA": 1.4,
+   "MAM": 1.3,
+   "AMJ": 1.08,
+   "MJJ": 0.72,
+   "JJA": 0.35,
+   "JAS": 0.08,
+   "ASO": -0.15,
+   "SON": -0.22,
+   "OND": -0.24,
+   "NDJ": -0.05
+  },
+  "oni_burn_window": 0.09,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1993,
@@ -44,8 +332,24 @@
   "oni_peak_aug_nov": 0.22,
   "oni_annual_mean_aug_nov": 0.21,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.13,
+   "JFM": 0.31,
+   "FMA": 0.5,
+   "MAM": 0.73,
+   "AMJ": 0.76,
+   "MJJ": 0.56,
+   "JJA": 0.28,
+   "JAS": 0.22,
+   "ASO": 0.2,
+   "SON": 0.2,
+   "OND": 0.2,
+   "NDJ": 0.19
+  },
+  "oni_burn_window": 0.23,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1994,
@@ -56,8 +360,24 @@
   "oni_peak_aug_nov": 0.93,
   "oni_annual_mean_aug_nov": 0.59,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.07,
+   "JFM": 0.0,
+   "FMA": 0.04,
+   "MAM": 0.17,
+   "AMJ": 0.25,
+   "MJJ": 0.23,
+   "JJA": 0.3,
+   "JAS": 0.3,
+   "ASO": 0.47,
+   "SON": 0.66,
+   "OND": 0.93,
+   "NDJ": 0.97
+  },
+  "oni_burn_window": 0.36,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1995,
@@ -68,8 +388,24 @@
   "oni_peak_aug_nov": -1.05,
   "oni_annual_mean_aug_nov": -0.84,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.88,
+   "JFM": 0.65,
+   "FMA": 0.46,
+   "MAM": 0.19,
+   "AMJ": 0.03,
+   "MJJ": -0.11,
+   "JJA": -0.3,
+   "JAS": -0.55,
+   "ASO": -0.81,
+   "SON": -0.97,
+   "OND": -1.05,
+   "NDJ": -1.01
+  },
+  "oni_burn_window": -0.55,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1996,
@@ -80,8 +416,24 @@
   "oni_peak_aug_nov": -0.39,
   "oni_annual_mean_aug_nov": -0.32,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.88,
+   "JFM": -0.7,
+   "FMA": -0.52,
+   "MAM": -0.36,
+   "AMJ": -0.25,
+   "MJJ": -0.24,
+   "JJA": -0.22,
+   "JAS": -0.27,
+   "ASO": -0.3,
+   "SON": -0.33,
+   "OND": -0.39,
+   "NDJ": -0.41
+  },
+  "oni_burn_window": -0.26,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1997,
@@ -92,8 +444,24 @@
   "oni_peak_aug_nov": 2.34,
   "oni_annual_mean_aug_nov": 2.1,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.41,
+   "JFM": -0.26,
+   "FMA": -0.03,
+   "MAM": 0.3,
+   "AMJ": 0.71,
+   "MJJ": 1.13,
+   "JJA": 1.48,
+   "JAS": 1.79,
+   "ASO": 2.04,
+   "SON": 2.24,
+   "OND": 2.34,
+   "NDJ": 2.37
+  },
+  "oni_burn_window": 1.77,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1998,
@@ -104,8 +472,24 @@
   "oni_peak_aug_nov": -1.31,
   "oni_annual_mean_aug_nov": -1.07,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 2.22,
+   "JFM": 1.91,
+   "FMA": 1.4,
+   "MAM": 1.03,
+   "AMJ": 0.4,
+   "MJJ": -0.08,
+   "JJA": -0.63,
+   "JAS": -0.83,
+   "ASO": -1.02,
+   "SON": -1.12,
+   "OND": -1.31,
+   "NDJ": -1.47
+  },
+  "oni_burn_window": -0.83,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 1999,
@@ -116,8 +500,24 @@
   "oni_peak_aug_nov": -1.35,
   "oni_annual_mean_aug_nov": -1.1,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -1.51,
+   "JFM": -1.25,
+   "FMA": -0.93,
+   "MAM": -0.8,
+   "AMJ": -0.79,
+   "MJJ": -0.84,
+   "JJA": -0.9,
+   "JAS": -0.94,
+   "ASO": -1.0,
+   "SON": -1.13,
+   "OND": -1.35,
+   "NDJ": -1.53
+  },
+  "oni_burn_window": -0.95,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2000,
@@ -128,8 +528,24 @@
   "oni_peak_aug_nov": -0.76,
   "oni_annual_mean_aug_nov": -0.53,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -1.47,
+   "JFM": -1.26,
+   "FMA": -0.98,
+   "MAM": -0.81,
+   "AMJ": -0.67,
+   "MJJ": -0.62,
+   "JJA": -0.48,
+   "JAS": -0.4,
+   "ASO": -0.42,
+   "SON": -0.54,
+   "OND": -0.76,
+   "NDJ": -0.78
+  },
+  "oni_burn_window": -0.43,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2001,
@@ -140,8 +556,24 @@
   "oni_peak_aug_nov": -0.33,
   "oni_annual_mean_aug_nov": -0.22,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.76,
+   "JFM": -0.54,
+   "FMA": -0.43,
+   "MAM": -0.29,
+   "AMJ": -0.19,
+   "MJJ": -0.08,
+   "JJA": -0.05,
+   "JAS": -0.13,
+   "ASO": -0.15,
+   "SON": -0.26,
+   "OND": -0.33,
+   "NDJ": -0.32
+  },
+  "oni_burn_window": -0.11,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2002,
@@ -152,8 +584,24 @@
   "oni_peak_aug_nov": 1.19,
   "oni_annual_mean_aug_nov": 0.9,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.15,
+   "JFM": 0.07,
+   "FMA": 0.11,
+   "MAM": 0.15,
+   "AMJ": 0.3,
+   "MJJ": 0.45,
+   "JJA": 0.57,
+   "JAS": 0.63,
+   "ASO": 0.78,
+   "SON": 0.99,
+   "OND": 1.19,
+   "NDJ": 1.08
+  },
+  "oni_burn_window": 0.66,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2003,
@@ -164,8 +612,24 @@
   "oni_peak_aug_nov": 0.29,
   "oni_annual_mean_aug_nov": 0.22,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.9,
+   "JFM": 0.59,
+   "FMA": 0.38,
+   "MAM": -0.01,
+   "AMJ": -0.18,
+   "MJJ": -0.13,
+   "JJA": 0.09,
+   "JAS": 0.14,
+   "ASO": 0.23,
+   "SON": 0.23,
+   "OND": 0.29,
+   "NDJ": 0.29
+  },
+  "oni_burn_window": 0.15,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2004,
@@ -176,8 +640,24 @@
   "oni_peak_aug_nov": 0.64,
   "oni_annual_mean_aug_nov": 0.59,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.34,
+   "JFM": 0.27,
+   "FMA": 0.19,
+   "MAM": 0.1,
+   "AMJ": 0.12,
+   "MJJ": 0.22,
+   "JJA": 0.39,
+   "JAS": 0.54,
+   "ASO": 0.58,
+   "SON": 0.61,
+   "OND": 0.64,
+   "NDJ": 0.71
+  },
+  "oni_burn_window": 0.5,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2005,
@@ -188,8 +668,24 @@
   "oni_peak_aug_nov": -0.57,
   "oni_annual_mean_aug_nov": -0.27,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.62,
+   "JFM": 0.55,
+   "FMA": 0.4,
+   "MAM": 0.37,
+   "AMJ": 0.27,
+   "MJJ": 0.09,
+   "JJA": -0.04,
+   "JAS": -0.14,
+   "ASO": -0.11,
+   "SON": -0.27,
+   "OND": -0.57,
+   "NDJ": -0.82
+  },
+  "oni_burn_window": -0.1,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2006,
@@ -200,8 +696,24 @@
   "oni_peak_aug_nov": 0.88,
   "oni_annual_mean_aug_nov": 0.61,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.86,
+   "JFM": -0.8,
+   "FMA": -0.63,
+   "MAM": -0.45,
+   "AMJ": -0.19,
+   "MJJ": -0.05,
+   "JJA": 0.12,
+   "JAS": 0.33,
+   "ASO": 0.54,
+   "SON": 0.71,
+   "OND": 0.88,
+   "NDJ": 0.88
+  },
+  "oni_burn_window": 0.33,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2007,
@@ -212,8 +724,24 @@
   "oni_peak_aug_nov": -1.57,
   "oni_annual_mean_aug_nov": -1.19,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.62,
+   "JFM": 0.19,
+   "FMA": -0.12,
+   "MAM": -0.32,
+   "AMJ": -0.34,
+   "MJJ": -0.41,
+   "JJA": -0.49,
+   "JAS": -0.77,
+   "ASO": -1.05,
+   "SON": -1.38,
+   "OND": -1.57,
+   "NDJ": -1.72
+  },
+  "oni_burn_window": -0.77,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2008,
@@ -224,8 +752,24 @@
   "oni_peak_aug_nov": -0.57,
   "oni_annual_mean_aug_nov": -0.34,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -1.76,
+   "JFM": -1.61,
+   "FMA": -1.37,
+   "MAM": -1.05,
+   "AMJ": -0.85,
+   "MJJ": -0.56,
+   "JJA": -0.33,
+   "JAS": -0.2,
+   "ASO": -0.25,
+   "SON": -0.36,
+   "OND": -0.57,
+   "NDJ": -0.79
+  },
+  "oni_burn_window": -0.26,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2009,
@@ -236,8 +780,24 @@
   "oni_peak_aug_nov": 1.31,
   "oni_annual_mean_aug_nov": 0.86,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.89,
+   "JFM": -0.84,
+   "FMA": -0.63,
+   "MAM": -0.35,
+   "AMJ": 0.03,
+   "MJJ": 0.34,
+   "JJA": 0.5,
+   "JAS": 0.56,
+   "ASO": 0.66,
+   "SON": 0.92,
+   "OND": 1.31,
+   "NDJ": 1.5
+  },
+  "oni_burn_window": 0.57,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2010,
@@ -248,8 +808,24 @@
   "oni_peak_aug_nov": -1.57,
   "oni_annual_mean_aug_nov": -1.45,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 1.47,
+   "JFM": 1.21,
+   "FMA": 0.88,
+   "MAM": 0.38,
+   "AMJ": -0.16,
+   "MJJ": -0.66,
+   "JJA": -0.98,
+   "JAS": -1.24,
+   "ASO": -1.43,
+   "SON": -1.54,
+   "OND": -1.57,
+   "NDJ": -1.48
+  },
+  "oni_burn_window": -1.22,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2011,
@@ -260,8 +836,24 @@
   "oni_peak_aug_nov": -1.02,
   "oni_annual_mean_aug_nov": -0.8,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -1.29,
+   "JFM": -1.06,
+   "FMA": -0.85,
+   "MAM": -0.68,
+   "AMJ": -0.5,
+   "MJJ": -0.34,
+   "JJA": -0.37,
+   "JAS": -0.5,
+   "ASO": -0.76,
+   "SON": -0.94,
+   "OND": -1.02,
+   "NDJ": -0.92
+  },
+  "oni_burn_window": -0.54,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2012,
@@ -272,8 +864,24 @@
   "oni_peak_aug_nov": 0.39,
   "oni_annual_mean_aug_nov": 0.29,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.71,
+   "JFM": -0.56,
+   "FMA": -0.44,
+   "MAM": -0.35,
+   "AMJ": -0.18,
+   "MJJ": 0.03,
+   "JJA": 0.28,
+   "JAS": 0.39,
+   "ASO": 0.37,
+   "SON": 0.28,
+   "OND": 0.13,
+   "NDJ": -0.03
+  },
+  "oni_burn_window": 0.35,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2013,
@@ -284,8 +892,24 @@
   "oni_peak_aug_nov": -0.34,
   "oni_annual_mean_aug_nov": -0.23,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.24,
+   "JFM": -0.28,
+   "FMA": -0.23,
+   "MAM": -0.2,
+   "AMJ": -0.3,
+   "MJJ": -0.38,
+   "JJA": -0.45,
+   "JAS": -0.34,
+   "ASO": -0.32,
+   "SON": -0.14,
+   "OND": -0.12,
+   "NDJ": -0.11
+  },
+  "oni_burn_window": -0.37,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2014,
@@ -296,8 +920,24 @@
   "oni_peak_aug_nov": 0.7,
   "oni_annual_mean_aug_nov": 0.38,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.24,
+   "JFM": -0.21,
+   "FMA": -0.02,
+   "MAM": 0.25,
+   "AMJ": 0.35,
+   "MJJ": 0.22,
+   "JJA": 0.07,
+   "JAS": 0.07,
+   "ASO": 0.24,
+   "SON": 0.51,
+   "OND": 0.7,
+   "NDJ": 0.8
+  },
+  "oni_burn_window": 0.13,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2015,
@@ -308,8 +948,24 @@
   "oni_peak_aug_nov": 2.45,
   "oni_annual_mean_aug_nov": 2.12,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.73,
+   "JFM": 0.65,
+   "FMA": 0.72,
+   "MAM": 0.86,
+   "AMJ": 1.04,
+   "MJJ": 1.19,
+   "JJA": 1.44,
+   "JAS": 1.73,
+   "ASO": 2.02,
+   "SON": 2.28,
+   "OND": 2.45,
+   "NDJ": 2.59
+  },
+  "oni_burn_window": 1.73,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2016,
@@ -320,8 +976,24 @@
   "oni_peak_aug_nov": -0.51,
   "oni_annual_mean_aug_nov": -0.44,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 2.5,
+   "JFM": 2.21,
+   "FMA": 1.69,
+   "MAM": 1.11,
+   "AMJ": 0.57,
+   "MJJ": 0.09,
+   "JJA": -0.19,
+   "JAS": -0.34,
+   "ASO": -0.42,
+   "SON": -0.51,
+   "OND": -0.49,
+   "NDJ": -0.37
+  },
+  "oni_burn_window": -0.32,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2017,
@@ -332,8 +1004,24 @@
   "oni_peak_aug_nov": -0.61,
   "oni_annual_mean_aug_nov": -0.34,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.08,
+   "JFM": 0.08,
+   "FMA": 0.27,
+   "MAM": 0.32,
+   "AMJ": 0.35,
+   "MJJ": 0.32,
+   "JJA": 0.14,
+   "JAS": -0.07,
+   "ASO": -0.23,
+   "SON": -0.44,
+   "OND": -0.61,
+   "NDJ": -0.76
+  },
+  "oni_burn_window": -0.05,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2018,
@@ -344,8 +1032,24 @@
   "oni_peak_aug_nov": 1.04,
   "oni_annual_mean_aug_nov": 0.67,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.71,
+   "JFM": -0.67,
+   "FMA": -0.55,
+   "MAM": -0.35,
+   "AMJ": -0.07,
+   "MJJ": 0.13,
+   "JJA": 0.2,
+   "JAS": 0.3,
+   "ASO": 0.52,
+   "SON": 0.82,
+   "OND": 1.04,
+   "NDJ": 1.05
+  },
+  "oni_burn_window": 0.34,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2019,
@@ -356,8 +1060,24 @@
   "oni_peak_aug_nov": 0.72,
   "oni_annual_mean_aug_nov": 0.43,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.99,
+   "JFM": 0.94,
+   "FMA": 0.87,
+   "MAM": 0.82,
+   "AMJ": 0.71,
+   "MJJ": 0.59,
+   "JJA": 0.38,
+   "JAS": 0.2,
+   "ASO": 0.31,
+   "SON": 0.51,
+   "OND": 0.72,
+   "NDJ": 0.75
+  },
+  "oni_burn_window": 0.3,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2020,
@@ -368,8 +1088,24 @@
   "oni_peak_aug_nov": -1.11,
   "oni_annual_mean_aug_nov": -0.83,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 0.71,
+   "JFM": 0.66,
+   "FMA": 0.57,
+   "MAM": 0.33,
+   "AMJ": 0.04,
+   "MJJ": -0.18,
+   "JJA": -0.29,
+   "JAS": -0.43,
+   "ASO": -0.77,
+   "SON": -1.0,
+   "OND": -1.11,
+   "NDJ": -1.06
+  },
+  "oni_burn_window": -0.5,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2021,
@@ -380,8 +1116,24 @@
   "oni_peak_aug_nov": -0.91,
   "oni_annual_mean_aug_nov": -0.7,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.99,
+   "JFM": -0.85,
+   "FMA": -0.74,
+   "MAM": -0.56,
+   "AMJ": -0.4,
+   "MJJ": -0.31,
+   "JJA": -0.35,
+   "JAS": -0.46,
+   "ASO": -0.64,
+   "SON": -0.77,
+   "OND": -0.91,
+   "NDJ": -0.83
+  },
+  "oni_burn_window": -0.48,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2022,
@@ -392,8 +1144,24 @@
   "oni_peak_aug_nov": -0.89,
   "oni_annual_mean_aug_nov": -0.84,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.76,
+   "JFM": -0.68,
+   "FMA": -0.77,
+   "MAM": -0.86,
+   "AMJ": -0.83,
+   "MJJ": -0.73,
+   "JJA": -0.7,
+   "JAS": -0.78,
+   "ASO": -0.87,
+   "SON": -0.89,
+   "OND": -0.82,
+   "NDJ": -0.7
+  },
+  "oni_burn_window": -0.78,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2023,
@@ -404,8 +1172,24 @@
   "oni_peak_aug_nov": 1.9,
   "oni_annual_mean_aug_nov": 1.6,
   "phase": "el_nino",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.55,
+   "JFM": -0.33,
+   "FMA": -0.11,
+   "MAM": 0.19,
+   "AMJ": 0.46,
+   "MJJ": 0.73,
+   "JJA": 1.0,
+   "JAS": 1.25,
+   "ASO": 1.5,
+   "SON": 1.74,
+   "OND": 1.9,
+   "NDJ": 1.99
+  },
+  "oni_burn_window": 1.25,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2024,
@@ -416,8 +1200,24 @@
   "oni_peak_aug_nov": -0.29,
   "oni_annual_mean_aug_nov": -0.16,
   "phase": "neutral",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": 1.84,
+   "JFM": 1.53,
+   "FMA": 1.18,
+   "MAM": 0.77,
+   "AMJ": 0.43,
+   "MJJ": 0.18,
+   "JJA": 0.06,
+   "JAS": -0.04,
+   "ASO": -0.12,
+   "SON": -0.19,
+   "OND": -0.29,
+   "NDJ": -0.43
+  },
+  "oni_burn_window": -0.03,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2025,
@@ -428,21 +1228,53 @@
   "oni_peak_aug_nov": -0.61,
   "oni_annual_mean_aug_nov": -0.47,
   "phase": "la_nina",
-  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-09-18",
-  "estimated": false
+  "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16",
+  "estimated": false,
+  "oni_seasons": {
+   "DJF": -0.46,
+   "JFM": -0.22,
+   "FMA": -0.08,
+   "MAM": 0.02,
+   "AMJ": -0.04,
+   "MJJ": -0.02,
+   "JJA": -0.11,
+   "JAS": -0.26,
+   "ASO": -0.43,
+   "SON": -0.57,
+   "OND": -0.61,
+   "NDJ": -0.6
+  },
+  "oni_burn_window": -0.27,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  },
  {
   "year": 2026,
-  "oni_jas": null,
+  "oni_jas": 2.16,
   "oni_aso": null,
   "oni_son": null,
   "oni_ond": null,
   "oni_peak_aug_nov": null,
   "oni_annual_mean_aug_nov": null,
   "phase": "el_nino",
-  "latest_available_season": "JJA",
-  "latest_available_oni": 1.8,
-  "source": "NOAA CPC ONI (ERSSTv5), retrieved 2026-09-18. The Aug-Nov 2026 seasons are not yet published; phase is inferred from the JJA 2026 value of +1.80 and is PROVISIONAL.",
-  "estimated": true
+  "latest_available_season": "JAS",
+  "latest_available_oni": 2.16,
+  "source": "NOAA CPC ONI (ERSSTv5), https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt, retrieved 2026-10-16. Seasons after JAS 2026 are not yet published.",
+  "estimated": true,
+  "oni_seasons": {
+   "DJF": -0.39,
+   "JFM": -0.21,
+   "FMA": 0.11,
+   "MAM": 0.46,
+   "AMJ": 0.95,
+   "MJJ": 1.39,
+   "JJA": 1.8,
+   "JAS": 2.16,
+   "ASO": null,
+   "SON": null,
+   "OND": null,
+   "NDJ": null
+  },
+  "oni_burn_window": null,
+  "oni_burn_window_def": "mean of the JJA, JAS and ASO ONI seasons (centred Jul-Sep)"
  }
 ]

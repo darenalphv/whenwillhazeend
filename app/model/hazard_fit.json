@@ -1,365 +1,1674 @@
 {
+ "fitted_at": "2026-10-16",
+ "model_version": 2,
+ "coefficients": {
+  "c0": -9.57226,
+  "c1": 0.82864,
+  "c2": 2e-05,
+  "c3": 0.19499,
+  "c4": 1.14937,
+  "c5": 0.13325,
+  "c6": 0.0,
+  "c7": 15.02881
+ },
+ "coefficients_mle": {
+  "c0": -9.68686,
+  "c1": 0.81222,
+  "c2": 0.0,
+  "c3": 0.18935,
+  "c4": 1.14428,
+  "c5": 0.13557,
+  "c6": 0.0,
+  "c7": 14.90766
+ },
+ "coefficient_signs": "h = sigmoid(c0 + c1*wet10 + c2*n_wet - c3*deficit - c4*dc_term - c5*ONI - c6*DMI); c1..c6 >= 0",
+ "fixed_parameters": {
+  "alpha_p84_mm_per_day": 3.7,
+  "alpha_source": "Field et al. 2016, PNAS 113:9204 (Kalimantan haze 3.7; range 3.7-5.5)",
+  "dc_crit": 350.0,
+  "dc_crit_source": "BMKG 'very dry' class >350 (range 300-400; Field et al. 2004 388.2)",
+  "wet10_mm": 50.0,
+  "wet10_source": "BMKG dasarian criterion, Giarno et al. 2012 (3 x 10 days >= 50 mm = onset)"
+ },
+ "rain_generator": {
+  "wet_threshold_mm": 1.0,
+  "fit_period": "1982-2025 (ENSO/IOD regression), 1981-2025 (daily)",
+  "monthly": {
+   "p01": [
+    0.4941,
+    0.5542,
+    0.7077,
+    0.7188,
+    0.442,
+    0.3681,
+    0.2505,
+    0.2023,
+    0.2277,
+    0.3238,
+    0.7027,
+    0.7333
+   ],
+   "p11": [
+    0.9672,
+    0.9613,
+    0.9677,
+    0.981,
+    0.9316,
+    0.859,
+    0.8228,
+    0.8038,
+    0.823,
+    0.9034,
+    0.984,
+    0.9832
+   ],
+   "gamma_shape": [
+    1.8942,
+    1.5295,
+    1.8081,
+    1.9777,
+    1.2831,
+    1.0515,
+    1.0027,
+    1.004,
+    1.0641,
+    1.1806,
+    1.8968,
+    2.1018
+   ],
+   "excess_mean_mm": [
+    8.907,
+    8.65,
+    9.224,
+    8.544,
+    6.634,
+    5.906,
+    5.319,
+    5.339,
+    6.663,
+    8.328,
+    9.36,
+    9.374
+   ],
+   "tmax_dry_c": [
+    30.935,
+    31.089,
+    30.895,
+    31.131,
+    30.77,
+    30.499,
+    30.436,
+    31.327,
+    32.406,
+    32.781,
+    32.094,
+    30.592
+   ],
+   "tmax_wet_c": [
+    29.671,
+    29.968,
+    30.054,
+    30.107,
+    30.161,
+    29.757,
+    29.496,
+    30.132,
+    30.582,
+    30.697,
+    30.156,
+    29.621
+   ],
+   "tmax_sd_c": [
+    1.139,
+    1.133,
+    1.114,
+    1.002,
+    0.98,
+    0.961,
+    1.085,
+    1.192,
+    1.321,
+    1.356,
+    1.198,
+    1.143
+   ]
+  },
+  "k_enso_by_month": [
+   -0.044,
+   -0.044,
+   -0.044,
+   -0.044,
+   -0.044,
+   0.3725,
+   0.3725,
+   0.3725,
+   0.3725,
+   0.3725,
+   0.3725,
+   -0.044
+  ],
+  "k_iod_by_month": [
+   -0.1133,
+   -0.1133,
+   -0.1133,
+   -0.1133,
+   -0.1133,
+   0.2065,
+   0.2065,
+   0.2065,
+   0.2065,
+   0.2065,
+   0.2065,
+   -0.1133
+  ],
+  "freq_share_by_month": [
+   0.193,
+   0.193,
+   0.193,
+   0.193,
+   0.193,
+   0.675,
+   0.675,
+   0.675,
+   0.675,
+   0.675,
+   0.675,
+   0.193
+  ],
+  "tmax_oni_coeff": 0.731,
+  "regression": {
+   "jun_nov": {
+    "k_enso": 0.3725,
+    "k_enso_se": 0.0589,
+    "k_iod": 0.2065,
+    "k_iod_se": 0.0853,
+    "r2": 0.245,
+    "n_months": 264,
+    "freq_share": 0.675
+   },
+   "dec_may": {
+    "k_enso": -0.044,
+    "k_enso_se": 0.0171,
+    "k_iod": -0.1133,
+    "k_iod_se": 0.0438,
+    "r2": 0.052,
+    "n_months": 264,
+    "freq_share": 0.193
+   }
+  },
+  "note": "k fitted by OLS of log(monthly areal-mean ERA5 rain / monthly climatology) on the CPC 3-month ONI centred on that month and the OSMC monthly DMI. Replaces the unsourced v1 constant ENSO_RAIN_K = 0.35, MEAN_WET_DAY_MM = 13 and WET_PERSISTENCE = 0.35."
+ },
+ "rain_generator_enso_only": {
+  "wet_threshold_mm": 1.0,
+  "fit_period": "1982-2025 (ENSO/IOD regression), 1981-2025 (daily)",
+  "monthly": {
+   "p01": [
+    0.4941,
+    0.5542,
+    0.7077,
+    0.7188,
+    0.442,
+    0.3681,
+    0.2505,
+    0.2023,
+    0.2277,
+    0.3238,
+    0.7027,
+    0.7333
+   ],
+   "p11": [
+    0.9672,
+    0.9613,
+    0.9677,
+    0.981,
+    0.9316,
+    0.859,
+    0.8228,
+    0.8038,
+    0.823,
+    0.9034,
+    0.984,
+    0.9832
+   ],
+   "gamma_shape": [
+    1.8942,
+    1.5295,
+    1.8081,
+    1.9777,
+    1.2831,
+    1.0515,
+    1.0027,
+    1.004,
+    1.0641,
+    1.1806,
+    1.8968,
+    2.1018
+   ],
+   "excess_mean_mm": [
+    8.907,
+    8.65,
+    9.224,
+    8.544,
+    6.634,
+    5.906,
+    5.319,
+    5.339,
+    6.663,
+    8.328,
+    9.36,
+    9.374
+   ],
+   "tmax_dry_c": [
+    30.935,
+    31.089,
+    30.895,
+    31.131,
+    30.77,
+    30.499,
+    30.436,
+    31.327,
+    32.406,
+    32.781,
+    32.094,
+    30.592
+   ],
+   "tmax_wet_c": [
+    29.671,
+    29.968,
+    30.054,
+    30.107,
+    30.161,
+    29.757,
+    29.496,
+    30.132,
+    30.582,
+    30.697,
+    30.156,
+    29.621
+   ],
+   "tmax_sd_c": [
+    1.139,
+    1.133,
+    1.114,
+    1.002,
+    0.98,
+    0.961,
+    1.085,
+    1.192,
+    1.321,
+    1.356,
+    1.198,
+    1.143
+   ]
+  },
+  "k_enso_by_month": [
+   -0.0469,
+   -0.0469,
+   -0.0469,
+   -0.0469,
+   -0.0469,
+   0.4465,
+   0.4465,
+   0.4465,
+   0.4465,
+   0.4465,
+   0.4465,
+   -0.0469
+  ],
+  "k_iod_by_month": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "freq_share_by_month": [
+   0.193,
+   0.193,
+   0.193,
+   0.193,
+   0.193,
+   0.675,
+   0.675,
+   0.675,
+   0.675,
+   0.675,
+   0.675,
+   0.193
+  ],
+  "tmax_oni_coeff": 0.731,
+  "regression": {
+   "jun_nov": {
+    "k_enso": 0.4465,
+    "k_enso_se": 0.0508,
+    "k_iod": 0.0,
+    "k_iod_se": null,
+    "r2": 0.228,
+    "n_months": 264,
+    "freq_share": 0.675
+   },
+   "dec_may": {
+    "k_enso": -0.0469,
+    "k_enso_se": 0.0172,
+    "k_iod": 0.0,
+    "k_iod_se": null,
+    "r2": 0.028,
+    "n_months": 264,
+    "freq_share": 0.193
+   }
+  },
+  "note": "k fitted by OLS of log(monthly areal-mean ERA5 rain / monthly climatology) on the CPC 3-month ONI centred on that month and the OSMC monthly DMI. Replaces the unsourced v1 constant ENSO_RAIN_K = 0.35, MEAN_WET_DAY_MM = 13 and WET_PERSISTENCE = 0.35."
+ },
+ "active_rule": {
+  "dc_min": 80.0,
+  "n_wet_max": 2,
+  "balanced_accuracy": 0.807,
+  "true_positive_rate": 0.785,
+  "true_negative_rate": 0.828,
+  "n_days": 4600,
+  "method": "grid search over 1 Jul-31 Dec 2001-2025 against fire-observed in-season days; in-sample, so optimistic"
+ },
+ "season_definition": "The fire season has ended on the first day after its peak from which the 7-day running count (centred) of NASA FIRMS MODIS active-fire detections (Terra + Aqua, Collection 6.1, 'presumed vegetation fire' type) inside 4S-0, 110-117E -- the Central/South Kalimantan peat belt used by Field et al. (2016, PNAS) -- stays below 10% of that season's highest 7-day count for 14 consecutive days. The end date is the first of those 14 days, so it can only be confirmed 17 days later. A season starts on the first day after 1 May on which the count exceeds 10% of the maximum and stays above it for 7 days. A year whose maximum is below the 10th percentile of all years' maxima (2001-2025) has no season. This is this site's own definition [engineering judgement]; no published definition of fire-season end exists.",
+ "labels": [
+  {
+   "year": 2001,
+   "status": "season",
+   "start": "2001-08-08",
+   "peak": "2001-08-24",
+   "end": "2001-09-25",
+   "duration": 48,
+   "max_7d": 1227.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2002,
+   "status": "season",
+   "start": "2002-08-08",
+   "peak": "2002-08-29",
+   "end": "2002-11-01",
+   "duration": 85,
+   "max_7d": 8307.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2003,
+   "status": "season",
+   "start": "2003-06-09",
+   "peak": "2003-09-05",
+   "end": "2003-10-05",
+   "duration": 118,
+   "max_7d": 3811.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2004,
+   "status": "season",
+   "start": "2004-08-07",
+   "peak": "2004-08-22",
+   "end": "2004-10-30",
+   "duration": 84,
+   "max_7d": 6843.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2005,
+   "status": "season",
+   "start": "2005-07-27",
+   "peak": "2005-09-15",
+   "end": "2005-10-13",
+   "duration": 78,
+   "max_7d": 3036.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2006,
+   "status": "season",
+   "start": "2006-08-06",
+   "peak": "2006-10-02",
+   "end": "2006-11-12",
+   "duration": 98,
+   "max_7d": 8702.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2007,
+   "status": "season",
+   "start": "2007-08-14",
+   "peak": "2007-10-02",
+   "end": "2007-10-10",
+   "duration": 57,
+   "max_7d": 2327.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2008,
+   "status": "season",
+   "start": "2008-06-20",
+   "peak": "2008-09-27",
+   "end": "2008-10-19",
+   "duration": 121,
+   "max_7d": 1345.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2009,
+   "status": "season",
+   "start": "2009-07-28",
+   "peak": "2009-09-26",
+   "end": "2009-10-21",
+   "duration": 85,
+   "max_7d": 7178.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2010,
+   "status": "season",
+   "start": "2010-08-24",
+   "peak": "2010-10-13",
+   "end": "2010-10-27",
+   "duration": 64,
+   "max_7d": 446.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2011,
+   "status": "season",
+   "start": "2011-07-24",
+   "peak": "2011-08-24",
+   "end": "2011-10-17",
+   "duration": 85,
+   "max_7d": 3569.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2012,
+   "status": "season",
+   "start": "2012-07-30",
+   "peak": "2012-10-01",
+   "end": "2012-10-16",
+   "duration": 78,
+   "max_7d": 3414.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2013,
+   "status": "season",
+   "start": "2013-08-16",
+   "peak": "2013-09-23",
+   "end": "2013-10-21",
+   "duration": 66,
+   "max_7d": 2646.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2014,
+   "status": "season",
+   "start": "2014-07-27",
+   "peak": "2014-10-02",
+   "end": "2014-11-07",
+   "duration": 103,
+   "max_7d": 4666.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2015,
+   "status": "season",
+   "start": "2015-08-04",
+   "peak": "2015-09-11",
+   "end": "2015-10-30",
+   "duration": 87,
+   "max_7d": 9164.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2016,
+   "status": "season",
+   "start": "2016-08-08",
+   "peak": "2016-09-13",
+   "end": "2016-09-20",
+   "duration": 43,
+   "max_7d": 1018.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2017,
+   "status": "no_season",
+   "start": null,
+   "peak": "2017-09-18",
+   "end": null,
+   "duration": null,
+   "max_7d": 413.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2018,
+   "status": "season",
+   "start": "2018-08-07",
+   "peak": "2018-09-28",
+   "end": "2018-10-10",
+   "duration": 64,
+   "max_7d": 1812.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2019,
+   "status": "season",
+   "start": "2019-08-10",
+   "peak": "2019-09-12",
+   "end": "2019-10-13",
+   "duration": 64,
+   "max_7d": 8169.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2020,
+   "status": "season",
+   "start": "2020-09-13",
+   "peak": "2020-09-19",
+   "end": "2020-10-11",
+   "duration": 28,
+   "max_7d": 736.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2021,
+   "status": "no_season",
+   "start": null,
+   "peak": "2021-09-20",
+   "end": null,
+   "duration": null,
+   "max_7d": 273.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2022,
+   "status": "no_season",
+   "start": null,
+   "peak": "2022-08-10",
+   "end": null,
+   "duration": null,
+   "max_7d": 185.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2023,
+   "status": "season",
+   "start": "2023-07-25",
+   "peak": "2023-09-29",
+   "end": "2023-11-03",
+   "duration": 101,
+   "max_7d": 3028.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2024,
+   "status": "season",
+   "start": "2024-07-24",
+   "peak": "2024-09-16",
+   "end": "2024-10-02",
+   "duration": 70,
+   "max_7d": 1004.0,
+   "target_source": "firms_modis"
+  },
+  {
+   "year": 2025,
+   "status": "season",
+   "start": "2025-07-19",
+   "peak": "2025-09-25",
+   "end": "2025-10-20",
+   "duration": 93,
+   "max_7d": 745.0,
+   "target_source": "firms_modis"
+  }
+ ],
+ "label_floor_7d": 426.2,
+ "skill": {
+  "n_seasons": 22,
+  "seasons": [
+   2001,
+   2002,
+   2003,
+   2004,
+   2005,
+   2006,
+   2007,
+   2008,
+   2009,
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2018,
+   2019,
+   2020,
+   2023,
+   2024,
+   2025
+  ],
+  "rmse_days": 8.92,
+  "rmse_days_loo": 10.69,
+  "rmse_days_forecast": 14.04,
+  "anchor_rmse_days": 3.16,
+  "anchor_seasons": [
+   {
+    "year": 2015,
+    "observed_days": 87,
+    "predicted_days": 89,
+    "residual_days": 2,
+    "forecast_days": 79
+   },
+   {
+    "year": 2019,
+    "observed_days": 64,
+    "predicted_days": 68,
+    "residual_days": 4,
+    "forecast_days": 73
+   }
+  ],
+  "rmse_days_forecast_from_1_sep": 13.51,
+  "forecast_from_1_sep": [
+   {
+    "year": 2001,
+    "predicted_days": 42,
+    "observed_days": 24,
+    "residual_days": 18
+   },
+   {
+    "year": 2002,
+    "predicted_days": 46,
+    "observed_days": 61,
+    "residual_days": -15
+   },
+   {
+    "year": 2003,
+    "predicted_days": 45,
+    "observed_days": 34,
+    "residual_days": 11
+   },
+   {
+    "year": 2004,
+    "predicted_days": 43,
+    "observed_days": 59,
+    "residual_days": -16
+   },
+   {
+    "year": 2005,
+    "predicted_days": 43,
+    "observed_days": 42,
+    "residual_days": 1
+   },
+   {
+    "year": 2006,
+    "predicted_days": 43,
+    "observed_days": 72,
+    "residual_days": -29
+   },
+   {
+    "year": 2007,
+    "predicted_days": 40,
+    "observed_days": 39,
+    "residual_days": 1
+   },
+   {
+    "year": 2008,
+    "predicted_days": 39,
+    "observed_days": 48,
+    "residual_days": -9
+   },
+   {
+    "year": 2009,
+    "predicted_days": 44,
+    "observed_days": 50,
+    "residual_days": -6
+   },
+   {
+    "year": 2010,
+    "predicted_days": 39,
+    "observed_days": 56,
+    "residual_days": -17
+   },
+   {
+    "year": 2011,
+    "predicted_days": 42,
+    "observed_days": 46,
+    "residual_days": -4
+   },
+   {
+    "year": 2012,
+    "predicted_days": 43,
+    "observed_days": 45,
+    "residual_days": -2
+   },
+   {
+    "year": 2013,
+    "predicted_days": 41,
+    "observed_days": 50,
+    "residual_days": -9
+   },
+   {
+    "year": 2014,
+    "predicted_days": 43,
+    "observed_days": 67,
+    "residual_days": -24
+   },
+   {
+    "year": 2015,
+    "predicted_days": 52,
+    "observed_days": 59,
+    "residual_days": -7
+   },
+   {
+    "year": 2016,
+    "predicted_days": 40,
+    "observed_days": 19,
+    "residual_days": 21
+   },
+   {
+    "year": 2018,
+    "predicted_days": 43,
+    "observed_days": 39,
+    "residual_days": 4
+   },
+   {
+    "year": 2019,
+    "predicted_days": 51,
+    "observed_days": 42,
+    "residual_days": 9
+   },
+   {
+    "year": 2023,
+    "predicted_days": 48,
+    "observed_days": 63,
+    "residual_days": -15
+   },
+   {
+    "year": 2024,
+    "predicted_days": 42,
+    "observed_days": 31,
+    "residual_days": 11
+   },
+   {
+    "year": 2025,
+    "predicted_days": 42,
+    "observed_days": 49,
+    "residual_days": -7
+   }
+  ],
+  "naive_rmse_days_mean_predictor": 22.72,
+  "mean_observed_duration_days": 78.2,
+  "sd_observed_duration_days": 22.7,
+  "forecast_rmse_by_iod": {
+   "positive_iod": 16.88,
+   "n_positive_iod": 6,
+   "other": 12.81,
+   "n_other": 16
+  },
+  "n_daily_observations": 1720,
+  "negative_log_likelihood": 0.045689
+ },
+ "enso_only_ablation": {
   "coefficients": {
+   "c0": -9.53146,
+   "c1": 0.84551,
+   "c2": 0.0,
+   "c3": 0.18982,
+   "c4": 1.13762,
+   "c5": 0.13439,
+   "c6": 0.0,
+   "c7": 15.23929
+  },
+  "rmse_days": 9.01,
+  "rmse_days_loo": 10.79,
+  "rmse_days_forecast": 14.46,
+  "frailty_sd": 1.25,
+  "hindcast_interval_coverage": 0.813,
+  "anchor_rmse_days": 2.55,
+  "anchor_seasons": [
+   {
+    "year": 2015,
+    "observed_days": 87,
+    "predicted_days": 89,
+    "residual_days": 2,
+    "forecast_days": 79
+   },
+   {
+    "year": 2019,
+    "observed_days": 64,
+    "predicted_days": 67,
+    "residual_days": 3,
+    "forecast_days": 70
+   }
+  ],
+  "rmse_days_forecast_from_1_sep": 13.57,
+  "forecast_rmse_by_iod": {
+   "positive_iod": 16.91,
+   "n_positive_iod": 6,
+   "other": 13.42,
+   "n_other": 16
+  },
+  "note": "c6 = 0 and a rainfall generator fitted without DMI"
+ },
+ "spec_s3_without_seasonal_clock": {
+  "coefficients": {
+   "c0": -5.38682,
+   "c1": 1.50042,
+   "c2": 0.0,
+   "c3": 0.0,
+   "c4": 7e-05,
+   "c5": 1e-05,
+   "c6": 9e-05,
+   "c7": 0.0
+  },
+  "rmse_days": 18.88,
+  "rmse_days_loo": 20.04,
+  "rmse_days_forecast": 24.59,
+  "frailty_sd": 0.0,
+  "hindcast_interval_coverage": 0.874,
+  "anchor_rmse_days": 13.58,
+  "anchor_seasons": [
+   {
+    "year": 2015,
+    "observed_days": 87,
+    "predicted_days": 102,
+    "residual_days": 15,
+    "forecast_days": 100
+   },
+   {
+    "year": 2019,
+    "observed_days": 64,
+    "predicted_days": 76,
+    "residual_days": 12,
+    "forecast_days": 94
+   }
+  ],
+  "rmse_days_forecast_from_1_sep": 18.3,
+  "forecast_rmse_by_iod": {
+   "positive_iod": 22.53,
+   "n_positive_iod": 6,
+   "other": 25.31,
+   "n_other": 16
+  },
+  "note": "The hazard exactly as written in MODEL_SPEC S3 (no seasonal-clock term). Reported because it is what the spec asked for; it is not shipped because it is worse than both the shipped v2 model and the v1 structure refitted on the same labels."
+ },
+ "seasonal": {
+  "onset_doy": 295,
+  "width_days": 30.0,
+  "retreat_doy": 110,
+  "retreat_width_days": 28.0,
+  "fitted_by": "profile maximum likelihood over onset 270-335 (step 5) x width {8,14,20,30} days; retreat fixed at v1's DOY 110 / 28 d (irrelevant inside a fire season)"
+ },
+ "frailty": {
+  "sd": 1.25,
+  "selected": {
+   "frailty_sd": 1.25,
+   "n_forecasts": 182,
+   "coverage_p10_p90": 0.835,
+   "below_p10": 0.033,
+   "above_p90": 0.132,
+   "pit_histogram_deciles": [
+    6,
+    12,
+    26,
+    9,
+    20,
+    10,
+    30,
+    21,
+    24,
+    24
+   ]
+  },
+  "grid": [
+   {
+    "frailty_sd": 0.0,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.665,
+    "below_p10": 0.071,
+    "above_p90": 0.264,
+    "pit_histogram_deciles": [
+     13,
+     23,
+     12,
+     12,
+     14,
+     7,
+     11,
+     22,
+     20,
+     48
+    ]
+   },
+   {
+    "frailty_sd": 0.25,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.67,
+    "below_p10": 0.066,
+    "above_p90": 0.264,
+    "pit_histogram_deciles": [
+     12,
+     25,
+     10,
+     14,
+     13,
+     7,
+     14,
+     23,
+     16,
+     48
+    ]
+   },
+   {
+    "frailty_sd": 0.5,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.676,
+    "below_p10": 0.06,
+    "above_p90": 0.264,
+    "pit_histogram_deciles": [
+     11,
+     22,
+     12,
+     14,
+     15,
+     7,
+     16,
+     23,
+     14,
+     48
+    ]
+   },
+   {
+    "frailty_sd": 0.75,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.692,
+    "below_p10": 0.06,
+    "above_p90": 0.247,
+    "pit_histogram_deciles": [
+     10,
+     19,
+     15,
+     13,
+     17,
+     7,
+     18,
+     27,
+     11,
+     45
+    ]
+   },
+   {
+    "frailty_sd": 1.0,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.742,
+    "below_p10": 0.049,
+    "above_p90": 0.209,
+    "pit_histogram_deciles": [
+     9,
+     15,
+     20,
+     11,
+     19,
+     8,
+     21,
+     29,
+     12,
+     38
+    ]
+   },
+   {
+    "frailty_sd": 1.25,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.835,
+    "below_p10": 0.033,
+    "above_p90": 0.132,
+    "pit_histogram_deciles": [
+     6,
+     12,
+     26,
+     9,
+     20,
+     10,
+     30,
+     21,
+     24,
+     24
+    ]
+   },
+   {
+    "frailty_sd": 1.5,
+    "n_forecasts": 182,
+    "coverage_p10_p90": 0.879,
+    "below_p10": 0.016,
+    "above_p90": 0.104,
+    "pit_histogram_deciles": [
+     3,
+     13,
+     24,
+     12,
+     17,
+     15,
+     33,
+     18,
+     28,
+     19
+    ]
+   }
+  ],
+  "method": "per-simulated-season Normal(0, sd) offset on the hazard log-odds; sd chosen so that p10-p90 intervals of leak-free hindcasts, issued every 10 days through each 2001-2025 season, contain the observed end ~80% of the time. In-sample, so mildly optimistic."
+ },
+ "monsoon_onset": {
+  "onset_by_year": {
+   "1981": "1981-10-21",
+   "1983": "1983-10-11",
+   "1984": "1984-09-01",
+   "1985": "1985-10-21",
+   "1986": "1986-09-21",
+   "1987": "1987-10-21",
+   "1988": "1988-08-11",
+   "1989": "1989-09-21",
+   "1990": "1990-12-01",
+   "1991": "1991-11-01",
+   "1992": "1992-10-21",
+   "1993": "1993-10-11",
+   "1994": "1994-11-01",
+   "1995": "1995-10-01",
+   "1996": "1996-08-11",
+   "1997": "1997-11-01",
+   "1998": "1998-09-21",
+   "1999": "1999-09-21",
+   "2000": "2000-10-01",
+   "2001": "2001-09-11",
+   "2002": "2002-11-01",
+   "2003": "2003-10-01",
+   "2004": "2004-10-21",
+   "2005": "2005-10-11",
+   "2006": "2006-11-11",
+   "2007": "2007-10-01",
+   "2008": "2008-10-01",
+   "2009": "2009-10-01",
+   "2010": "2010-08-01",
+   "2011": "2011-10-01",
+   "2012": "2012-10-11",
+   "2013": "2013-10-21",
+   "2014": "2014-11-01",
+   "2015": "2015-10-21",
+   "2016": "2016-09-01",
+   "2017": "2017-09-11",
+   "2018": "2018-10-01",
+   "2019": "2019-10-01",
+   "2020": "2020-09-21",
+   "2021": "2021-08-01",
+   "2022": "2022-08-01",
+   "2023": "2023-10-11",
+   "2024": "2024-09-21",
+   "2025": "2025-08-01"
+  },
+  "quartiles_doy_all": [
+   264,
+   274,
+   294
+  ],
+  "quartiles_doy_by_enso_phase": {
+   "el_nino": [
+    292,
+    294,
+    305
+   ],
+   "neutral": [
+    259,
+    275,
+    294
+   ],
+   "la_nina": [
+    224,
+    264,
+    274
+   ]
+  },
+  "definition": "BMKG: first of three consecutive calendar dasarian (10-day periods) each with >= 50 mm, searched from 1 Aug; ERA5 areal mean of five peat-belt points (Giarno et al. 2012)",
+  "comparison": "Moron et al. 2009 southern-Kalimantan onset quartiles 17 Sep / 22 Sep / 25 Oct (their own definition)"
+ },
+ "seasonal_profile": [
+  {
+   "onset_doy": 290,
+   "width_days": 30.0,
+   "nll": 0.045689
+  },
+  {
+   "onset_doy": 295,
+   "width_days": 30.0,
+   "nll": 0.045689
+  },
+  {
+   "onset_doy": 300,
+   "width_days": 30.0,
+   "nll": 0.045697
+  },
+  {
+   "onset_doy": 285,
+   "width_days": 30.0,
+   "nll": 0.0457
+  },
+  {
+   "onset_doy": 305,
+   "width_days": 30.0,
+   "nll": 0.045716
+  },
+  {
+   "onset_doy": 280,
+   "width_days": 30.0,
+   "nll": 0.045718
+  },
+  {
+   "onset_doy": 310,
+   "width_days": 30.0,
+   "nll": 0.045744
+  },
+  {
+   "onset_doy": 275,
+   "width_days": 30.0,
+   "nll": 0.045745
+  }
+ ],
+ "ablations_in_sample": {
+  "no_rain_terms (c1=c2=c3=0)": {
+   "rmse_days": 10.14,
+   "coefficients": {
+    "c0": -9.32072,
+    "c1": 0.0,
+    "c2": 0.0,
+    "c3": 0.0,
+    "c4": 1.74972,
+    "c5": 0.30185,
+    "c6": 0.00013,
+    "c7": 15.60773
+   }
+  },
+  "no_drought_code (c4=0)": {
+   "rmse_days": 8.63,
+   "coefficients": {
+    "c0": -9.45885,
+    "c1": 0.97612,
+    "c2": 7e-05,
+    "c3": 0.64481,
+    "c4": 0.0,
+    "c5": 7e-05,
+    "c6": 0.11419,
+    "c7": 14.40135
+   }
+  },
+  "no_climate_indices (c5=c6=0)": {
+   "rmse_days": 8.9,
+   "coefficients": {
+    "c0": -9.49837,
+    "c1": 0.8568,
+    "c2": 0.0,
+    "c3": 0.25018,
+    "c4": 1.06723,
+    "c5": 0.0,
+    "c6": 0.0,
+    "c7": 14.9871
+   }
+  },
+  "seasonal_clock_only (c0, c7)": {
+   "rmse_days": 13.05,
+   "coefficients": {
+    "c0": -8.18916,
+    "c1": 0.0,
+    "c2": 0.0,
+    "c3": 0.0,
+    "c4": 0.0,
+    "c5": 0.0,
+    "c6": 0.0,
+    "c7": 11.47628
+   }
+  },
+  "intercept_only": {
+   "rmse_days": 22.72,
+   "coefficients": {
+    "c0": -4.71239,
+    "c1": 0.0,
+    "c2": 0.0,
+    "c3": 0.0,
+    "c4": 0.0,
+    "c5": 0.0,
+    "c6": 0.0,
+    "c7": 0.0
+   }
+  }
+ },
+ "test_2019_forecast_from_1_aug": {
+  "as_of": "2019-08-01",
+  "oni_known": 0.71,
+  "dmi_known": 0.62,
+  "full_model_p50_days": 82.0,
+  "full_model_p50_end": "2019-10-22",
+  "full_model_p10_p90": [
+   62.0,
+   97.0
+  ],
+  "enso_only_p50_days": 79.0,
+  "enso_only_p50_end": "2019-10-19",
+  "enso_only_p10_p90": [
+   60.0,
+   95.0
+  ],
+  "spec_s3_model_p50_days": 102.0,
+  "full_minus_enso_only_p50_days_over_10_seeds": [
+   2.0,
+   3.0,
+   2.0,
+   2.0,
+   3.0,
+   3.0,
+   3.0,
+   3.0,
+   3.0,
+   3.0
+  ],
+  "observed_end": "2019-10-13",
+  "observed_days_from_as_of": 73,
+  "passes": true
+ },
+ "residuals": [
+  {
+   "year": 2001,
+   "start": "2001-08-08",
+   "end": "2001-09-25",
+   "observed_days": 48,
+   "predicted_days": 65,
+   "loo_residual_days": 18,
+   "forecast_days": 65,
+   "enso_only_forecast_days": 65,
+   "oni_at_start": -0.19,
+   "dmi_at_start": -0.28
+  },
+  {
+   "year": 2002,
+   "start": "2002-08-08",
+   "end": "2002-11-01",
+   "observed_days": 85,
+   "predicted_days": 89,
+   "loo_residual_days": 4,
+   "forecast_days": 67,
+   "enso_only_forecast_days": 68,
+   "oni_at_start": 0.3,
+   "dmi_at_start": -0.49
+  },
+  {
+   "year": 2003,
+   "start": "2003-06-09",
+   "end": "2003-10-05",
+   "observed_days": 118,
+   "predicted_days": 126,
+   "loo_residual_days": 9,
+   "forecast_days": 129,
+   "enso_only_forecast_days": 128,
+   "oni_at_start": 0.38,
+   "dmi_at_start": 0.17
+  },
+  {
+   "year": 2004,
+   "start": "2004-08-07",
+   "end": "2004-10-30",
+   "observed_days": 84,
+   "predicted_days": 77,
+   "loo_residual_days": -11,
+   "forecast_days": 66,
+   "enso_only_forecast_days": 66,
+   "oni_at_start": 0.12,
+   "dmi_at_start": -0.38
+  },
+  {
+   "year": 2005,
+   "start": "2005-07-27",
+   "end": "2005-10-13",
+   "observed_days": 78,
+   "predicted_days": 80,
+   "loo_residual_days": 2,
+   "forecast_days": 80,
+   "enso_only_forecast_days": 80,
+   "oni_at_start": 0.27,
+   "dmi_at_start": -0.15
+  },
+  {
+   "year": 2006,
+   "start": "2006-08-06",
+   "end": "2006-11-12",
+   "observed_days": 98,
+   "predicted_days": 96,
+   "loo_residual_days": -4,
+   "forecast_days": 68,
+   "enso_only_forecast_days": 67,
+   "oni_at_start": -0.19,
+   "dmi_at_start": -0.31
+  },
+  {
+   "year": 2007,
+   "start": "2007-08-14",
+   "end": "2007-10-10",
+   "observed_days": 57,
+   "predicted_days": 61,
+   "loo_residual_days": 4,
+   "forecast_days": 59,
+   "enso_only_forecast_days": 57,
+   "oni_at_start": -0.41,
+   "dmi_at_start": 0.33
+  },
+  {
+   "year": 2008,
+   "start": "2008-06-20",
+   "end": "2008-10-19",
+   "observed_days": 121,
+   "predicted_days": 114,
+   "loo_residual_days": -8,
+   "forecast_days": 110,
+   "enso_only_forecast_days": 109,
+   "oni_at_start": -1.05,
+   "dmi_at_start": 0.02
+  },
+  {
+   "year": 2009,
+   "start": "2009-07-28",
+   "end": "2009-10-21",
+   "observed_days": 85,
+   "predicted_days": 81,
+   "loo_residual_days": -5,
+   "forecast_days": 78,
+   "enso_only_forecast_days": 77,
+   "oni_at_start": 0.03,
+   "dmi_at_start": -0.1
+  },
+  {
+   "year": 2010,
+   "start": "2010-08-24",
+   "end": "2010-10-27",
+   "observed_days": 64,
+   "predicted_days": 47,
+   "loo_residual_days": -25,
+   "forecast_days": 47,
+   "enso_only_forecast_days": 46,
+   "oni_at_start": -0.66,
+   "dmi_at_start": -0.12
+  },
+  {
+   "year": 2011,
+   "start": "2011-07-24",
+   "end": "2011-10-17",
+   "observed_days": 85,
+   "predicted_days": 84,
+   "loo_residual_days": -1,
+   "forecast_days": 79,
+   "enso_only_forecast_days": 78,
+   "oni_at_start": -0.5,
+   "dmi_at_start": -0.07
+  },
+  {
+   "year": 2012,
+   "start": "2012-07-30",
+   "end": "2012-10-16",
+   "observed_days": 78,
+   "predicted_days": 80,
+   "loo_residual_days": 3,
+   "forecast_days": 73,
+   "enso_only_forecast_days": 73,
+   "oni_at_start": -0.18,
+   "dmi_at_start": -0.07
+  },
+  {
+   "year": 2013,
+   "start": "2013-08-16",
+   "end": "2013-10-21",
+   "observed_days": 66,
+   "predicted_days": 64,
+   "loo_residual_days": -2,
+   "forecast_days": 56,
+   "enso_only_forecast_days": 55,
+   "oni_at_start": -0.38,
+   "dmi_at_start": -0.51
+  },
+  {
+   "year": 2014,
+   "start": "2014-07-27",
+   "end": "2014-11-07",
+   "observed_days": 103,
+   "predicted_days": 92,
+   "loo_residual_days": -13,
+   "forecast_days": 81,
+   "enso_only_forecast_days": 80,
+   "oni_at_start": 0.35,
+   "dmi_at_start": 0.02
+  },
+  {
+   "year": 2015,
+   "start": "2015-08-04",
+   "end": "2015-10-30",
+   "observed_days": 87,
+   "predicted_days": 89,
+   "loo_residual_days": 2,
+   "forecast_days": 79,
+   "enso_only_forecast_days": 79,
+   "oni_at_start": 1.04,
+   "dmi_at_start": 0.13
+  },
+  {
+   "year": 2016,
+   "start": "2016-08-08",
+   "end": "2016-09-20",
+   "observed_days": 43,
+   "predicted_days": 63,
+   "loo_residual_days": 22,
+   "forecast_days": 67,
+   "enso_only_forecast_days": 69,
+   "oni_at_start": 0.57,
+   "dmi_at_start": -0.74
+  },
+  {
+   "year": 2018,
+   "start": "2018-08-07",
+   "end": "2018-10-10",
+   "observed_days": 64,
+   "predicted_days": 68,
+   "loo_residual_days": 5,
+   "forecast_days": 68,
+   "enso_only_forecast_days": 66,
+   "oni_at_start": -0.07,
+   "dmi_at_start": 0.12
+  },
+  {
+   "year": 2019,
+   "start": "2019-08-10",
+   "end": "2019-10-13",
+   "observed_days": 64,
+   "predicted_days": 68,
+   "loo_residual_days": 6,
+   "forecast_days": 73,
+   "enso_only_forecast_days": 70,
+   "oni_at_start": 0.59,
+   "dmi_at_start": 0.67
+  },
+  {
+   "year": 2020,
+   "start": "2020-09-13",
+   "end": "2020-10-11",
+   "observed_days": 28,
+   "predicted_days": 29,
+   "loo_residual_days": 2,
+   "forecast_days": 28,
+   "enso_only_forecast_days": 27,
+   "oni_at_start": -0.29,
+   "dmi_at_start": -0.04
+  },
+  {
+   "year": 2023,
+   "start": "2023-07-25",
+   "end": "2023-11-03",
+   "observed_days": 101,
+   "predicted_days": 85,
+   "loo_residual_days": -18,
+   "forecast_days": 83,
+   "enso_only_forecast_days": 82,
+   "oni_at_start": 0.46,
+   "dmi_at_start": 0.08
+  },
+  {
+   "year": 2024,
+   "start": "2024-07-24",
+   "end": "2024-10-02",
+   "observed_days": 70,
+   "predicted_days": 79,
+   "loo_residual_days": 10,
+   "forecast_days": 83,
+   "enso_only_forecast_days": 83,
+   "oni_at_start": 0.43,
+   "dmi_at_start": -0.02
+  },
+  {
+   "year": 2025,
+   "start": "2025-07-19",
+   "end": "2025-10-20",
+   "observed_days": 93,
+   "predicted_days": 86,
+   "loo_residual_days": -8,
+   "forecast_days": 87,
+   "enso_only_forecast_days": 85,
+   "oni_at_start": -0.04,
+   "dmi_at_start": 0.21
+  }
+ ],
+ "viirs_label_check": [
+  {
+   "year": 2015,
+   "modis_start": "2015-08-04",
+   "viirs_start": "2015-08-05",
+   "modis_end": "2015-10-30",
+   "viirs_end": "2015-10-30"
+  },
+  {
+   "year": 2019,
+   "modis_start": "2019-08-10",
+   "viirs_start": "2019-08-06",
+   "modis_end": "2019-10-13",
+   "viirs_end": "2019-11-12"
+  },
+  {
+   "year": 2023,
+   "modis_start": "2023-07-25",
+   "viirs_start": null,
+   "modis_end": "2023-11-03",
+   "viirs_end": null
+  }
+ ],
+ "drought_code_verification": {
+  "reference": "cffdrs R package (github.com/cffdrs/cffdrs_r) test data",
+  "single_step_cases": 4392,
+  "single_step_max_abs_error": 0.005,
+  "tropical_cases": 732,
+  "tropical_max_abs_error": 0.005,
+  "series_days": 48,
+  "series_max_abs_error": 0.0086,
+  "note": "reference values are printed to 1 decimal (single) / 4 significant figures (series), so errors up to ~0.05 / ~0.05 are rounding"
+ },
+ "weather_source": "observed",
+ "weather_provenance": "open-meteo archive (ERA5), https://archive-api.open-meteo.com/v1/archive",
+ "weather_record": [
+  "1981-01-01",
+  "2026-10-10"
+ ],
+ "target_is_rainfall_derived": false,
+ "target_note": "Season dates are fire-observed (NASA FIRMS MODIS counts, site rule in season_definition). The v1 rainfall-rule target, and its circularity, are gone; in-sample error is therefore expected to rise (MODEL_SPEC S6).",
+ "caveats": [
+  "About 22 fitted seasons and seven coefficients: enough to fit, barely enough to validate. Judge the model by the leave-one-out and forecast-mode errors.",
+  "The season labels are this site's own rule on MODIS fire counts. A different threshold (5% or 20% of the season maximum; 7 or 21 quiet days) moves end dates by days to weeks, and the coefficients move with them.",
+  "MODIS Terra/Aqua orbits have drifted since about 2020-2022, changing overpass times and fire counts. Relative thresholds absorb a constant change, not a trend within a season.",
+  "The rainfall generator's climatology includes the season being forecast (it is fitted on 1981-2025), a small leak that flatters forecast-mode error slightly.",
+  "Parameter uncertainty is not propagated into the published interval; the p10-p90 band is weather uncertainty only.",
+  "Land use changed across 2001-2025 (drainage, the 2011 moratorium, the 2016 peat restoration agency); one stationary coefficient set papers over that."
+ ],
+ "v1_on_fire_labels": {
+  "note": "v1 = KBDI + 7-day rain + fixed-DOY monsoon logistic + post-season ONI (oni_peak_aug_nov), single point (Palangka Raya). Evaluated on the same fire-observed labels as v2. 'as_shipped' uses the v1 coefficients fitted on rainfall-rule labels, so on these labels every figure is out-of-sample for it; 'refit' refits the v1 structure on the fire-observed labels.",
+  "as_shipped": {
+   "coefficients": {
     "b0": -3.60073,
     "b1": 0.00843,
     "b2": -5.5406,
     "b3": -0.15913,
     "b4": 5.98514
-  },
-  "coefficients_mle": {
-    "b0": -2.40278,
-    "b1": 0.01096,
-    "b2": -8.01644,
-    "b3": -0.20762,
-    "b4": 3.47053
-  },
-  "rmse_days": 14.18,
-  "rmse_days_mle_only": 18.2,
-  "rmse_days_loo": 17.97,
-  "rmse_days_forecast": 25.48,
-  "mean_observed_duration_days": 103.1,
-  "sd_observed_duration_days": 41.2,
-  "naive_rmse_days_mean_predictor": 41.25,
-  "n_seasons": 27,
-  "n_daily_observations": 2811,
-  "negative_log_likelihood": 0.029546,
-  "weather_source": "observed",
-  "weather_provenance": "open-meteo archive (ERA5)",
-  "weather_record": [
-    "1996-01-01",
-    "2026-04-20"
-  ],
-  "centroid": {
-    "lat": -2.21,
-    "lon": 113.92
-  },
-  "fitted_at": "2026-09-18",
-  "target_is_rainfall_derived": true,
-  "target_note": "Season start/end dates in app/data/seasons.json are derived from an ERA5 rainfall rule, not from observed fire-episode dates. Fitting a hazard model that contains a rainfall term against those durations is partly circular, so the in-sample RMSE overstates real skill. See `ablations` for how much of the skill survives removing every rainfall term, and `anchor_seasons` for the three seasons whose dates come from documented episodes.",
-  "ablations": {
-    "no_rainfall_terms (b1=b2=0)": {
-      "rmse_days": 24.55,
-      "coefficients": {
-        "b0": -6.31629,
-        "b1": 0.0,
-        "b2": 0.0,
-        "b3": -0.76644,
-        "b4": 7.90188
-      }
+   },
+   "rmse_days": 19.36,
+   "rmse_days_forecast": 17.25,
+   "anchor_seasons": [
+    {
+     "year": 2015,
+     "observed_days": 87,
+     "predicted_days": 99
     },
-    "no_climate_terms (b3=b4=0)": {
-      "rmse_days": 18.34,
-      "coefficients": {
-        "b0": -2.80566,
-        "b1": 0.01998,
-        "b2": -7.2096,
-        "b3": 0.0,
-        "b4": 0.0
-      }
-    },
-    "monsoon_climatology_only (b1=b2=b3=0)": {
-      "rmse_days": 29.63,
-      "coefficients": {
-        "b0": -6.86969,
-        "b1": 0.0,
-        "b2": 0.0,
-        "b3": 0.0,
-        "b4": 12.0
-      }
+    {
+     "year": 2019,
+     "observed_days": 64,
+     "predicted_days": 67
     }
+   ],
+   "anchor_rmse_days": 8.75
   },
-  "anchor_seasons": [
-    {
-      "year": 1997,
-      "observed_days": 194,
-      "predicted_days": 180,
-      "residual_days": -14
-    },
-    {
-      "year": 2015,
-      "observed_days": 131,
-      "predicted_days": 129,
-      "residual_days": -2
-    },
-    {
-      "year": 2019,
-      "observed_days": 95,
-      "predicted_days": 96,
-      "residual_days": 1
-    }
+  "refit": {
+   "coefficients": {
+    "b0": -6.96592,
+    "b1": 0.01875,
+    "b2": -0.20569,
+    "b3": -0.23332,
+    "b4": 8.83487
+   },
+   "rmse_days": 9.37,
+   "rmse_days_loo": 13.28,
+   "rmse_days_forecast": 11.62,
+   "anchor_rmse_days": 1.58,
+   "n_seasons": 22,
+   "naive_rmse_days_mean_predictor": 22.72
+  },
+  "refit_anchor_seasons": [
+   {
+    "year": 2015,
+    "observed_days": 87,
+    "predicted_days": 88,
+    "residual_days": 1,
+    "forecast_days": 87,
+    "oni": 2.45,
+    "phase": "el_nino"
+   },
+   {
+    "year": 2019,
+    "observed_days": 64,
+    "predicted_days": 66,
+    "residual_days": 2,
+    "forecast_days": 74,
+    "oni": 0.72,
+    "phase": "el_nino"
+   }
   ],
-  "anchor_rmse_days": 8.19,
-  "zero_season_check": [
-    {
-      "year": 2010,
-      "observed_days": 0,
-      "kbdi_1_sep": 258.3,
-      "monsoon_progress_1_sep": 0.043,
-      "model_says_active": true,
-      "oni": -1.57
-    },
-    {
-      "year": 2022,
-      "observed_days": 0,
-      "kbdi_1_sep": 139.2,
-      "monsoon_progress_1_sep": 0.043,
-      "model_says_active": false,
-      "oni": -0.89
-    }
-  ],
-  "residuals": [
-    {
-      "year": 1997,
-      "observed_days": 194,
-      "predicted_days": 180,
-      "residual_days": -14,
-      "forecast_days": 177,
-      "oni": 2.34,
-      "phase": "el_nino"
-    },
-    {
-      "year": 1998,
-      "observed_days": 105,
-      "predicted_days": 45,
-      "residual_days": -60,
-      "forecast_days": 64,
-      "oni": -1.31,
-      "phase": "la_nina"
-    },
-    {
-      "year": 1999,
-      "observed_days": 108,
-      "predicted_days": 109,
-      "residual_days": 1,
-      "forecast_days": 102,
-      "oni": -1.35,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2000,
-      "observed_days": 93,
-      "predicted_days": 91,
-      "residual_days": -2,
-      "forecast_days": 84,
-      "oni": -0.76,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2001,
-      "observed_days": 94,
-      "predicted_days": 98,
-      "residual_days": 4,
-      "forecast_days": 110,
-      "oni": -0.33,
-      "phase": "neutral"
-    },
-    {
-      "year": 2002,
-      "observed_days": 168,
-      "predicted_days": 159,
-      "residual_days": -9,
-      "forecast_days": 162,
-      "oni": 1.19,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2003,
-      "observed_days": 135,
-      "predicted_days": 140,
-      "residual_days": 5,
-      "forecast_days": 147,
-      "oni": 0.29,
-      "phase": "neutral"
-    },
-    {
-      "year": 2004,
-      "observed_days": 136,
-      "predicted_days": 131,
-      "residual_days": -5,
-      "forecast_days": 132,
-      "oni": 0.64,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2005,
-      "observed_days": 126,
-      "predicted_days": 128,
-      "residual_days": 2,
-      "forecast_days": 123,
-      "oni": -0.57,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2006,
-      "observed_days": 126,
-      "predicted_days": 123,
-      "residual_days": -3,
-      "forecast_days": 108,
-      "oni": 0.88,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2007,
-      "observed_days": 97,
-      "predicted_days": 99,
-      "residual_days": 2,
-      "forecast_days": 77,
-      "oni": -1.57,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2008,
-      "observed_days": 110,
-      "predicted_days": 117,
-      "residual_days": 7,
-      "forecast_days": 136,
-      "oni": -0.57,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2009,
-      "observed_days": 153,
-      "predicted_days": 143,
-      "residual_days": -10,
-      "forecast_days": 148,
-      "oni": 1.31,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2011,
-      "observed_days": 141,
-      "predicted_days": 136,
-      "residual_days": -5,
-      "forecast_days": 114,
-      "oni": -1.02,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2012,
-      "observed_days": 135,
-      "predicted_days": 145,
-      "residual_days": 10,
-      "forecast_days": 144,
-      "oni": 0.39,
-      "phase": "neutral"
-    },
-    {
-      "year": 2013,
-      "observed_days": 82,
-      "predicted_days": 81,
-      "residual_days": -1,
-      "forecast_days": 64,
-      "oni": -0.34,
-      "phase": "neutral"
-    },
-    {
-      "year": 2014,
-      "observed_days": 115,
-      "predicted_days": 110,
-      "residual_days": -5,
-      "forecast_days": 102,
-      "oni": 0.7,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2015,
-      "observed_days": 131,
-      "predicted_days": 129,
-      "residual_days": -2,
-      "forecast_days": 144,
-      "oni": 2.45,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2016,
-      "observed_days": 66,
-      "predicted_days": 69,
-      "residual_days": 3,
-      "forecast_days": 92,
-      "oni": -0.51,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2017,
-      "observed_days": 54,
-      "predicted_days": 61,
-      "residual_days": 7,
-      "forecast_days": 67,
-      "oni": -0.61,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2018,
-      "observed_days": 88,
-      "predicted_days": 94,
-      "residual_days": 6,
-      "forecast_days": 103,
-      "oni": 1.04,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2019,
-      "observed_days": 95,
-      "predicted_days": 96,
-      "residual_days": 1,
-      "forecast_days": 117,
-      "oni": 0.72,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2020,
-      "observed_days": 71,
-      "predicted_days": 45,
-      "residual_days": -26,
-      "forecast_days": 99,
-      "oni": -1.11,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2021,
-      "observed_days": 23,
-      "predicted_days": 37,
-      "residual_days": 14,
-      "forecast_days": 78,
-      "oni": -0.91,
-      "phase": "la_nina"
-    },
-    {
-      "year": 2023,
-      "observed_days": 86,
-      "predicted_days": 89,
-      "residual_days": 3,
-      "forecast_days": 102,
-      "oni": 1.9,
-      "phase": "el_nino"
-    },
-    {
-      "year": 2024,
-      "observed_days": 26,
-      "predicted_days": 36,
-      "residual_days": 10,
-      "forecast_days": 78,
-      "oni": -0.29,
-      "phase": "neutral"
-    },
-    {
-      "year": 2025,
-      "observed_days": 26,
-      "predicted_days": 35,
-      "residual_days": 9,
-      "forecast_days": 87,
-      "oni": -0.61,
-      "phase": "la_nina"
-    }
-  ],
-  "caveats": [
-    "The season start and end dates this model is fitted against are not observations of fire. Published per-season episode dates barely exist, so the bundled dataset derives them from an ERA5 rainfall rule. A hazard model containing a rainfall term is therefore fitted partly to its own input, and the in-sample RMSE flatters it. The ablation that removes every rainfall term is the number to look at, together with the three seasons (1997, 2015, 2019) whose dates come from documented episodes.",
-    "There are at most about thirty observed Kalimantan fire seasons on record and five free parameters. That is enough to fit and barely enough to validate. Judge the model by the leave-one-out and forecast-mode errors, not by the in-sample one.",
-    "The published start and end dates of historical seasons are themselves modelled quantities, usually a threshold on a satellite hotspot count. Move the threshold and every observed duration moves by days to weeks, and the fitted coefficients move with them.",
-    "The fit uses ERA5 reanalysis rainfall at one point for the whole of Kalimantan. ERA5 has a known wet bias over tropical land and cannot see the patchiness of convective rain, so the fitted rainfall coefficient is an effective, island-scale one, not the true local sensitivity of a smouldering front to being rained on.",
-    "Land use changed enormously across the fitted period. Peatland drainage, the 2011 moratorium, the 2016 peat restoration agency and the spread of oil palm all mean a 1997 season and a 2023 season are not draws from the same process. A single stationary coefficient set papers over that.",
-    "The fit is leveraged by a handful of extreme El Nino years, because those are the long seasons. The uncertainty on the ONI coefficient is much larger than its point estimate suggests.",
-    "Parameter uncertainty is not propagated into the published forecast interval. The p10-p90 band on the site is weather uncertainty only; including coefficient uncertainty would widen it materially.",
-    "Perfect-foresight RMSE flatters the model: it is the error when the weather for the rest of the season is already known. What a visitor to the site is exposed to is the forecast-mode error, which is roughly twice as large."
-  ]
+  "refit_known_oni": {
+   "coefficients": {
+    "b0": -6.66242,
+    "b1": 0.01844,
+    "b2": -0.76311,
+    "b3": -0.00016,
+    "b4": 8.62798
+   },
+   "rmse_days": 9.55,
+   "rmse_days_loo": 12.48,
+   "rmse_days_forecast": 13.38,
+   "anchor_rmse_days": 1.58
+  },
+  "refit_known_oni_note": "v1 structure refitted with the ONI known at each season's start (no post-season information): the fair comparison for v2.",
+  "n_seasons": 22
+ }
 }

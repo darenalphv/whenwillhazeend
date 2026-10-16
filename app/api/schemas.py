@@ -350,6 +350,40 @@ class MeteoQuery(_Strict):
 
 
 # --------------------------------------------------------------------------- #
+# GET /api/forecast/odds  (CONTRACT_V2 M2; added by MODEL-SEASON)
+# --------------------------------------------------------------------------- #
+
+#: First date the season model can be run for: the fitted record starts in
+#: 2001 and needs ~10 months of weather spin-up from the 1981 ERA5 record.
+MIN_FORECAST_DATE = date(1982, 1, 1)
+
+
+class ForecastOddsQuery(_Strict):
+    """Query parameters for ``app.model.forecast.forecast_odds``."""
+
+    as_of: str | None = Field(
+        default=None,
+        description=("ISO date the odds are computed as of. Default today (UTC): live "
+                     "odds with the weather forecast. An earlier date returns a leak-free "
+                     "hindcast that uses only weather observed up to that date."),
+        examples=["2026-10-16"],
+    )
+
+    @field_validator("as_of")
+    @classmethod
+    def _check_as_of(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        parsed = _parse_iso_date(v, "as_of")
+        if parsed < MIN_FORECAST_DATE:
+            raise ValueError(f"as_of: no weather record before {MIN_FORECAST_DATE.isoformat()}")
+        from datetime import datetime, timezone
+        if parsed > datetime.now(timezone.utc).date():
+            raise ValueError("as_of: odds cannot be computed as of a future date")
+        return parsed.isoformat()
+
+
+# --------------------------------------------------------------------------- #
 # Path parameter bounds
 # --------------------------------------------------------------------------- #
 

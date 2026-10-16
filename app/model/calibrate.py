@@ -1,74 +1,39 @@
-"""Calibration of the season-end hazard coefficients against observed seasons.
+"""Offline calibration of the v2 season-end model (MODEL_SPEC section 2.4, S1-S6).
 
-What is being fitted
---------------------
-The intercept and four slopes of the daily termination hazard used by
-`app.model.burn`:
+Run:  .venv/bin/python -m app.model.calibrate        (writes hazard_fit.json)
 
-    h(d) = sigmoid(b0 + b1*rain_7d + b2*drought_factor(KBDI) + b3*oni
-                   + b4*monsoon_progress)
+Never imported on a request path (scipy). Inputs, all bundled or produced by
+``scripts/model/season/*``:
 
-Data
-----
-* **Labels.** `app.data.loader.load_seasons()` gives a start date, an end date
-  and hence a duration for each historical Kalimantan fire season.
-* **Features.** The *observed* daily weather at the peat-weighted Kalimantan
-  centroid, pulled once from the Open-Meteo Archive (ERA5) back to 1996 and
-  cached in ``app/model/calibration_weather.json`` so the fit is reproducible
-  offline.  KBDI is run continuously over the whole 30-year record rather than
-  restarted each season, which is how Keetch & Byram intended it.  This matters:
-  an earlier version of this module reconstructed each season's weather from
-  climatology, and because that reconstruction was uncorrelated with the
-  observed end dates the likelihood correctly drove the rainfall and drought
-  coefficients to zero.  Fitting against real weather is what gives b1 and b2
-  any meaning at all.
+* **Labels** (S1): fire-observed season start/end from NASA FIRMS MODIS daily
+  counts in the Field et al. (2016) peat-belt box,
+  ``scripts/model/season/data/firms_daily_modis.json`` (2001-2025), labelled by
+  `app.model.forecast.season_labels` -- the same rule that resolves the odds.
+  1997-2000 have no MODIS; they keep rainfall-rule dates in seasons.json and
+  are excluded from the fit and from every skill figure.
+* **Weather**: ERA5 areal mean of five peat-belt points,
+  ``app/model/calibration_weather.json`` (1981-).
+* **Indices**: ONI (CPC) and weekly DMI (NOAA OSMC), publication-lagged so
+  every feature on day d is something a forecaster could have known on d.
 
-  If the archive cannot be reached and no cache exists, the module falls back
-  to ENSO-conditioned climatology and marks the result
-  ``"weather_source": "climatology"``.  A fit made that way is not worth much
-  and says so.
+Fit
+---
+1. Rainfall generator (S4): monthly Markov chain + gamma excess on areal-mean
+   ERA5 rain 1981-2025; k_enso and k_iod by OLS of log monthly rainfall on the
+   centred 3-month ONI and the monthly DMI, separately for Jun-Nov and Dec-May.
+2. Hazard (S3) by discrete-time survival maximum likelihood (L-BFGS-B, sign
+   bounds c1..c6 >= 0), then Nelder-Mead refinement of the median duration
+   read off the deterministic survival curve on the observed weather.
 
-Two-stage fit
--------------
-1. **Maximum likelihood** for the discrete-time survival model.  Each season
-   contributes one observation per day it was burning: censored (y=0) on every
-   day before the observed end date, an event (y=1) on the end date.  The mean
-   negative log-likelihood
-
-       -LL = -(1/N) sum_i [ y_i*log h_i + (1-y_i)*log(1-h_i) ]
-
-   is minimised with L-BFGS-B under sign bounds ``b1, b4 >= 0`` and
-   ``b2, b3 <= 0``, so the fit cannot come out claiming rain prolongs fires.
-
-2. **Duration refinement.**  MLE is unbiased for the daily hazard but not for
-   the *median duration*, which is the number the site puts in 200-point type.
-   Stage 2 runs Nelder-Mead over all five coefficients, minimising the RMSE of
-   the model's median duration against the observed duration, where the median
-   duration is read off the deterministic survival curve driven by the weather
-   that actually occurred in that season:
-
-       S(D) = prod_{d=1..D} (1 - h(d)),   duration_hat = min{D : S(D) <= 0.5}
-
-Three error numbers are reported, and they mean different things:
-
-* ``rmse_days`` -- in-sample, perfect-foresight.  Given the weather that
-  actually happened, how well does the hazard function place the end date?
-  This is the honest measure of the hazard function itself.
-* ``rmse_days_loo`` -- leave-one-out: stage 1 is refit without each season,
-  stage 2's offset carried over.  This is the number to judge the model by.
-* ``rmse_days_forecast`` -- what the site would have said on day one of each
-  season, running the full Monte-Carlo with no knowledge of the weather to
-  come.  It is necessarily the largest of the three, and it is the error a
-  user of the website is actually exposed to.
-
-Sources
--------
-* Cox, D.R. (1972). Regression models and life-tables (discrete-time form).
-  *JRSS B* 34(2), 187-220 -- the survival formulation used here.
-* Keetch & Byram (1968) -- the drought index (see `app.model.kbdi`).
-* Field, R.D. et al. (2016). *PNAS* 113(33), 9204 -- ENSO-drought-fire coupling.
-* Open-Meteo Historical Weather API (ERA5), https://open-meteo.com/ -- the
-  observed daily weather the fit is conditioned on.
+Four error figures, as in v1:
+* ``rmse_days``           in-sample, perfect foresight of the weather;
+* ``rmse_days_loo``       leave-one-season-out;
+* ``rmse_days_forecast``  Monte-Carlo from each season's start date with no
+                          future weather -- the number the site publishes;
+* ``anchor``              the documented-episode check (2015, 2019).
+Plus: the same four for the v1 model on the same labels, an ENSO-only
+ablation, the S6 positive-IOD split, and the spec's 2019 test (forecast from
+1 Aug 2019 must be longer than the ENSO-only model's).
 """
 
 from __future__ import annotations
@@ -76,195 +41,137 @@ from __future__ import annotations
 import json
 import math
 import os
+import pathlib
+import sys
 from datetime import date, timedelta
 
-from app.model import kbdi as kbdi_mod
-from app.model import meteo as meteo_mod
 from app.model import burn as burn_mod
+from app.model import drought_code as dc_mod
+from app.model import forecast as fc_mod
 
-__all__ = ["fit_hazard_coefficients", "build_training_frame",
-           "observed_weather", "predicted_duration", "CAVEATS",
-           "FIT_PATH", "WEATHER_CACHE_PATH"]
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+FIT_PATH = pathlib.Path(__file__).with_name("hazard_fit.json")
+WEATHER_PATH = pathlib.Path(__file__).with_name("calibration_weather.json")
+FIRMS_PATH = ROOT / "scripts/model/season/data/firms_daily_modis.json"
+FIRMS_VIIRS_PATH = ROOT / "scripts/model/season/data/firms_daily_viirs.json"
 
-SPINUP_START = "1996-01-01"   # KBDI spin-up before the first fitted season
-BULK_FETCH_TIMEOUT_S = 120.0  # one-off 30-year archive pull, not a page load
-BOUNDS = [(-9.0, 2.0), (0.0, 0.5), (-9.0, 0.0), (-3.0, 0.0), (0.0, 12.0)]
-KEYS = ("b0", "b1", "b2", "b3", "b4")
-#: The three seasons whose start and end dates are anchored in documented fire
-#: episodes rather than derived from a rainfall rule. Skill against these three
-#: is worth more than in-sample fit against all twenty-seven.
-ANCHOR_SEASONS = (1997, 2015, 2019)
-_HERE = os.path.dirname(__file__)
-FIT_PATH = os.path.join(_HERE, "hazard_fit.json")
-WEATHER_CACHE_PATH = os.path.join(_HERE, "calibration_weather.json")
-
-
-# ---------------------------------------------------------------------------
-# observed weather
-# ---------------------------------------------------------------------------
-
-def observed_weather(lat: float, lon: float, start: str = SPINUP_START,
-                     end: str | None = None, refresh: bool = False) -> dict:
-    """Daily tmax/rain at (lat, lon), from cache, then ERA5, then climatology."""
-    end = end or date.today().isoformat()
-    if not refresh and os.path.exists(WEATHER_CACHE_PATH):
-        try:
-            with open(WEATHER_CACHE_PATH) as fh:
-                cached = json.load(fh)
-            if (cached.get("dates") and cached["dates"][0] <= start
-                    and cached["dates"][-1] >= end[:10]):
-                return cached
-        except (OSError, ValueError, KeyError, IndexError):
-            pass
-
-    out = None
-    try:
-        # A 30-year bulk pull is not a page load: allow it far longer than the
-        # 6 s the live forecast path is held to.
-        rows = meteo_mod._pull(meteo_mod.ARCHIVE_URL, lat, lon,
-                               meteo_mod._d(start), meteo_mod._d(end),
-                               timeout=BULK_FETCH_TIMEOUT_S)
-        if len(rows) > 3000:
-            keys = sorted(rows)
-            out = {
-                "source": "open-meteo archive (ERA5)",
-                "weather_source": "observed",
-                "lat": float(lat), "lon": float(lon),
-                "retrieved": date.today().isoformat(),
-                "dates": keys,
-                "tmax_c": [round(rows[k]["tmax_c"], 2) for k in keys],
-                "rain_mm": [round(rows[k]["rain_mm"], 2) for k in keys],
-            }
-    except Exception:
-        out = None
-
-    if out is None:
-        synth = meteo_mod.synthesize_weather(lat, lon, start, end, oni=0.0, seed=1996)
-        return {
-            "source": synth["source"], "weather_source": "climatology",
-            "lat": float(lat), "lon": float(lon),
-            "retrieved": date.today().isoformat(),
-            "dates": synth["dates"], "tmax_c": synth["tmax_c"],
-            "rain_mm": synth["rain_mm"],
-        }
-
-    try:
-        with open(WEATHER_CACHE_PATH, "w") as fh:
-            json.dump(out, fh)
-    except OSError:
-        pass
-    return out
+KEYS = burn_mod.KEYS
+BOUNDS = [(-14.0, 4.0), (0.0, 6.0), (0.0, 6.0), (0.0, 6.0), (0.0, 6.0), (0.0, 4.0), (0.0, 4.0),
+          (0.0, 40.0)]
+ALL = (1, 1, 1, 1, 1, 1, 1, 1)
+SPEC_ONLY = (1, 1, 1, 1, 1, 1, 1, 0)      # MODEL_SPEC S3 exactly: no seasonal clock
+HORIZON = burn_mod.MAX_HORIZON_DAYS
+#: Seasons whose end has an independent documented anchor (Fanin & van der
+#: Werf 2017: 2015 fires stopped in late October; 2019 is the spec's IOD test).
+ANCHOR_SEASONS = (2015, 2019)
+POSITIVE_IOD_SON = 0.4   # [J] MODEL_SPEC S6; BoM +0.4 convention UNVERIFIED
+GEN_FIT_YEARS = (1981, 2025)
 
 
-# ---------------------------------------------------------------------------
-# seasons + features
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
+# labels
+# --------------------------------------------------------------------------- #
 
-def _load_raw_seasons():
-    try:
-        from app.data.loader import load_seasons
-        return load_seasons() or []
-    except Exception:
-        return []
-
-
-def _seasons_with_dates(seasons=None):
-    if seasons is None:
-        from app.data.loader import load_seasons
-        seasons = load_seasons()
+def fire_labels(path=FIRMS_PATH, box="kalimantan") -> list[dict]:
+    import numpy as np
+    d = json.loads(pathlib.Path(path).read_text())
+    years = sorted(int(y) for y in d["years"])
+    raw = {}
+    for y in years:
+        cur = d["years"][str(y)][box]
+        dates, counts = list(cur["dates"]), list(cur["count"])
+        nxt = d["years"].get(str(y + 1))
+        if nxt:
+            dates += nxt[box]["dates"][:120]
+            counts += nxt[box]["count"][:120]
+        raw[y] = (dates, counts)
+    maxima = [fc_mod.season_labels(*raw[y], y)["max_7d"] for y in years]
+    floor = float(np.percentile(maxima, fc_mod.FLOOR_PERCENTILE))
     out = []
-    for s in seasons or []:
-        if not s.get("start_date") or not s.get("end_date"):
-            continue
-        st, en = meteo_mod._d(s["start_date"]), meteo_mod._d(s["end_date"])
-        dur = s.get("duration_days")
-        dur = int(dur) if dur else (en - st).days
-        if dur <= 0 or dur > burn_mod.MAX_HORIZON_DAYS:
-            continue
-        oni = meteo_mod.oni_value(s)
-        if oni is None:
-            oni = {"el_nino": 1.2, "la_nina": -1.0}.get(
-                (s.get("enso_phase") or "neutral").lower(), 0.0)
-        out.append({"year": int(s["year"]), "start": st, "end": en,
-                    "duration": dur, "oni": float(oni),
-                    "phase": meteo_mod.enso_phase_of(s)})
-    out.sort(key=lambda r: r["year"])
+    for y in years:
+        lab = fc_mod.season_labels(*raw[y], y, floor=floor)
+        dur = None
+        if lab["status"] == "season" and lab["start"]:
+            dur = (date.fromisoformat(lab["end"]) - date.fromisoformat(lab["start"])).days
+        out.append({"year": y, **lab, "duration": dur, "floor_7d": floor,
+                    "season_total": int(sum(raw[y][1][:365 + (y % 4 == 0)])),
+                    "target_source": f"firms_{d.get('sensor', 'modis')}"})
     return out
 
 
-class FeatureRecord:
-    """The continuous daily feature record the fit and the hindcast both read."""
+# --------------------------------------------------------------------------- #
+# observed record with features and point-in-time indices
+# --------------------------------------------------------------------------- #
 
-    __slots__ = ("dates", "index", "rain7", "df", "monsoon", "kbdi",
-                 "weather_source", "source", "lat", "lon")
-
-    def __init__(self, wx, lat, lon):
+class Record:
+    def __init__(self, wx: dict):
+        import numpy as np
+        from app.data.loader_season import oni_known_on, dmi_known_on
         self.dates = list(wx["dates"])
         self.index = {d: i for i, d in enumerate(self.dates)}
-        self.weather_source = wx.get("weather_source", "observed")
-        self.source = wx.get("source", "")
-        self.lat, self.lon = float(lat), float(lon)
-        annual = meteo_mod.annual_rain_mm_for(lat, lon)
-        rain = [float(r or 0.0) for r in wx["rain_mm"]]
-        self.kbdi = kbdi_mod.kbdi_series(self.dates, wx["tmax_c"], rain, annual, 0.0)
-        self.df = [kbdi_mod.drought_factor(k) for k in self.kbdi]
-        run, r7 = 0.0, []
-        for i, v in enumerate(rain):
-            run += v
-            if i >= 7:
-                run -= rain[i - 7]
-            r7.append(run)
-        self.rain7 = r7
-        cache: dict[tuple[int, int], float] = {}
-        mp = []
-        for d in self.dates:
-            key = (int(d[5:7]), int(d[8:10]))
-            if key not in cache:
-                cache[key] = meteo_mod.monsoon_progress(d, lat, lon)
-            mp.append(cache[key])
-        self.monsoon = mp
+        self.rain = np.asarray(wx["rain_mm"], float)
+        self.tmax = np.asarray(wx["tmax_c"], float)
+        f = burn_mod.observed_features(self.rain.tolist(), self.tmax.tolist())
+        self.dc = np.asarray(f["dc"])
+        self.p84 = np.asarray(f["p84"])
+        self.wet10 = np.asarray(f["wet10"])
+        self.nwet = np.asarray(f["n_wet"])
+        self.deficit = np.maximum(0.0, burn_mod.ALPHA_P84 - self.p84)
+        self.dcterm = np.maximum(0.0, self.dc - burn_mod.DC_CRIT) / 100.0
+        oni = [oni_known_on(ds)[0] for ds in self.dates]
+        dmi = [dmi_known_on(ds)[0] for ds in self.dates]
+        self.oni = np.asarray([v if v is not None else 0.0 for v in oni], float)
+        self.dmi = np.asarray([v if v is not None else 0.0 for v in dmi], float)
+        self.source = wx.get("source")
+        self.seasonal = None
+        self.frailty_sd = 0.0
+        self.mp = np.zeros(len(self.dates))
 
-    def row(self, iso_date: str, oni: float):
-        i = self.index.get(iso_date)
-        if i is None:
-            return None
-        return [1.0, self.rain7[i], self.df[i], float(oni), self.monsoon[i]]
+    def X(self, i0: int, i1: int, iod: bool = True):
+        """Design rows for days i0..i1 inclusive: [1, wet10, nwet, -def, -dc, -oni, -dmi]."""
+        import numpy as np
+        sl = slice(i0, i1 + 1)
+        n = i1 - i0 + 1
+        return np.column_stack([np.ones(n), self.wet10[sl], self.nwet[sl], -self.deficit[sl],
+                                -self.dcterm[sl], -self.oni[sl],
+                                -self.dmi[sl] if iod else np.zeros(n), self.mp[sl]])
+
+    def set_seasonal(self, params):
+        import numpy as np
+        self.seasonal = params
+        self.mp = np.array([burn_mod.seasonal_clock(date.fromisoformat(d), params)
+                            for d in self.dates]) if params else np.zeros(len(self.dates))
 
 
-def build_training_frame(seasons=None, lat=None, lon=None, weather=None):
-    """Design matrix X (n_days x 5), labels y, season-year tags, and the record."""
+def _seasons(labels, rec):
+    rows = []
+    for lab in labels:
+        if lab["status"] != "season" or not lab["start"]:
+            continue
+        i0 = rec.index.get(lab["start"])
+        if i0 is None or i0 + HORIZON >= len(rec.dates):
+            continue
+        rows.append({"year": lab["year"], "start": lab["start"], "end": lab["end"],
+                     "duration": lab["duration"], "i0": i0})
+    return rows
+
+
+def build_frame(rows, rec, iod=True):
     import numpy as np
-    if lat is None or lon is None:
-        lat, lon, _ = burn_mod.region_centroid("kalimantan")
-    rows = _seasons_with_dates(seasons)
-    if not rows:
-        raise RuntimeError("no historical seasons with usable start/end dates")
-    last_needed = max(r["start"] for r in rows) + timedelta(
-        days=burn_mod.MAX_HORIZON_DAYS + 2)
-    end = min(last_needed, date.today()).isoformat()
-    wx = weather or observed_weather(lat, lon, SPINUP_START, end)
-    rec = FeatureRecord(wx, lat, lon)
-
-    X, y, meta, usable = [], [], [], []
+    X, y, meta = [], [], []
     for s in rows:
-        days = [s["start"] + timedelta(days=k) for k in range(s["duration"] + 1)]
-        feats = [rec.row(d.isoformat(), s["oni"]) for d in days]
-        if any(f is None for f in feats):
-            continue                     # season predates the weather record
-        usable.append(s)
-        for d, f in zip(days, feats):
-            X.append(f)
-            y.append(1.0 if d == s["end"] else 0.0)
-            meta.append(s["year"])
-    if not usable:
-        raise RuntimeError("no season falls inside the available weather record")
-    return (np.asarray(X, dtype=float), np.asarray(y, dtype=float),
-            np.asarray(meta), usable, rec)
+        Xi = rec.X(s["i0"] + 1, s["i0"] + s["duration"], iod)
+        yi = np.zeros(len(Xi))
+        yi[-1] = 1.0
+        X.append(Xi)
+        y.append(yi)
+        meta.append(np.full(len(Xi), s["year"]))
+    return np.vstack(X), np.concatenate(y), np.concatenate(meta)
 
 
-# ---------------------------------------------------------------------------
-# likelihood and duration
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
+# likelihood, duration, fits
+# --------------------------------------------------------------------------- #
 
 def _nll(theta, X, y):
     import numpy as np
@@ -273,290 +180,703 @@ def _nll(theta, X, y):
     return float(-ll.sum() / len(y))
 
 
-def _fit_mle(X, y, x0=None):
+def _grad(theta, X, y):
+    import numpy as np
+    z = np.clip(X @ theta, -40.0, 40.0)
+    p = 1.0 / (1.0 + np.exp(-z))
+    return (X.T @ (p - y)) / len(y)
+
+
+def _bounds(free):
+    return [b if f else (0.0, 0.0) for b, f in zip(BOUNDS, free)]
+
+
+def fit_mle(X, y, x0=None, free=ALL):
     import numpy as np
     from scipy.optimize import minimize
-    if x0 is None:
-        x0 = np.array([-4.6, 0.03, -3.2, -0.45, 3.0])
-    res = minimize(_nll, np.asarray(x0, dtype=float), args=(X, y),
-                   method="L-BFGS-B", bounds=BOUNDS)
-    return np.asarray(res.x, dtype=float), float(res.fun)
+    free = np.asarray(free, bool)
+    x0 = np.asarray(x0 if x0 is not None else [-3.5, 0.3, 0.3, 0.3, 0.3, 0.1, 0.1, 2.0], float) * free
+    res = minimize(_nll, x0, args=(X, y), jac=_grad, method="L-BFGS-B", bounds=_bounds(free))
+    return np.asarray(res.x, float) * free, float(res.fun)
 
 
-def predicted_duration(theta, season, rec, horizon=None) -> float:
-    """Median duration from the deterministic survival curve on real weather.
-
-    ``S(D) = prod(1 - h(d))``; the median is the first D with ``S(D) <= 0.5``.
-    """
-    horizon = horizon or burn_mod.MAX_HORIZON_DAYS
-    surv = 1.0
-    for k in range(1, horizon + 1):
-        f = rec.row((season["start"] + timedelta(days=k)).isoformat(), season["oni"])
-        if f is None:
-            break
-        z = sum(a * b for a, b in zip(theta, f))
-        h = 1.0 / (1.0 + math.exp(-max(-40.0, min(40.0, z))))
-        surv *= (1.0 - h)
-        if surv <= 0.5:
-            return float(k)
-    return float(horizon + 1)
-
-
-def _rmse(theta, rows, rec):
+def clip(theta, free=ALL):
     import numpy as np
-    pred = np.array([predicted_duration(theta, s, rec) for s in rows])
-    obs = np.array([float(s["duration"]) for s in rows])
-    return float(np.sqrt(np.mean((pred - obs) ** 2))), pred, obs
+    return np.array([min(max(float(v), lo), hi) if f else 0.0
+                     for v, (lo, hi), f in zip(theta, BOUNDS, free)])
 
 
-def _fit_masked(X, y, rows, rec, free, x0=None, maxiter=400):
-    """Fit with some coefficients pinned to zero (an ablation)."""
+def predicted_duration(theta, s, rec, iod=True) -> float:
     import numpy as np
-    from scipy.optimize import minimize
-    free = np.asarray(free, dtype=bool)
-    bounds = [b if f else (0.0, 0.0) for b, f in zip(BOUNDS, free)]
-    start = np.asarray(x0 if x0 is not None else [-4.6, 0.03, -3.2, -0.45, 3.0],
-                       dtype=float) * free
-    res = minimize(_nll, start, args=(X, y), method="L-BFGS-B", bounds=bounds)
-    theta = np.asarray(res.x, dtype=float) * free
-
-    def obj(v):
-        t = np.zeros(5)
-        t[free] = v
-        return _rmse(_clip_bounds(t) * free, rows, rec)[0]
-
-    r2 = minimize(obj, theta[free], method="Nelder-Mead",
-                  options={"maxiter": maxiter, "xatol": 1e-4, "fatol": 1e-4})
-    cand = np.zeros(5)
-    cand[free] = r2.x
-    cand = _clip_bounds(cand) * free
-    best = min((_rmse(theta, rows, rec)[0], theta),
-               (_rmse(cand, rows, rec)[0], cand), key=lambda p: p[0])
-    return best[1], float(best[0])
+    X = rec.X(s["i0"] + 1, s["i0"] + HORIZON, iod)
+    h = 1.0 / (1.0 + np.exp(-np.clip(X @ theta, -40, 40)))
+    surv = np.cumprod(1.0 - h)
+    hit = np.nonzero(surv <= 0.5)[0]
+    return float(hit[0] + 1) if hit.size else float(HORIZON + 1)
 
 
-def _clip_bounds(theta):
+def rmse_of(theta, rows, rec, iod=True):
     import numpy as np
-    return np.array([min(max(float(v), lo), hi) for v, (lo, hi) in zip(theta, BOUNDS)])
-
-
-def _forecast_rmse(theta, rows, rec, n_sims=1200, seed=11):
-    """RMSE of the live Monte-Carlo run from each season's first day."""
-    import numpy as np
-    coeffs = dict(zip(KEYS, [float(v) for v in theta]))
-    pred, obs = [], []
-    for s in rows:
-        i = rec.index.get(s["start"].isoformat())
-        k0 = rec.kbdi[i] if i is not None else 400.0
-        end_day, _, _ = burn_mod.run_hazard_simulation(
-            s["start"].isoformat(), rec.lat, rec.lon, s["oni"], coeffs,
-            n_sims=n_sims, seed=seed + s["year"],
-            horizon=burn_mod.MAX_HORIZON_DAYS, forecast=None, kbdi_start=k0)
-        pred.append(float(np.median(end_day)))
-        obs.append(float(s["duration"]))
-    pred, obs = np.asarray(pred), np.asarray(obs)
+    pred = np.array([predicted_duration(theta, s, rec, iod) for s in rows])
+    obs = np.array([s["duration"] for s in rows], float)
     return float(np.sqrt(np.mean((pred - obs) ** 2))), pred
 
 
-def fit_hazard_coefficients(seasons=None, seed: int = 7, n_sims: int = 1200,
-                            refine: bool = True, maxiter: int = 600,
-                            write: bool = True, weather=None) -> dict:
-    """Two-stage fit.  Returns coefficients, three RMSEs and per-season residuals."""
+def fit_two_stage(X, y, rows, rec, free=ALL, iod=True, maxiter=1500):
     import numpy as np
     from scipy.optimize import minimize
+    th_mle, nll = fit_mle(X, y, free=free)
+    best = (rmse_of(th_mle, rows, rec, iod)[0], th_mle)
+    freeb = np.asarray(free, bool)
+    for x0 in (th_mle, np.array([-5.0, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 4.0]) * freeb):
+        def obj(v):
+            t = np.zeros(8)
+            t[freeb] = v
+            return rmse_of(clip(t, free), rows, rec, iod)[0]
+        r = minimize(obj, x0[freeb], method="Nelder-Mead",
+                     options={"maxiter": maxiter, "xatol": 1e-4, "fatol": 1e-3})
+        t = np.zeros(8)
+        t[freeb] = r.x
+        t = clip(t, free)
+        e = rmse_of(t, rows, rec, iod)[0]
+        if e < best[0]:
+            best = (e, t)
+    return best[1], th_mle, nll
 
-    X, y, meta, rows, rec = build_training_frame(seasons, weather=weather)
-    if len(rows) < 6:
-        raise RuntimeError(f"only {len(rows)} usable historical seasons; refusing to fit")
 
-    theta_mle, nll = _fit_mle(X, y)
-    rmse_mle, _, _ = _rmse(theta_mle, rows, rec)
+# --------------------------------------------------------------------------- #
+# rainfall generator (S4)
+# --------------------------------------------------------------------------- #
 
-    theta, rmse = theta_mle.copy(), rmse_mle
-    if refine:
-        def obj(t):
-            r, _, _ = _rmse(_clip_bounds(t), rows, rec)
-            return r
-        best = None
-        for start in (theta_mle, np.array([-5.5, 0.02, -2.0, -0.6, 5.0])):
-            res = minimize(obj, start, method="Nelder-Mead",
-                           options={"maxiter": maxiter, "xatol": 1e-4, "fatol": 1e-4})
-            cand = _clip_bounds(np.asarray(res.x, dtype=float))
-            r, _, _ = _rmse(cand, rows, rec)
-            if best is None or r < best[0]:
-                best = (r, cand)
-        if best and best[0] < rmse:
-            rmse, theta = best
+def fit_rain_generator(rec: Record, iod: bool = True, wet_threshold: float = 1.0) -> dict:
+    import numpy as np
+    from app.data.loader_season import oni_for_season_centred, load_iod
+    y0, y1 = GEN_FIT_YEARS
+    yrs = np.array([int(d[:4]) for d in rec.dates])
+    mos = np.array([int(d[5:7]) for d in rec.dates])
+    sel = (yrs >= y0) & (yrs <= y1)
+    rain, tmax = rec.rain, rec.tmax
+    wet = rain >= wet_threshold
+    p01, p11, shape, excess, tdry, twet, tsd = [], [], [], [], [], [], []
+    for m in range(1, 13):
+        idx = np.nonzero(sel & (mos == m))[0]
+        idx = idx[idx > 0]
+        prev = wet[idx - 1]
+        cur = wet[idx]
+        p01.append(float(cur[~prev].mean()))
+        p11.append(float(cur[prev].mean()))
+        x = rain[idx][cur] - wet_threshold + 1e-3
+        mean = float(x.mean())
+        A = math.log(mean) - float(np.mean(np.log(x)))
+        k = (1.0 + math.sqrt(1.0 + 4.0 * A / 3.0)) / (4.0 * A)       # Thom (1958)
+        shape.append(round(k, 4))
+        excess.append(round(mean, 3))
+        tdry.append(round(float(tmax[idx][~cur].mean()), 3))
+        twet.append(round(float(tmax[idx][cur].mean()), 3))
+        resid = tmax[idx] - np.where(cur, twet[-1], tdry[-1])
+        tsd.append(round(float(resid.std()), 3))
 
-    rmse_final, pred, obs = _rmse(theta, rows, rec)
+    # monthly totals and indices for the ENSO/IOD regression
+    tot, freq, tav, X_oni, X_dmi, mm = [], [], [], [], [], []
+    monthly_dmi = load_iod()["monthly"]
+    for y in range(max(y0, 1982), y1 + 1):
+        for m in range(1, 13):
+            idx = np.nonzero((yrs == y) & (mos == m))[0]
+            o = oni_for_season_centred(y, m)
+            dm = monthly_dmi.get(f"{y:04d}-{m:02d}")
+            if idx.size < 28 or o is None or dm is None:
+                continue
+            tot.append(float(rain[idx].sum()))
+            freq.append(float(wet[idx].mean()))
+            tav.append(float(tmax[idx].mean()))
+            X_oni.append(o)
+            X_dmi.append(dm)
+            mm.append(m)
+    tot, freq, tav = np.array(tot), np.array(freq), np.array(tav)
+    X_oni, X_dmi, mm = np.array(X_oni), np.array(X_dmi), np.array(mm)
+    clim_tot = {m: tot[mm == m].mean() for m in range(1, 13)}
+    clim_frq = {m: freq[mm == m].mean() for m in range(1, 13)}
+    clim_t = {m: tav[mm == m].mean() for m in range(1, 13)}
+    la = np.log(np.maximum(tot, 1.0) / np.array([clim_tot[m] for m in mm]))
+    lf = np.log(np.maximum(freq, 0.02) / np.array([clim_frq[m] for m in mm]))
+    ta = tav - np.array([clim_t[m] for m in mm])
+    regress = {}
+    k_e, k_i, share = [0.0] * 12, [0.0] * 12, [0.5] * 12
+    for name, months in (("jun_nov", range(6, 12)), ("dec_may", (12, 1, 2, 3, 4, 5))):
+        s = np.isin(mm, list(months))
+        cols = [np.ones(s.sum()), X_oni[s]] + ([X_dmi[s]] if iod else [])
+        A = np.column_stack(cols)
+        beta, *_ = np.linalg.lstsq(A, la[s], rcond=None)
+        resid = la[s] - A @ beta
+        dof = max(1, s.sum() - A.shape[1])
+        cov = (resid @ resid / dof) * np.linalg.inv(A.T @ A)
+        ss_tot = float(((la[s] - la[s].mean()) ** 2).sum())
+        r2 = 1.0 - float(resid @ resid) / ss_tot if ss_tot > 0 else 0.0
+        ke = -float(beta[1])
+        ki = -float(beta[2]) if iod else 0.0
+        sh = float(np.clip(np.polyfit(la[s], lf[s], 1)[0], 0.0, 1.0))
+        regress[name] = {
+            "k_enso": round(ke, 4), "k_enso_se": round(float(math.sqrt(cov[1, 1])), 4),
+            "k_iod": round(ki, 4),
+            "k_iod_se": round(float(math.sqrt(cov[2, 2])), 4) if iod else None,
+            "r2": round(r2, 3), "n_months": int(s.sum()),
+            "freq_share": round(sh, 3),
+        }
+        for m in months:
+            k_e[m - 1], k_i[m - 1], share[m - 1] = ke, ki, sh
+    s = np.isin(mm, list(range(6, 12)))
+    t_coef = float(np.polyfit(X_oni[s], ta[s], 1)[0])
+    return {
+        "wet_threshold_mm": wet_threshold,
+        "fit_period": f"{max(y0, 1982)}-{y1} (ENSO/IOD regression), {y0}-{y1} (daily)",
+        "monthly": {"p01": [round(v, 4) for v in p01], "p11": [round(v, 4) for v in p11],
+                    "gamma_shape": shape, "excess_mean_mm": excess,
+                    "tmax_dry_c": tdry, "tmax_wet_c": twet, "tmax_sd_c": tsd},
+        "k_enso_by_month": [round(v, 4) for v in k_e],
+        "k_iod_by_month": [round(v, 4) for v in k_i],
+        "freq_share_by_month": [round(v, 3) for v in share],
+        "tmax_oni_coeff": round(t_coef, 3),
+        "regression": regress,
+        "note": ("k fitted by OLS of log(monthly areal-mean ERA5 rain / monthly climatology) "
+                 "on the CPC 3-month ONI centred on that month and the OSMC monthly DMI. "
+                 "Replaces the unsourced v1 constant ENSO_RAIN_K = 0.35, MEAN_WET_DAY_MM = 13 "
+                 "and WET_PERSISTENCE = 0.35."),
+    }
 
-    loo_err = []
-    for s in rows:
-        keep = meta != s["year"]
-        try:
-            t_loo, _ = _fit_mle(X[keep], y[keep], x0=theta)
-            t_loo = _clip_bounds(t_loo + (theta - theta_mle))
-        except Exception:
-            t_loo = theta
-        loo_err.append(predicted_duration(t_loo, s, rec) - float(s["duration"]))
-    rmse_loo = float(np.sqrt(np.mean(np.square(loo_err)))) if loo_err else None
 
-    rmse_fc, pred_fc = _forecast_rmse(theta, rows, rec, n_sims=n_sims, seed=seed)
+# --------------------------------------------------------------------------- #
+# BMKG rainy-season onset per year (S5 diagnostic)
+# --------------------------------------------------------------------------- #
 
-    # --- ablations: how much of the skill needs rainfall at all? ------------
-    ablations = {}
-    for name, free in (("no_rainfall_terms (b1=b2=0)", (1, 0, 0, 1, 1)),
-                       ("no_climate_terms (b3=b4=0)", (1, 1, 1, 0, 0)),
-                       ("monsoon_climatology_only (b1=b2=b3=0)", (1, 0, 0, 0, 1))):
-        try:
-            th_a, r_a = _fit_masked(X, y, rows, rec, free, x0=theta)
-            ablations[name] = {
-                "rmse_days": round(float(r_a), 2),
-                "coefficients": {k: round(float(v), 5) for k, v in zip(KEYS, th_a)},
-            }
-        except Exception as exc:                       # pragma: no cover
-            ablations[name] = {"error": type(exc).__name__}
+def bmkg_onsets(rec, after_month=8) -> dict:
+    """First calendar dasarian (1-10, 11-20, 21-end) after 1 Aug that begins
+    three consecutive dasarian with >= 50 mm each (Giarno et al. 2012), on the
+    ERA5 areal-mean rain; summarised by burn-window ENSO phase."""
+    import numpy as np
+    from app.data.loader import load_enso
+    phase = {}
+    for r in load_enso():
+        bw = r.get("oni_burn_window")
+        if bw is not None:
+            phase[r["year"]] = "el_nino" if bw >= 0.5 else ("la_nina" if bw <= -0.5 else "neutral")
+    years = sorted({int(d[:4]) for d in rec.dates})
+    out = {}
+    for y in years:
+        das = []
+        for m in range(after_month, 13):
+            for lo, hi in ((1, 10), (11, 20), (21, 31)):
+                idx = [rec.index.get(f"{y}-{m:02d}-{d:02d}") for d in range(lo, hi + 1)]
+                idx = [i for i in idx if i is not None]
+                if len(idx) < 8:
+                    das = None
+                    break
+                das.append((f"{y}-{m:02d}-{lo:02d}", float(rec.rain[idx].sum())))
+            if das is None:
+                break
+        if not das:
+            continue
+        for k in range(len(das) - 2):
+            if all(das[k + j][1] >= burn_mod.WET10_MM for j in range(3)):
+                out[y] = das[k][0]
+                break
+    doys = {y: date.fromisoformat(v).timetuple().tm_yday for y, v in out.items()}
 
-    # --- skill on the three documented-episode seasons ----------------------
-    anchors = []
+    def q(vals):
+        if not vals:
+            return None
+        a = np.percentile(vals, [25, 50, 75])
+        return [int(round(x)) for x in a]
+    by = {ph: q([d for y, d in doys.items() if phase.get(y) == ph])
+          for ph in ("el_nino", "neutral", "la_nina")}
+    return {"onset_by_year": out, "quartiles_doy_all": q(list(doys.values())),
+            "quartiles_doy_by_enso_phase": by,
+            "definition": "BMKG: first of three consecutive calendar dasarian (10-day periods) "
+                          "each with >= 50 mm, searched from 1 Aug; ERA5 areal mean of five "
+                          "peat-belt points (Giarno et al. 2012)",
+            "comparison": "Moron et al. 2009 southern-Kalimantan onset quartiles 17 Sep / 22 Sep "
+                          "/ 25 Oct (their own definition)"}
+
+
+# --------------------------------------------------------------------------- #
+# seasonal clock (onset day, width) by profile likelihood
+# --------------------------------------------------------------------------- #
+
+def profile_seasonal(rows, rec):
+    """Fit the seasonal clock's onset DOY and width by maximum likelihood.
+
+    For each (onset, width) on a grid the hazard's other coefficients are
+    fitted by MLE; the pair with the lowest negative log-likelihood wins.
+    Likelihood, not duration RMSE, is the selection criterion, so the
+    leave-one-out and forecast errors reported later are not tuned on it.
+    """
+    grid = []
+    best = None
+    for onset in range(270, 336, 5):
+        for width in (8.0, 14.0, 20.0, 30.0):
+            params = {"onset_doy": onset, "width_days": width,
+                      "retreat_doy": 110, "retreat_width_days": 28.0}
+            rec.set_seasonal(params)
+            X, y, _ = build_frame(rows, rec)
+            _, nll = fit_mle(X, y)
+            grid.append({"onset_doy": onset, "width_days": width, "nll": round(nll, 6)})
+            if best is None or nll < best[0]:
+                best = (nll, params)
+    params = dict(best[1])
+    params["fitted_by"] = ("profile maximum likelihood over onset 270-335 (step 5) x width "
+                           "{8,14,20,30} days; retreat fixed at v1's DOY 110 / 28 d (irrelevant "
+                           "inside a fire season)")
+    return params, sorted(grid, key=lambda g: g["nll"])[:8]
+
+
+# --------------------------------------------------------------------------- #
+# probability calibration: per-season frailty
+# --------------------------------------------------------------------------- #
+
+def hindcast_pit(theta, gen, rows, rec, sd, step=10, n_sims=800, iod=True):
+    """PIT of observed ends for leak-free hindcasts issued every ``step`` days
+    from each season's start until its end."""
+    import numpy as np
+    coeffs = dict(zip(KEYS, [float(v) for v in theta]))
+    pits = []
     for s_ in rows:
-        if s_["year"] not in ANCHOR_SEASONS:
-            continue
-        p_ = predicted_duration(theta, s_, rec)
-        anchors.append({"year": s_["year"], "observed_days": s_["duration"],
-                        "predicted_days": int(round(p_)),
-                        "residual_days": int(round(p_ - s_["duration"]))})
-    anchor_rmse = (round(float(np.sqrt(np.mean([a["residual_days"] ** 2
-                                                for a in anchors]))), 2)
-                   if anchors else None)
+        for off in range(0, s_["duration"], step):
+            ed = forecast_from(rec, coeffs, gen, s_["i0"] + off, n_sims, 300 + s_["year"] + off,
+                               iod, frailty_sd=sd)[1]
+            true = s_["duration"] - off
+            pits.append(float((ed < true).mean() + 0.5 * (ed == true).mean()))
+    p = np.array(pits)
+    return {"frailty_sd": sd, "n_forecasts": int(p.size),
+            "coverage_p10_p90": round(float(((p > 0.1) & (p < 0.9)).mean()), 3),
+            "below_p10": round(float((p <= 0.1).mean()), 3),
+            "above_p90": round(float((p >= 0.9).mean()), 3),
+            "pit_histogram_deciles": np.histogram(p, bins=10, range=(0, 1))[0].tolist()}
 
-    # --- the floor: years in which no season happened at all ----------------
-    zero_check = []
-    for raw in (seasons if seasons is not None else _load_raw_seasons()):
-        if raw.get("duration_days") not in (0, 0.0):
-            continue
-        yr = int(raw["year"])
-        probe = f"{yr}-09-01"
-        i = rec.index.get(probe)
-        if i is None:
-            continue
-        oni_y = meteo_mod.oni_value(raw) or 0.0
-        zero_check.append({
-            "year": yr,
-            "observed_days": 0,
-            "kbdi_1_sep": round(rec.kbdi[i], 1),
-            "monsoon_progress_1_sep": round(rec.monsoon[i], 3),
-            "model_says_active": bool(rec.kbdi[i] >= burn_mod.ACTIVE_KBDI_MIN
-                                      and rec.monsoon[i] < burn_mod.ACTIVE_MONSOON_MAX),
-            "oni": oni_y,
-        })
 
-    out = {
-        "coefficients": {k: round(float(v), 5) for k, v in zip(KEYS, theta)},
-        "coefficients_mle": {k: round(float(v), 5) for k, v in zip(KEYS, theta_mle)},
-        "rmse_days": round(float(rmse_final), 2),
-        "rmse_days_mle_only": round(float(rmse_mle), 2),
-        "rmse_days_loo": round(rmse_loo, 2) if rmse_loo is not None else None,
-        "rmse_days_forecast": round(float(rmse_fc), 2),
-        "mean_observed_duration_days": round(float(np.mean(obs)), 1),
-        "sd_observed_duration_days": round(float(np.std(obs)), 1),
-        "naive_rmse_days_mean_predictor": round(
-            float(np.sqrt(np.mean((obs - obs.mean()) ** 2))), 2),
+def calibrate_frailty(theta, gen, rows, rec, iod=True):
+    """Pick the frailty sd whose hindcast p10-p90 coverage is closest to 80%."""
+    table = [hindcast_pit(theta, gen, rows, rec, sd, iod=iod)
+             for sd in (0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5)]
+    best = min(table, key=lambda t: abs(t["coverage_p10_p90"] - 0.8))
+    return {"sd": best["frailty_sd"], "selected": best, "grid": table,
+            "method": ("per-simulated-season Normal(0, sd) offset on the hazard log-odds; sd "
+                       "chosen so that p10-p90 intervals of leak-free hindcasts, issued every "
+                       "10 days through each 2001-2025 season, contain the observed end ~80% "
+                       "of the time. In-sample, so mildly optimistic.")}
+
+
+# --------------------------------------------------------------------------- #
+# forecast mode
+# --------------------------------------------------------------------------- #
+
+def init_state(rec: Record, i: int) -> dict:
+    lo = max(0, i - burn_mod.P84_DAYS + 1)
+    return {"dc": float(rec.dc[i]), "rain_hist": rec.rain[lo:i + 1].tolist()}
+
+
+def forecast_from(rec, coeffs, gen, i, n_sims=2000, seed=1, iod=True, frailty_sd=None):
+    """Median days-to-end of a Monte-Carlo started on record day i (no future weather)."""
+    import numpy as np
+    d = date.fromisoformat(rec.dates[i])
+    end_day, _, _ = burn_mod.run_hazard_simulation(
+        d, d, init_state(rec, i), coeffs, gen, float(rec.oni[i]),
+        float(rec.dmi[i]) if iod else 0.0, n_sims=n_sims, seed=seed, horizon=HORIZON,
+        seasonal=rec.seasonal, frailty_sd=rec.frailty_sd if frailty_sd is None else frailty_sd)
+    return float(np.median(end_day)), end_day
+
+
+def forecast_rmse(theta, gen, rows, rec, iod=True, n_sims=2000, seed=11):
+    import numpy as np
+    coeffs = dict(zip(KEYS, [float(v) for v in theta]))
+    pred = np.array([forecast_from(rec, coeffs, gen, s["i0"], n_sims, seed + s["year"], iod)[0]
+                     for s in rows])
+    obs = np.array([s["duration"] for s in rows], float)
+    return float(np.sqrt(np.mean((pred - obs) ** 2))), pred
+
+
+def fixed_date_rmse(theta, gen, rows, rec, mmdd="09-01", iod=True, n_sims=2000, seed=5):
+    """End-date error of forecasts issued on a fixed calendar date inside the season."""
+    import numpy as np
+    coeffs = dict(zip(KEYS, [float(v) for v in theta]))
+    errs = []
+    for s in rows:
+        d = f"{s['year']}-{mmdd}"
+        if not (s["start"] <= d < s["end"]):
+            continue
+        i = rec.index[d]
+        med, _ = forecast_from(rec, coeffs, gen, i, n_sims, seed + s["year"], iod)
+        true_days = (date.fromisoformat(s["end"]) - date.fromisoformat(d)).days
+        errs.append({"year": s["year"], "predicted_days": int(round(med)),
+                     "observed_days": true_days, "residual_days": int(round(med - true_days))})
+    r = float(np.sqrt(np.mean([e["residual_days"] ** 2 for e in errs]))) if errs else None
+    return r, errs
+
+
+# --------------------------------------------------------------------------- #
+# active-season rule
+# --------------------------------------------------------------------------- #
+
+def fit_active_rule(labels, rec) -> dict:
+    """Grid-search `dc >= dc_min and n_wet < n_wet_max` against fire-observed
+    in-season days (1 Jul - 31 Dec, 2001-2025), maximising balanced accuracy."""
+    import numpy as np
+    truth, idxs = [], []
+    by_year = {l["year"]: l for l in labels}
+    for y, lab in by_year.items():
+        d = date(y, 7, 1)
+        while d <= date(y, 12, 31):
+            i = rec.index.get(d.isoformat())
+            if i is not None:
+                ins = (lab["status"] == "season" and lab["start"] and
+                       lab["start"] <= d.isoformat() < lab["end"])
+                truth.append(bool(ins))
+                idxs.append(i)
+            d += timedelta(days=1)
+    truth = np.array(truth)
+    dc = rec.dc[idxs]
+    nw = rec.nwet[idxs]
+    best = None
+    for t in range(0, 501, 10):
+        for nmax in (1, 2, 3, 4):
+            pred = (dc >= t) & (nw < nmax)
+            tpr = (pred & truth).sum() / max(1, truth.sum())
+            tnr = (~pred & ~truth).sum() / max(1, (~truth).sum())
+            ba = 0.5 * (tpr + tnr)
+            if best is None or ba > best[0]:
+                best = (ba, t, nmax, tpr, tnr)
+    ba, t, nmax, tpr, tnr = best
+    return {"dc_min": float(t), "n_wet_max": int(nmax),
+            "balanced_accuracy": round(float(ba), 3),
+            "true_positive_rate": round(float(tpr), 3),
+            "true_negative_rate": round(float(tnr), 3),
+            "n_days": int(len(truth)),
+            "method": "grid search over 1 Jul-31 Dec 2001-2025 against fire-observed "
+                      "in-season days; in-sample, so optimistic"}
+
+
+# --------------------------------------------------------------------------- #
+# v1 on the new labels
+# --------------------------------------------------------------------------- #
+
+def legacy_v1_on_new_labels(labels) -> dict:
+    sys.path.insert(0, str(ROOT / "scripts/model/season"))
+    import numpy as np
+    import legacy_v1_calibrate as v1c  # noqa: E402
+    import legacy_v1_burn as v1b       # noqa: E402
+    from app.data.loader import load_seasons, load_enso
+    enso = {r["year"]: r for r in load_enso()}
+    seasons = []
+    for lab in labels:
+        if lab["status"] != "season":
+            continue
+        e = enso.get(lab["year"], {})
+        seasons.append({"year": lab["year"], "start_date": lab["start"], "end_date": lab["end"],
+                        "duration_days": lab["duration"],
+                        "oni_peak_aug_nov": e.get("oni_peak_aug_nov"),
+                        "enso_phase": e.get("phase")})
+    X, y, meta, rows, rec = v1c.build_training_frame(seasons)
+    shipped = np.array([v1b.HAZARD_COEFFS[k] for k in v1c.KEYS])
+    r_in, pred_in, obs = v1c._rmse(shipped, rows, rec)
+    r_fc, pred_fc = v1c._forecast_rmse(shipped, rows, rec, n_sims=1500, seed=7)
+    anchors = [{"year": s["year"], "observed_days": s["duration"],
+                "predicted_days": int(round(p))} for s, p in zip(rows, pred_in)
+               if s["year"] in ANCHOR_SEASONS]
+    refit = v1c.fit_hazard_coefficients(seasons=seasons, write=False, n_sims=1500)
+    ref_anch = [r for r in refit["residuals"] if r["year"] in ANCHOR_SEASONS]
+    # the same refit, but with the ONI a forecaster could have known at season
+    # start instead of v1's post-season Aug-Nov peak (which leaks the future)
+    from app.data.loader_season import oni_known_on
+    honest = [dict(s_, oni=oni_known_on(s_["start_date"])[0]) for s_ in seasons]
+    for h in honest:
+        h.pop("oni_peak_aug_nov", None)
+    refit_h = v1c.fit_hazard_coefficients(seasons=honest, write=False, n_sims=1500)
+    return {
+        "note": ("v1 = KBDI + 7-day rain + fixed-DOY monsoon logistic + post-season ONI "
+                 "(oni_peak_aug_nov), single point (Palangka Raya). Evaluated on the same "
+                 "fire-observed labels as v2. 'as_shipped' uses the v1 coefficients fitted "
+                 "on rainfall-rule labels, so on these labels every figure is out-of-sample "
+                 "for it; 'refit' refits the v1 structure on the fire-observed labels."),
+        "as_shipped": {
+            "coefficients": dict(zip(v1c.KEYS, shipped.round(5).tolist())),
+            "rmse_days": round(r_in, 2), "rmse_days_forecast": round(r_fc, 2),
+            "anchor_seasons": anchors,
+            "anchor_rmse_days": round(float(np.sqrt(np.mean(
+                [(a["predicted_days"] - a["observed_days"]) ** 2 for a in anchors]))), 2),
+        },
+        "refit": {k: refit[k] for k in ("coefficients", "rmse_days", "rmse_days_loo",
+                                         "rmse_days_forecast", "anchor_rmse_days",
+                                         "n_seasons", "naive_rmse_days_mean_predictor")},
+        "refit_anchor_seasons": ref_anch,
+        "refit_known_oni": {k: refit_h[k] for k in ("coefficients", "rmse_days", "rmse_days_loo",
+                                                     "rmse_days_forecast", "anchor_rmse_days")},
+        "refit_known_oni_note": ("v1 structure refitted with the ONI known at each season's start "
+                                 "(no post-season information): the fair comparison for v2."),
         "n_seasons": len(rows),
-        "n_daily_observations": int(len(y)),
-        "negative_log_likelihood": round(float(nll), 6),
-        "weather_source": rec.weather_source,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# main fit
+# --------------------------------------------------------------------------- #
+
+def fit_all(n_sims: int = 2000, legacy: bool = True, write: bool = True) -> dict:
+    import numpy as np
+    wx = json.loads(WEATHER_PATH.read_text())
+    rec = Record(wx)
+    labels = fire_labels()
+    rows = _seasons(labels, rec)
+    obs = np.array([s["duration"] for s in rows], float)
+    years = [s["year"] for s in rows]
+    from app.data.loader_season import load_iod
+    iod_seasons = load_iod()["seasons"]
+
+    out = {"fitted_at": date.today().isoformat(), "model_version": 2}
+
+    # --- generators ------------------------------------------------------
+    gen = fit_rain_generator(rec, iod=True)
+    gen_enso = fit_rain_generator(rec, iod=False)
+
+    # --- seasonal clock: onset/width by profile likelihood ------------------
+    seasonal, profile = profile_seasonal(rows, rec)
+    rec.set_seasonal(seasonal)
+
+    def variant(free, generator, iod=True):
+        rec.frailty_sd = 0.0
+        X, y, meta = build_frame(rows, rec, iod=iod)
+        th, th_mle, nll = fit_two_stage(X, y, rows, rec, free=free, iod=iod)
+        r_in, pred_in = rmse_of(th, rows, rec, iod)
+        loo = []
+        for s_ in rows:
+            keep = meta != s_["year"]
+            t_loo, _ = fit_mle(X[keep], y[keep], x0=th_mle, free=free)
+            t_loo = clip(t_loo + (th - th_mle), free)
+            loo.append(predicted_duration(t_loo, s_, rec, iod) - s_["duration"])
+        frail = calibrate_frailty(th, generator, rows, rec, iod=iod)
+        rec.frailty_sd = frail["sd"]
+        r_fc, pred_fc = forecast_rmse(th, generator, rows, rec, iod=iod, n_sims=n_sims)
+        r_sep, sep_rows = fixed_date_rmse(th, generator, rows, rec, "09-01", iod=iod,
+                                          n_sims=n_sims)
+        anchors = [{"year": s_["year"], "observed_days": s_["duration"],
+                    "predicted_days": int(round(p)), "residual_days": int(round(p - s_["duration"])),
+                    "forecast_days": int(round(pf))}
+                   for s_, p, pf in zip(rows, pred_in, pred_fc) if s_["year"] in ANCHOR_SEASONS]
+        return {
+            "theta": th, "theta_mle": th_mle, "nll": nll, "n_obs": int(len(y)),
+            "pred_in": pred_in, "loo": loo, "pred_fc": pred_fc, "sep_rows": sep_rows,
+            "frailty": frail,
+            "summary": {
+                "coefficients": {k: round(float(v), 5) for k, v in zip(KEYS, th)},
+                "rmse_days": round(r_in, 2),
+                "rmse_days_loo": round(float(np.sqrt(np.mean(np.square(loo)))), 2),
+                "rmse_days_forecast": round(r_fc, 2),
+                "frailty_sd": frail["sd"],
+                "hindcast_interval_coverage": frail["selected"]["coverage_p10_p90"],
+                "anchor_rmse_days": round(float(np.sqrt(np.mean(
+                    [a["residual_days"] ** 2 for a in anchors]))), 2),
+                "anchor_seasons": anchors,
+                "rmse_days_forecast_from_1_sep": round(r_sep, 2) if r_sep is not None else None,
+            },
+        }
+
+    main = variant(ALL, gen)
+    spec = variant(SPEC_ONLY, gen)
+    enso = variant((1, 1, 1, 1, 1, 1, 0, 1), gen_enso, iod=False)
+    theta, th_mle, nll = main["theta"], main["theta_mle"], main["nll"]
+    th_e = enso["theta"]
+    pred_in, loo, pred_fc, pred_fc_e = main["pred_in"], main["loo"], main["pred_fc"], enso["pred_fc"]
+    r_in = main["summary"]["rmse_days"]
+    r_loo = main["summary"]["rmse_days_loo"]
+    r_fc = main["summary"]["rmse_days_forecast"]
+    r_sep, sep_rows = main["summary"]["rmse_days_forecast_from_1_sep"], main["sep_rows"]
+
+    # --- other ablations (in-sample only) ---------------------------------
+    X, yy, _ = build_frame(rows, rec)
+    abl = {}
+    for name, free in (("no_rain_terms (c1=c2=c3=0)", (1, 0, 0, 0, 1, 1, 1, 1)),
+                       ("no_drought_code (c4=0)", (1, 1, 1, 1, 0, 1, 1, 1)),
+                       ("no_climate_indices (c5=c6=0)", (1, 1, 1, 1, 1, 0, 0, 1)),
+                       ("seasonal_clock_only (c0, c7)", (1, 0, 0, 0, 0, 0, 0, 1)),
+                       ("intercept_only", (1, 0, 0, 0, 0, 0, 0, 0))):
+        th_a, _, _ = fit_two_stage(X, yy, rows, rec, free=free, maxiter=800)
+        abl[name] = {"rmse_days": round(rmse_of(th_a, rows, rec)[0], 2),
+                     "coefficients": dict(zip(KEYS, th_a.round(5).tolist()))}
+
+    # --- 2019 test: forecast from 1 Aug 2019 -----------------------------
+    i19 = rec.index["2019-08-01"]
+    rec.frailty_sd = main["frailty"]["sd"]
+    c_full = dict(zip(KEYS, theta.tolist()))
+    c_enso = dict(zip(KEYS, th_e.tolist()))
+    m_full, ed_full = forecast_from(rec, c_full, gen, i19, 5000, 2019)
+    m_enso, ed_enso = forecast_from(rec, c_enso, gen_enso, i19, 5000, 2019, iod=False,
+                                    frailty_sd=enso["frailty"]["sd"])
+    seeds = [forecast_from(rec, c_full, gen, i19, 5000, sd)[0]
+             - forecast_from(rec, c_enso, gen_enso, i19, 5000, sd, iod=False,
+                             frailty_sd=enso["frailty"]["sd"])[0] for sd in range(10)]
+    c_spec = dict(zip(KEYS, spec["theta"].tolist()))
+    m_spec, _ = forecast_from(rec, c_spec, gen, i19, 5000, 2019, frailty_sd=spec["frailty"]["sd"])
+    lab19 = next(l for l in labels if l["year"] == 2019)
+    d0 = date(2019, 8, 1)
+    test_2019 = {
+        "as_of": "2019-08-01",
+        "oni_known": round(float(rec.oni[i19]), 2), "dmi_known": round(float(rec.dmi[i19]), 2),
+        "full_model_p50_days": m_full,
+        "full_model_p50_end": (d0 + timedelta(days=int(m_full))).isoformat(),
+        "full_model_p10_p90": [float(np.percentile(ed_full, 10)), float(np.percentile(ed_full, 90))],
+        "enso_only_p50_days": m_enso,
+        "enso_only_p50_end": (d0 + timedelta(days=int(m_enso))).isoformat(),
+        "enso_only_p10_p90": [float(np.percentile(ed_enso, 10)), float(np.percentile(ed_enso, 90))],
+        "spec_s3_model_p50_days": m_spec,
+        "full_minus_enso_only_p50_days_over_10_seeds": seeds,
+        "observed_end": lab19["end"],
+        "observed_days_from_as_of": (date.fromisoformat(lab19["end"]) - d0).days,
+        "passes": bool(m_full > m_enso),
+    }
+
+    # --- positive-IOD split (S6) ----------------------------------------
+    def _split(pred):
+        pos, oth = [], []
+        for s, p in zip(rows, pred):
+            son = (iod_seasons.get(str(s["year"])) or {}).get("dmi_son")
+            (pos if son is not None and son > POSITIVE_IOD_SON else oth).append(p - s["duration"])
+        f = lambda e: round(float(np.sqrt(np.mean(np.square(e)))), 2) if e else None
+        return {"positive_iod": f(pos), "n_positive_iod": len(pos),
+                "other": f(oth), "n_other": len(oth)}
+
+    # --- anchors -----------------------------------------------------------
+    anchors = [{"year": s["year"], "observed_days": s["duration"],
+                "predicted_days": int(round(p)), "residual_days": int(round(p - s["duration"])),
+                "forecast_days": int(round(pf))}
+               for s, p, pf in zip(rows, pred_in, pred_fc) if s["year"] in ANCHOR_SEASONS]
+    anchor_rmse = round(float(np.sqrt(np.mean([a["residual_days"] ** 2 for a in anchors]))), 2)
+
+    naive = float(np.sqrt(np.mean((obs - obs.mean()) ** 2)))
+    active_rule = fit_active_rule(labels, rec)
+
+    # --- VIIRS cross-check of the labels ----------------------------------
+    viirs = []
+    if FIRMS_VIIRS_PATH.exists():
+        try:
+            vl = {l["year"]: l for l in fire_labels(FIRMS_VIIRS_PATH)}
+            for l in labels:
+                v = vl.get(l["year"])
+                if v:
+                    viirs.append({"year": l["year"], "modis_start": l["start"], "viirs_start": v["start"],
+                                  "modis_end": l["end"], "viirs_end": v["end"]})
+        except Exception as exc:  # pragma: no cover
+            viirs = [{"error": repr(exc)}]
+
+    try:
+        sys.path.insert(0, str(ROOT / "scripts/model/season"))
+        import verify_dc
+        cache = os.environ.get("CFFDRS_CACHE")
+        dc_check = verify_dc.verify(pathlib.Path(cache) if cache else None)
+    except Exception as exc:  # pragma: no cover
+        dc_check = {"error": repr(exc)}
+
+    out.update({
+        "coefficients": {k: round(float(v), 5) for k, v in zip(KEYS, theta)},
+        "coefficients_mle": {k: round(float(v), 5) for k, v in zip(KEYS, th_mle)},
+        "coefficient_signs": "h = sigmoid(c0 + c1*wet10 + c2*n_wet - c3*deficit - c4*dc_term "
+                             "- c5*ONI - c6*DMI); c1..c6 >= 0",
+        "fixed_parameters": {
+            "alpha_p84_mm_per_day": burn_mod.ALPHA_P84,
+            "alpha_source": "Field et al. 2016, PNAS 113:9204 (Kalimantan haze 3.7; range 3.7-5.5)",
+            "dc_crit": burn_mod.DC_CRIT,
+            "dc_crit_source": "BMKG 'very dry' class >350 (range 300-400; Field et al. 2004 388.2)",
+            "wet10_mm": burn_mod.WET10_MM,
+            "wet10_source": "BMKG dasarian criterion, Giarno et al. 2012 (3 x 10 days >= 50 mm = onset)",
+        },
+        "rain_generator": gen,
+        "rain_generator_enso_only": gen_enso,
+        "active_rule": active_rule,
+        "season_definition": fc_mod.SEASON_END_DEFINITION,
+        "labels": [{k: l[k] for k in ("year", "status", "start", "peak", "end", "duration",
+                                       "max_7d", "target_source")} for l in labels],
+        "label_floor_7d": labels[0]["floor_7d"] if labels else None,
+        "skill": {
+            "n_seasons": len(rows),
+            "seasons": years,
+            "rmse_days": round(r_in, 2),
+            "rmse_days_loo": round(r_loo, 2),
+            "rmse_days_forecast": round(r_fc, 2),
+            "anchor_rmse_days": anchor_rmse,
+            "anchor_seasons": anchors,
+            "rmse_days_forecast_from_1_sep": round(r_sep, 2) if r_sep is not None else None,
+            "forecast_from_1_sep": sep_rows,
+            "naive_rmse_days_mean_predictor": round(naive, 2),
+            "mean_observed_duration_days": round(float(obs.mean()), 1),
+            "sd_observed_duration_days": round(float(obs.std()), 1),
+            "forecast_rmse_by_iod": _split(pred_fc),
+            "n_daily_observations": int(main["n_obs"]),
+            "negative_log_likelihood": round(nll, 6),
+        },
+        "enso_only_ablation": {**enso["summary"], "forecast_rmse_by_iod": _split(pred_fc_e),
+                               "note": "c6 = 0 and a rainfall generator fitted without DMI"},
+        "spec_s3_without_seasonal_clock": {
+            **spec["summary"], "forecast_rmse_by_iod": _split(spec["pred_fc"]),
+            "note": ("The hazard exactly as written in MODEL_SPEC S3 (no seasonal-clock term). "
+                     "Reported because it is what the spec asked for; it is not shipped "
+                     "because it is worse than both the shipped v2 model and the v1 structure "
+                     "refitted on the same labels.")},
+        "seasonal": seasonal,
+        "frailty": main["frailty"],
+        "monsoon_onset": bmkg_onsets(rec),
+        "seasonal_profile": profile,
+        "ablations_in_sample": abl,
+        "test_2019_forecast_from_1_aug": test_2019,
+        "residuals": [{"year": s["year"], "start": s["start"], "end": s["end"],
+                       "observed_days": s["duration"], "predicted_days": int(round(p)),
+                       "loo_residual_days": int(round(lr)),
+                       "forecast_days": int(round(pf)), "enso_only_forecast_days": int(round(pe)),
+                       "oni_at_start": round(float(rec.oni[s["i0"]]), 2),
+                       "dmi_at_start": round(float(rec.dmi[s["i0"]]), 2)}
+                      for s, p, lr, pf, pe in zip(rows, pred_in, loo, pred_fc, pred_fc_e)],
+        "viirs_label_check": viirs,
+        "drought_code_verification": dc_check,
+        "weather_source": "observed",
         "weather_provenance": rec.source,
         "weather_record": [rec.dates[0], rec.dates[-1]],
-        "centroid": {"lat": rec.lat, "lon": rec.lon},
-        "fitted_at": date.today().isoformat(),
-        "target_is_rainfall_derived": True,
-        "target_note": (
-            "Season start/end dates in app/data/seasons.json are derived from an "
-            "ERA5 rainfall rule, not from observed fire-episode dates. Fitting a "
-            "hazard model that contains a rainfall term against those durations "
-            "is partly circular, so the in-sample RMSE overstates real skill. "
-            "See `ablations` for how much of the skill survives removing every "
-            "rainfall term, and `anchor_seasons` for the three seasons whose "
-            "dates come from documented episodes."),
-        "ablations": ablations,
-        "anchor_seasons": anchors,
-        "anchor_rmse_days": anchor_rmse,
-        "zero_season_check": zero_check,
-        "residuals": [
-            {"year": s["year"], "observed_days": s["duration"],
-             "predicted_days": int(round(float(p))),
-             "residual_days": int(round(float(p) - s["duration"])),
-             "forecast_days": int(round(float(pf))),
-             "oni": s["oni"], "phase": s["phase"]}
-            for s, p, pf in zip(rows, pred, pred_fc)],
+        "target_is_rainfall_derived": False,
+        "target_note": ("Season dates are fire-observed (NASA FIRMS MODIS counts, site rule in "
+                        "season_definition). The v1 rainfall-rule target, and its circularity, "
+                        "are gone; in-sample error is therefore expected to rise (MODEL_SPEC S6)."),
         "caveats": CAVEATS,
-    }
+    })
+    if legacy:
+        out["v1_on_fire_labels"] = legacy_v1_on_new_labels(labels)
     if write:
-        try:
-            with open(FIT_PATH, "w") as fh:
-                json.dump(out, fh, indent=2)
-        except OSError:
-            pass
+        FIT_PATH.write_text(json.dumps(out, indent=1))
     return out
 
 
-def main():  # pragma: no cover - developer entry point
-    fit = fit_hazard_coefficients()
-    print(json.dumps({k: v for k, v in fit.items() if k != "caveats"}, indent=2))
-    c = fit["coefficients"]
-    print("\n# paste into app/model/burn.py")
-    print("HAZARD_COEFFS = {")
-    for k in KEYS:
-        print(f'    "{k}": {c[k]:>10.5f},')
-    print("}")
-    print(f'# RMSE {fit["rmse_days"]} d in-sample (perfect foresight), '
-          f'{fit["rmse_days_loo"]} d leave-one-out, '
-          f'{fit["rmse_days_forecast"]} d forecast-mode; n={fit["n_seasons"]}')
-    print(f'# naive mean-predictor RMSE {fit["naive_rmse_days_mean_predictor"]} d; '
-          f'anchor-season RMSE {fit["anchor_rmse_days"]} d '
-          f'(1997/2015/2019, documented episodes)')
-    print("# ablations: " + "; ".join(
-        f'{k} -> {v.get("rmse_days")} d' for k, v in fit["ablations"].items()))
-
-
 CAVEATS = [
-    "The season start and end dates this model is fitted against are not "
-    "observations of fire. Published per-season episode dates barely exist, so "
-    "the bundled dataset derives them from an ERA5 rainfall rule. A hazard "
-    "model containing a rainfall term is therefore fitted partly to its own "
-    "input, and the in-sample RMSE flatters it. The ablation that removes every "
-    "rainfall term is the number to look at, together with the three seasons "
-    "(1997, 2015, 2019) whose dates come from documented episodes.",
-    "There are at most about thirty observed Kalimantan fire seasons on record "
-    "and five free parameters. That is enough to fit and barely enough to "
-    "validate. Judge the model by the leave-one-out and forecast-mode errors, "
-    "not by the in-sample one.",
-    "The published start and end dates of historical seasons are themselves "
-    "modelled quantities, usually a threshold on a satellite hotspot count. "
-    "Move the threshold and every observed duration moves by days to weeks, and "
-    "the fitted coefficients move with them.",
-    "The fit uses ERA5 reanalysis rainfall at one point for the whole of "
-    "Kalimantan. ERA5 has a known wet bias over tropical land and cannot see "
-    "the patchiness of convective rain, so the fitted rainfall coefficient is "
-    "an effective, island-scale one, not the true local sensitivity of a "
-    "smouldering front to being rained on.",
-    "Land use changed enormously across the fitted period. Peatland drainage, "
-    "the 2011 moratorium, the 2016 peat restoration agency and the spread of "
-    "oil palm all mean a 1997 season and a 2023 season are not draws from the "
-    "same process. A single stationary coefficient set papers over that.",
-    "The fit is leveraged by a handful of extreme El Nino years, because those "
-    "are the long seasons. The uncertainty on the ONI coefficient is much "
-    "larger than its point estimate suggests.",
-    "Parameter uncertainty is not propagated into the published forecast "
-    "interval. The p10-p90 band on the site is weather uncertainty only; "
-    "including coefficient uncertainty would widen it materially.",
-    "Perfect-foresight RMSE flatters the model: it is the error when the "
-    "weather for the rest of the season is already known. What a visitor to "
-    "the site is exposed to is the forecast-mode error, which is roughly twice "
-    "as large.",
+    "About 22 fitted seasons and seven coefficients: enough to fit, barely enough to "
+    "validate. Judge the model by the leave-one-out and forecast-mode errors.",
+    "The season labels are this site's own rule on MODIS fire counts. A different "
+    "threshold (5% or 20% of the season maximum; 7 or 21 quiet days) moves end dates "
+    "by days to weeks, and the coefficients move with them.",
+    "MODIS Terra/Aqua orbits have drifted since about 2020-2022, changing overpass times "
+    "and fire counts. Relative thresholds absorb a constant change, not a trend within "
+    "a season.",
+    "The rainfall generator's climatology includes the season being forecast (it is "
+    "fitted on 1981-2025), a small leak that flatters forecast-mode error slightly.",
+    "Parameter uncertainty is not propagated into the published interval; the p10-p90 "
+    "band is weather uncertainty only.",
+    "Land use changed across 2001-2025 (drainage, the 2011 moratorium, the 2016 peat "
+    "restoration agency); one stationary coefficient set papers over that.",
 ]
+
+
+def main():  # pragma: no cover
+    out = fit_all()
+    show = {k: out[k] for k in ("coefficients", "skill", "enso_only_ablation",
+                                "test_2019_forecast_from_1_aug", "active_rule")}
+    show["v1"] = out.get("v1_on_fire_labels")
+    print(json.dumps(show, indent=1, default=str))
 
 
 if __name__ == "__main__":  # pragma: no cover
     main()
+
+
+#: v1 name, kept because ``app.model.__init__`` exposes it lazily.
+fit_hazard_coefficients = fit_all

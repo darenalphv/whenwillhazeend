@@ -145,6 +145,19 @@ def season_summary() -> dict:
             "pm25_peak_ugm3": s.get("pm25_peak_ugm3") or {},
             "estimated": bool(s.get("estimated")),
             "source": s.get("source"),
+            # v2 (CONTRACT_V2 M4) -- optional for the frontend
+            "target_source": s.get("target_source"),
+            "oni_burn_window": s.get("oni_burn_window"),
+            "iod_phase": s.get("iod_phase"),
+            "dmi_son": s.get("dmi_son"),
+            "dmi_peak": s.get("dmi_peak"),
+            "psi_peak_singapore": s.get("psi_peak_singapore"),
+            "singapore_peaks": s.get("singapore_peaks"),
+            "pm25_peak_metric": s.get("pm25_peak_metric"),
+            "excess_deaths_range": s.get("excess_deaths_range"),
+            "burned_area_mha_indonesia_range": s.get("burned_area_mha_indonesia_range"),
+            "burned_area_mha_kalimantan_range": s.get("burned_area_mha_kalimantan_range"),
+            "rainfall_rule_dates": s.get("rainfall_rule_dates"),
         })
 
     years = [r["year"] for r in rows]
@@ -296,15 +309,21 @@ CAVEATS = [
     "come from different sensors and different algorithms, and published "
     "estimates for the same season can differ by a factor of two. Comparing "
     "years therefore compares methods as much as it compares fires.",
-    "Season start and end dates are thresholds on hotspot counts, not observed "
-    "events. Different agencies place the start of the same season weeks apart, "
-    "and the durations fitted elsewhere in this model inherit that.",
+    "Season start and end dates from 2001 are this site's own threshold rule "
+    "on NASA MODIS fire counts over the Central/South Kalimantan peat belt; "
+    "1997-2000 predate MODIS and keep dates from a rainfall rule "
+    "(target_source says which). Move the threshold and every date moves by "
+    "days to weeks.",
     "Excess-death figures are modelled attributions from smoke exposure, not "
-    "counted deaths. The widely cited ~100,000 figure for 2015 across "
-    "Indonesia, Malaysia and Singapore is a central estimate from an "
-    "exposure-response model with a wide interval, and other studies give "
-    "substantially lower numbers. It is reported here because it is the best "
-    "available, not because it is precise.",
+    "counted deaths. Published estimates for 2015 range from about 12,000 to "
+    "100,000, depending mainly on how smoke exposure is converted into risk; "
+    "short-term and long-term estimates count different things. The single "
+    "excess_deaths_est value is the highest of them (Koplitz et al. 2016) and "
+    "should be shown with excess_deaths_range, never alone.",
+    "ENSO phases are classified on the burn-window ONI (mean of the JJA, JAS "
+    "and ASO seasons), not on the post-season peak, so 2006 and 2019 read as "
+    "ENSO-neutral: both were driven by a positive Indian Ocean Dipole "
+    "(iod_phase).",
     "Economic loss estimates mix direct costs, forgone output and health costs "
     "in ways that differ between sources, and are not inflation-adjusted here.",
     "The record is short and dominated by two extreme El Nino events, so every "
