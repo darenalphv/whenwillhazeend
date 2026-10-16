@@ -397,14 +397,50 @@ def _rh_from_t(tmin_c: float, tmax_c: float) -> float:
 # Open-Meteo client
 # ---------------------------------------------------------------------------
 
+class OpenMeteoDisabled(RuntimeError):
+    """Raised instead of calling Open-Meteo when the licensing policy says no.
+
+    Callers already turn any exception into ``live: false`` plus a
+    ``fallback_reason``, so the reason a visitor sees is the licensing one.
+    """
+
+
+def _unavailable_reason(api: str, exc: BaseException) -> str:
+    """Visitor-facing reason. The licensing switch gets its plain-language
+    explanation; anything else is named by type only (never the message,
+    which for HTTP errors would include the request URL)."""
+    if isinstance(exc, OpenMeteoDisabled):
+        return str(exc)
+    return f"{api} API unavailable ({type(exc).__name__})"
+
+
+_CUSTOMER_HOSTS = {
+    "://api.open-meteo.com": "://customer-api.open-meteo.com",
+    "://archive-api.open-meteo.com": "://customer-archive-api.open-meteo.com",
+}
+
+
 def _get_json(url: str, params: dict, timeout: float | None = None) -> dict:
+    from app.config import OPEN_METEO_OFF_REASON, open_meteo_key, open_meteo_mode
+
+    mode = open_meteo_mode()
+    if mode == "off":
+        raise OpenMeteoDisabled(OPEN_METEO_OFF_REASON)
+
     import httpx  # imported lazily so the module imports without httpx present
-    # Accept-Encoding: identity -- inside a Cloudflare Python Worker the fetch
-    # bridge hands httpx a still-compressed body for the default encodings and
-    # r.json() raises (research/PLATFORM.md). Harmless under CPython.
+    # Accept-Encoding: identity -- harmless under CPython, and kept because some
+    # proxied runtimes hand httpx a still-compressed body otherwise.
     with httpx.Client(timeout=timeout or REQUEST_TIMEOUT_S,
                       headers={"Accept-Encoding": "identity"}) as client:
-        r = client.get(url, params=params)
+        if mode == "key":
+            for free, paid in _CUSTOMER_HOSTS.items():
+                url = url.replace(free, paid)
+            # POST body, never the query string: httpx error messages include
+            # the URL, and callers copy error text into fallback_reason, which
+            # is returned to visitors. A key in the URL could be published.
+            r = client.post(url, data={**params, "apikey": open_meteo_key()})
+        else:
+            r = client.get(url, params=params)
         r.raise_for_status()
         return r.json()
 
@@ -533,7 +569,7 @@ def fetch_areal_weather(start: str, end: str, as_of: str,
                     got[k], src[k] = v, "ERA5 archive"
             net_live = True
         except Exception as exc:
-            reasons.append(f"archive API unavailable ({type(exc).__name__})")
+            reasons.append(_unavailable_reason("archive", exc))
 
     fc_lo = max(s, today - timedelta(days=FORECAST_MAX_PAST_DAYS))
     fc_hi = min(e, today + timedelta(days=FORECAST_MAX_LEAD_DAYS))
@@ -549,7 +585,7 @@ def fetch_areal_weather(start: str, end: str, as_of: str,
                     src[k] = "forecast" if _d(k) > cut else "forecast-API analysis"
             net_live = True
         except Exception as exc:
-            reasons.append(f"forecast API unavailable ({type(exc).__name__})")
+            reasons.append(_unavailable_reason("forecast", exc))
 
     dates = [_iso(d) for d in _daterange(s, e)]
     obs_missing = sum(1 for k in dates if _d(k) <= obs_end and k not in got)
@@ -601,7 +637,7 @@ def fetch_weather(lat: float, lon: float, start: str, end: str) -> dict:
             got.update(_pull(ARCHIVE_URL, lat, lon, s, archive_end))
             any_live = True
         except Exception as exc:
-            reasons.append(f"archive API unavailable ({type(exc).__name__})")
+            reasons.append(_unavailable_reason("archive", exc))
 
     fc_start = max(s, today - timedelta(days=FORECAST_MAX_PAST_DAYS))
     fc_end = min(e, today + timedelta(days=FORECAST_MAX_LEAD_DAYS))
@@ -610,7 +646,7 @@ def fetch_weather(lat: float, lon: float, start: str, end: str) -> dict:
             got.update(_pull(FORECAST_URL, lat, lon, fc_start, fc_end))
             any_live = True
         except Exception as exc:
-            reasons.append(f"forecast API unavailable ({type(exc).__name__})")
+            reasons.append(_unavailable_reason("forecast", exc))
 
     missing = [d for d in want if _iso(d) not in got]
     if missing:

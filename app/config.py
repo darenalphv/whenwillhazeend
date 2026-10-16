@@ -77,3 +77,34 @@ class Settings:
 
 
 settings = Settings()
+
+
+# --------------------------------------------------------------------------- #
+# Open-Meteo licensing policy
+#
+# Open-Meteo's free API is licensed for non-commercial use only, and this site
+# funnels to a company, so by default the live site makes NO Open-Meteo calls.
+# Every model and feed falls back (bundled ERA5 weather + climatology; no CAMS
+# readings) and says why. Read per call, so a key added in the host's
+# environment takes effect on restart and tests can monkeypatch it.
+# --------------------------------------------------------------------------- #
+
+OPEN_METEO_OFF_REASON = (
+    "Live Open-Meteo data is switched off: its free tier is licensed for "
+    "non-commercial use only, and no commercial API key is configured."
+)
+
+
+def open_meteo_key() -> str | None:
+    """The commercial key from the environment, or None. Never log it."""
+    return os.environ.get("OPEN_METEO_API_KEY", "").strip() or None
+
+
+def open_meteo_mode() -> str:
+    """'key' (commercial endpoints), 'free' (explicit developer opt-in via
+    WWHE_OPEN_METEO_ALLOW_FREE=1, never in production), or 'off' (default)."""
+    if open_meteo_key():
+        return "key"
+    if _env_bool("WWHE_OPEN_METEO_ALLOW_FREE", False):
+        return "free"
+    return "off"
