@@ -9,6 +9,12 @@ so requests to our own app still work.
 
 from __future__ import annotations
 
+import os
+
+# Tests must never touch the network at app startup.
+os.environ.setdefault("WWHE_LIVE_WARM", "0")
+
+
 import socket
 from collections.abc import Iterator
 

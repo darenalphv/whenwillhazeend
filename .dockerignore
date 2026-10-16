@@ -12,3 +12,5 @@ scripts/model
 *.md
 .DS_Store
 .claude
+# recorded API responses for tests only
+app/live/fixtures

@@ -68,6 +68,15 @@ async def _lifespan(_app: FastAPI):
             # One broken model must cost only its own endpoints (they 503 with
             # the component named), never the whole app's startup.
             log.warning("warm import of %s failed (%s); its endpoints will 503", name, exc)
+    # Pre-fetch the live feeds (FIRMS is a ~6 MB download) on a background
+    # thread, so the first visitor doesn't wait on it. Off when testing or
+    # offline: WWHE_LIVE_WARM=0.
+    if os.environ.get("WWHE_LIVE_WARM", "1") != "0":
+        try:
+            from app.live import warm_in_background
+            warm_in_background()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("live-data warm-up not started: %s", exc)
     yield
 
 
