@@ -1,0 +1,14 @@
+{
+  "name": "whenwillhazeend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "whenwillhazeend.com on Cloudflare: FastAPI as a Python Worker (/api/*) + Workers Static Assets (everything else).",
+  "scripts": {
+    "build": "python3 scripts/build_static.py && python3 worker/stage_app.py",
+    "dev": "npm run build && cd worker && uv run pywrangler dev",
+    "deploy": "npm run build && cd worker && uv run pywrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.0"
+  }
+}

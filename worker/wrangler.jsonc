@@ -1,0 +1,56 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "whenwillhazeend",
+  // Staged by worker/stage_app.py: entry.py + a copy of the app/ package.
+  "main": "src/entry.py",
+  // >= 2026-09-08 selects Python 3.14 / Pyodide 314 (see research/PLATFORM.md).
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["python_workers"],
+
+  // Ship the bundled JSON datasets (app/data/**, app/model/*.json) with the code
+  // so app/data/loader.py can open() them from the Worker's filesystem.
+  "rules": [
+    { "type": "Data", "globs": ["**/*.json"], "fallthrough": true }
+  ],
+
+  // Trim the vendored packages (python_modules/): test suites, type stubs and
+  // numpy's Fortran wrapper generator are never imported at runtime.
+  "python_modules": {
+    "exclude": ["**/*.pyc", "**/tests/**", "**/*.pyi", "numpy/f2py/**", "numpy/_pyinstaller/**"]
+  },
+
+  "assets": {
+    "directory": "../public",
+    "binding": "ASSETS",
+    // Only the API runs Python. Pages and /static/* never wake the Worker.
+    "run_worker_first": ["/api/*"],
+    // /simulator -> public/simulator/index.html
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+
+  // Per-request CPU ceiling (Workers Paid only; Free is fixed at 10 ms, which
+  // the simulations exceed ~20-160x). Heaviest measured request: ~1.6 s
+  // (exhaustion, n_sims=20000). 10 s leaves headroom and caps the cost of abuse.
+  "limits": { "cpu_ms": 10000 },
+
+  // Forecast-odds history (CONTRACT_V2 M2): the cron computes "odds as of today"
+  // once a day and appends it here; GET /api/forecast/history merges it in.
+  // Without an "id", deploy auto-provisions the namespace (wrangler's
+  // experimental --x-provision, on by default). Recommended: run
+  // `npx wrangler kv namespace create FORECAST_KV` and add its "id" here.
+  "kv_namespaces": [{ "binding": "FORECAST_KV" }],
+  "triggers": { "crons": ["30 0 * * *"] },  // 00:30 UTC = 07:30 WIB, daily
+
+  // Custom Domain: on deploy, Cloudflare creates the DNS record and certificate
+  // for the apex (the zone is already on Cloudflare). Fails if a conflicting
+  // A/AAAA/CNAME record for the apex exists -- delete it first. www -> apex is
+  // a Redirect Rule in the dashboard (see research/PLATFORM.md), because pages
+  // are served by Static Assets before this Worker could redirect them.
+  "routes": [{ "pattern": "whenwillhazeend.com", "custom_domain": true }],
+  // Keep the *.workers.dev URL for smoke tests. Note: the edge cache (Cache API)
+  // is a no-op there, so measure cache hits on the custom domain only.
+  "workers_dev": true,
+
+  "observability": { "enabled": true }
+}

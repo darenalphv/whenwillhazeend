@@ -10,15 +10,17 @@ climatology and says so in its response.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from app import __version__
 from app.api.routes import router as api_router
 from app.config import settings
+
+if TYPE_CHECKING:  # pragma: no cover
+    from fastapi.templating import Jinja2Templates
 
 log = logging.getLogger("whenwillhazeend")
 
@@ -49,16 +51,30 @@ app.include_router(api_router)
 # missing directory degrades to a clear message rather than an import error).
 # --------------------------------------------------------------------------- #
 
-if settings.static_dir.is_dir():
-    app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
-else:  # pragma: no cover - only when the frontend has not been written yet
-    log.warning("static directory %s missing; /static not mounted", settings.static_dir)
+# On Cloudflare (Python Worker) neither directory is shipped -- Workers Static
+# Assets serve the pre-built pages and /static/* -- and jinja2 is not installed,
+# so both imports are deferred until we know they are needed.
 
-templates: Jinja2Templates | None = (
-    Jinja2Templates(directory=str(settings.templates_dir))
-    if settings.templates_dir.is_dir()
-    else None
-)
+if settings.static_dir.is_dir():
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
+else:  # pragma: no cover - Worker bundle, or the frontend has not been written yet
+    log.info("static directory %s missing; /static not mounted", settings.static_dir)
+
+
+def _make_templates() -> Jinja2Templates | None:
+    if not settings.templates_dir.is_dir():
+        return None
+    try:
+        from fastapi.templating import Jinja2Templates
+    except ImportError:  # pragma: no cover - jinja2 not installed
+        log.warning("jinja2 not installed; page routes will return 503")
+        return None
+    return Jinja2Templates(directory=str(settings.templates_dir))
+
+
+templates: Jinja2Templates | None = _make_templates()
 
 _MISSING_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
