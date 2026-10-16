@@ -206,14 +206,18 @@ def build_observed(days: int = 7) -> dict:
             sources["nea"] = {"available": False, "measured": True, "error": describe_error(exc)}
         try:
             cams_res = f_cams.result()
-            sources["cams"] = {"available": True, "measured": False,
+            sources["cams"] = {"available": True, "measured": False, "mode": cams.mode(),
                                "fetched_at": _epoch_iso(cams_res.fetched_at),
                                "stale": cams_res.stale, "keyed": cams.using_key()}
             if cams_res.stale:
                 caveats.append("The CAMS model values are from an earlier fetch; the latest refresh "
                                "failed.")
+        except cams.OpenMeteoOff as exc:
+            sources["cams"] = {"available": False, "measured": False, "mode": "off",
+                               "reason": str(exc)}
         except SourceUnavailable as exc:
-            sources["cams"] = {"available": False, "measured": False, "error": str(exc)}
+            sources["cams"] = {"available": False, "measured": False, "mode": cams.mode(),
+                               "error": str(exc)}
             caveats.append("The CAMS model is unavailable right now; no modelled values are shown.")
         except Exception as exc:  # pragma: no cover
             log.exception("CAMS points failed unexpectedly")
@@ -238,6 +242,15 @@ def build_observed(days: int = 7) -> dict:
         places.append(entry)
 
     caveats.append(MALAYSIA_OFFICIAL_FINDING)
+    if any(p["modelled"] for p in places if p["country"] == "MY"):
+        caveats.append("Kuala Lumpur and Selangor therefore show only the CAMS model, labelled "
+                       "as modelled.")
+    else:
+        why = sources["cams"].get("reason") or "the CAMS model is unavailable right now"
+        caveats.append(
+            "No modelled or official reading for Kuala Lumpur or Selangor is available to this "
+            f"site ({why.rstrip('.')}). For the official Malaysian API readings, see APIMS: "
+            f"{APIMS_PORTAL['url']}")
     if modelled:
         caveats.append(
             f"Modelled values come from the CAMS global forecast (~{cams.GRID_KM} km grid). "

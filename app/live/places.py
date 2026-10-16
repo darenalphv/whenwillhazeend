@@ -18,8 +18,10 @@ of Environment (DOE). Finding as of 2026-10-16:
 
 So there is no documented, reuse-licensed source for Malaysian API readings, and
 the app does not scrape the portal's undocumented endpoints. Malaysian places get
-``official: null``, the CAMS model clearly labelled as modelled, and a link to
-the official portal so readers can check the real readings there.
+``official: null``, the CAMS model clearly labelled as modelled when the
+Open-Meteo licensing policy allows it (``app.config.open_meteo_mode``; off by
+default, in which case ``modelled`` is null too), and always a link to the
+official portal so readers can check the real readings there.
 """
 
 from __future__ import annotations
@@ -37,8 +39,8 @@ APIMS_PORTAL = {
 MALAYSIA_OFFICIAL_FINDING = (
     "Malaysia's official Air Pollutant Index (API / IPU) is not shown: DOE publishes it "
     "on the APIMS portal (eqms.doe.gov.my) but offers no documented public data feed or "
-    "reuse licence for it, so Kuala Lumpur and Selangor show only the CAMS model, "
-    "labelled as modelled. Check APIMS for the official readings."
+    "reuse licence for it, so this site does not copy it. Check APIMS for the official "
+    "readings."
 )
 
 

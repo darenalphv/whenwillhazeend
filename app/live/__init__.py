@@ -20,14 +20,19 @@ def warm_in_background() -> None:
 
     Cold fetches take ~1 s (NEA, CAMS points), ~3 s (CAMS field + wind) and
     3-10 s (the 6 MB FIRMS file). Failures are swallowed: the request path
-    reports unavailability itself. Does nothing at import time.
+    reports unavailability itself. Does nothing at import time. When the
+    Open-Meteo policy is off (app.config.open_meteo_mode), CAMS and wind are
+    not fetched - build_observed skips CAMS before any network call.
     """
     import threading
 
     def run() -> None:
-        from app.live import build
+        from app.live import build, cams
 
-        for fn in (build.build_observed, build.build_field, build.build_hotspots):
+        fns = [build.build_observed, build.build_hotspots]
+        if cams.mode() != "off":  # no Open-Meteo traffic at all under the off policy
+            fns.insert(1, build.build_field)
+        for fn in fns:
             try:
                 fn()
             except Exception:  # noqa: BLE001 - warming is best-effort

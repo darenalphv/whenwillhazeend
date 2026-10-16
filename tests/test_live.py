@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
+from app import config
 from app.live import bands, build, cache, cams, common, firms, nea, wind
 from app.live.common import MYT
 from app.live.regions import classify, region_ids
@@ -99,6 +100,9 @@ def upstream(monkeypatch, tmp_path) -> FakeUpstream:
         monkeypatch.setattr(mod, "now_myt", lambda: NOW, raising=False)
     monkeypatch.delenv("OPEN_METEO_API_KEY", raising=False)
     monkeypatch.delenv("DATA_GOV_SG_API_KEY", raising=False)
+    # Most tests exercise CAMS through the developer opt-in ('free'); the 'off'
+    # default and the 'key' mode have their own tests below.
+    monkeypatch.setenv("WWHE_OPEN_METEO_ALLOW_FREE", "1")
     cache.set_disk_dir(tmp_path / "cache")
     for s in (nea.store, cams.points_store, cams.field_store, firms.store, wind.store):
         s.clear()
@@ -486,6 +490,8 @@ def test_open_meteo_key_switches_to_customer_endpoints(api, upstream, monkeypatc
     assert cams.FIELD_DEG_KEYED == cams.NATIVE_DEG  # keyed tier samples CAMS natively
     monkeypatch.setattr(cams, "FIELD_DEG_KEYED", 1.0)  # ...but the fixture is a 1-degree 3 x 3
     monkeypatch.setenv("OPEN_METEO_API_KEY", FAKE_KEY)
+    monkeypatch.delenv("WWHE_OPEN_METEO_ALLOW_FREE", raising=False)
+    assert config.open_meteo_mode() == "key"
     caplog.set_level(logging.DEBUG)
     obs = api.get("/api/now/observed")
     fld = api.get("/api/now/field")
@@ -501,11 +507,95 @@ def test_open_meteo_key_switches_to_customer_endpoints(api, upstream, monkeypatc
 
 
 def test_without_key_uses_free_endpoints(api, upstream):
+    assert config.open_meteo_mode() == "free"
     api.get("/api/now/observed")
     om = [r for r in upstream.requests if "open-meteo" in r.url.host]
     assert om and all(not r.url.host.startswith("customer-") for r in om)
     assert all("apikey" not in b for r, b in zip(upstream.requests, upstream.bodies)
                if "open-meteo" in r.url.host)
+
+
+# --------------------------------------------------------------------------- #
+# Open-Meteo licensing policy 'off' (the production default)
+# --------------------------------------------------------------------------- #
+
+def _open_meteo_requests(upstream) -> list[httpx.Request]:
+    return [r for r in upstream.requests if "open-meteo" in r.url.host]
+
+
+@pytest.fixture
+def off(monkeypatch, upstream):
+    monkeypatch.delenv("WWHE_OPEN_METEO_ALLOW_FREE", raising=False)
+    monkeypatch.delenv("OPEN_METEO_API_KEY", raising=False)
+    assert config.open_meteo_mode() == "off"
+    return upstream
+
+
+def test_off_observed_keeps_nea_and_makes_no_open_meteo_call(api, off):
+    r = api.get("/api/now/observed")
+    assert r.status_code == 200
+    d = r.json()
+    assert _open_meteo_requests(off) == []
+    cams_src = d["sources"]["cams"]
+    assert cams_src["available"] is False and cams_src["mode"] == "off"
+    assert cams_src["reason"] == config.OPEN_METEO_OFF_REASON
+    assert d["sources"]["nea"]["available"] is True
+    for p in d["places"]:
+        assert p["modelled"] is None
+        if p["country"] == "MY":
+            assert p["official"] is None
+            assert p["official_portal"]["url"] == "https://eqms.doe.gov.my/APIMS/main"
+        else:
+            assert p["official"]["index"] == "PSI"
+    h = d["headline"]
+    assert h["measured"] is True and h["place_id"] == "sg-central" and h["value"] == 227
+    msg = [c for c in d["caveats"] if c.startswith("No modelled or official reading for Kuala Lumpur")]
+    assert len(msg) == 1 and "https://eqms.doe.gov.my/APIMS/main" in msg[0]
+    assert "non-commercial" in msg[0]
+    assert not any("show only the CAMS model" in c for c in d["caveats"])
+
+
+def test_off_field_is_503_with_licensing_reason_and_stays_in_openapi(api, off):
+    r = api.get("/api/now/field")
+    assert r.status_code == 503
+    assert config.OPEN_METEO_OFF_REASON in r.json()["detail"]
+    assert "/api/now/field" in api.get("/api/openapi.json").json()["paths"]
+    assert _open_meteo_requests(off) == []
+
+
+def test_off_wind_and_points_refuse_without_network(off):
+    for fn in (cams.get_points, cams.get_field, wind.get_wind):
+        with pytest.raises(cams.OpenMeteoOff):
+            fn()
+    assert _open_meteo_requests(off) == []
+
+
+def test_off_does_not_serve_values_cached_under_another_mode(api, upstream, monkeypatch):
+    assert api.get("/api/now/observed").json()["places"][5]["modelled"] is not None  # 'free'
+    n = len(_open_meteo_requests(upstream))
+    monkeypatch.delenv("WWHE_OPEN_METEO_ALLOW_FREE")
+    d = api.get("/api/now/observed").json()
+    assert all(p["modelled"] is None for p in d["places"])
+    assert api.get("/api/now/field").status_code == 503
+    assert len(_open_meteo_requests(upstream)) == n
+
+
+def test_off_hotspots_unaffected(api, off):
+    assert api.get("/api/now/hotspots").status_code == 200
+    assert _open_meteo_requests(off) == []
+
+
+def test_off_warm_up_thread_makes_no_open_meteo_call(off):
+    import threading
+
+    import app.live as live
+
+    live.warm_in_background()
+    for t in threading.enumerate():
+        if t.name == "live-warm":
+            t.join(timeout=30)
+    assert _open_meteo_requests(off) == []
+    assert any("firms" in r.url.host for r in off.requests)  # it did warm the rest
 
 
 # --------------------------------------------------------------------------- #

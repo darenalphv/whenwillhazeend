@@ -12,9 +12,14 @@ Licensing - read this:
 * Service: Open-Meteo's free endpoint is for **non-commercial use only**. A
   subscription (API Standard, EUR 29/month as listed on 2026-10-16, 1M calls/month,
   includes the Air Quality API) grants a commercial licence and a key for the
-  ``customer-`` endpoints. Set ``OPEN_METEO_API_KEY`` and every call in this module
-  switches to ``customer-air-quality-api.open-meteo.com`` with ``apikey=``.
-  The key goes in a POST form body - never in a URL, never in a log line.
+  ``customer-`` endpoints.
+* Policy: :func:`app.config.open_meteo_mode`, read on every call.
+  ``'off'`` (the default - no key, no opt-in): this module makes **no network
+  call** and does not serve previously cached values; the source reports
+  unavailable with ``app.config.OPEN_METEO_OFF_REASON``.
+  ``'free'`` (``WWHE_OPEN_METEO_ALLOW_FREE=1``, developers only): free endpoints.
+  ``'key'`` (``OPEN_METEO_API_KEY`` set): ``customer-air-quality-api.open-meteo.com``
+  with ``apikey=`` in the POST form body - never in a URL, never in a log line.
 
 Call budget: Open-Meteo counts **each coordinate** as one call (verified: one
 1,000-point request exhausted the free 600/minute allowance). So the field grid
@@ -25,12 +30,12 @@ updates every 12 h). The nine pinned places are one 9-call request per 30 min.
 
 from __future__ import annotations
 
-import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
+from app import config
 from app.live.cache import Result, Store, cached
-from app.live.common import MYT, from_utc_naive, iso, now_myt
+from app.live.common import MYT, SourceUnavailable, from_utc_naive, iso, now_myt
 from app.live.places import PLACES, Place
 
 FREE_BASE = "https://air-quality-api.open-meteo.com/v1/air-quality"
@@ -67,19 +72,36 @@ def attribution(year: int | None = None) -> str:
             "Air-quality data by Open-Meteo.com, CC BY 4.0.")
 
 
+class OpenMeteoOff(SourceUnavailable):
+    """Open-Meteo use is switched off by licensing policy (app.config)."""
+
+
+def mode() -> str:
+    return config.open_meteo_mode()
+
+
 def using_key() -> bool:
-    return bool(os.environ.get("OPEN_METEO_API_KEY", "").strip())
+    return mode() == "key"
 
 
-def _post(params: dict, timeout: float) -> list[dict]:
-    """POST to the free or customer endpoint. The key, if any, rides in the body."""
+def ensure_enabled() -> None:
+    """Raise :class:`OpenMeteoOff` before any cache read or network call when off."""
+    if mode() == "off":
+        raise OpenMeteoOff(config.OPEN_METEO_OFF_REASON)
+
+
+def post_open_meteo(free_url: str, customer_url: str, params: dict, timeout: float) -> list[dict]:
+    """POST to Open-Meteo per the licensing mode. The key, if any, rides in the body."""
     from app.live.common import http_client
 
-    key = os.environ.get("OPEN_METEO_API_KEY", "").strip()
-    url = CUSTOMER_BASE if key else FREE_BASE
+    m = mode()
+    if m == "off":  # second line of defence; callers check first
+        raise OpenMeteoOff(config.OPEN_METEO_OFF_REASON)
     data = {k: str(v) for k, v in params.items()}
-    if key:
-        data["apikey"] = key
+    url = free_url
+    if m == "key":
+        url = customer_url
+        data["apikey"] = config.open_meteo_key() or ""
     with http_client(timeout) as client:
         r = client.post(url, data=data)
         r.raise_for_status()
@@ -87,6 +109,10 @@ def _post(params: dict, timeout: float) -> list[dict]:
     if isinstance(payload, dict) and payload.get("error"):
         raise ValueError("Open-Meteo returned an error payload")
     return payload if isinstance(payload, list) else [payload]
+
+
+def _post(params: dict, timeout: float) -> list[dict]:
+    return post_open_meteo(FREE_BASE, CUSTOMER_BASE, params, timeout)
 
 
 # --------------------------------------------------------------------------- #
@@ -129,7 +155,9 @@ def _points_params(places: tuple[Place, ...]) -> dict:
 
 
 def get_points(places: tuple[Place, ...] = PLACES) -> Result:
-    """Hourly modelled PM2.5 and US AQI for ``places``. Raises SourceUnavailable."""
+    """Hourly modelled PM2.5 and US AQI for ``places``. Raises SourceUnavailable
+    (OpenMeteoOff, with no network call and no cache read, when policy is off)."""
+    ensure_enabled()
     key = "points:" + "|".join(p.id for p in places)
 
     def load(_prev):
@@ -211,6 +239,7 @@ def fetch_field(spec: dict) -> dict:
 
 
 def get_field() -> tuple[dict, Result]:
+    ensure_enabled()
     spec = grid_spec()
     key = f"field:{spec['dlon']}"
 

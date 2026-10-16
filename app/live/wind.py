@@ -10,20 +10,22 @@ Verified 2026-10-16: the forecast endpoint serves ``wind_speed_850hPa`` /
 the tropics - an approximation, stated in the response.
 
 Grid: every 2 deg over the CAMS field bbox (13 x 8 = 104 points, i.e. 104
-Open-Meteo calls per refresh, cached 6 h). The same ``OPEN_METEO_API_KEY``
-switch as :mod:`app.live.cams` moves this to ``customer-api.open-meteo.com``.
+Open-Meteo calls per refresh, cached 6 h). The same licensing policy as
+:mod:`app.live.cams` applies (``app.config.open_meteo_mode``): off by default -
+no network call; ``free`` on developer opt-in; ``key`` moves this to
+``customer-api.open-meteo.com`` with the key in the POST body.
 Open-Meteo returns speed and the direction the wind blows *from*; u/v are
 derived here: u = -s sin(dir), v = -s cos(dir) (u east-positive, v north-positive).
 """
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 
 import numpy as np
 
 from app.live.cache import Result, Store, cached
+from app.live import cams
 from app.live.cams import FIELD_BOUNDS, PAST_DAYS
 from app.live.common import MYT, iso
 
@@ -60,19 +62,7 @@ def _points(spec: dict) -> list[tuple[float, float]]:
 
 
 def _post(params: dict) -> list[dict]:
-    from app.live.common import http_client
-
-    key = os.environ.get("OPEN_METEO_API_KEY", "").strip()
-    data = {k: str(v) for k, v in params.items()}
-    if key:
-        data["apikey"] = key
-    with http_client(TIMEOUT_S) as client:
-        r = client.post(CUSTOMER_BASE if key else FREE_BASE, data=data)
-        r.raise_for_status()
-        payload = r.json()
-    if isinstance(payload, dict) and payload.get("error"):
-        raise ValueError("Open-Meteo returned an error payload")
-    return payload if isinstance(payload, list) else [payload]
+    return cams.post_open_meteo(FREE_BASE, CUSTOMER_BASE, params, TIMEOUT_S)
 
 
 def parse(payload: list[dict], npts: int) -> dict[str, np.ndarray]:
@@ -96,6 +86,7 @@ def parse(payload: list[dict], npts: int) -> dict[str, np.ndarray]:
 
 
 def get_wind() -> tuple[dict, Result]:
+    cams.ensure_enabled()
     spec = grid_spec()
     pts = _points(spec)
 
